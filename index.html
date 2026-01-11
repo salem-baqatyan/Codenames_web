@@ -173,7 +173,7 @@
         } else {
             document.getElementById('spy-controls').style.display = 'none';
             document.getElementById('op-controls').style.display = 'flex';
-            document.getElementById('guess-text').innerText = `المحاولات المتبقية: ${gameState.remainingGuesses}`;
+            document.getElementById('guess-text').innerText = gameState.remainingGuesses==1 ?'تلميح أضافي' : `المحاولات المتبقية: ${gameState.remainingGuesses - 1}`;
         }
     }
 
