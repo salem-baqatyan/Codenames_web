@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Codenames Pro - Final Client Specs</title>
+<title>Codenames Pro - Advanced Log UI</title>
 <style>
     :root { 
         --bg-color: #0d1117; 
@@ -41,8 +41,25 @@
     .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; background: rgba(0,0,0,0.3); }
     .player-name { font-size: 0.55rem; color: white; margin-top: 0px; font-weight: bold; }
 
-    .game-log-container { background: linear-gradient(to bottom, #444, #222); border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
-    #log-content { flex: 1; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 0.65rem; overflow-y: auto; color: white; padding: 3px; text-align: right; }
+    /* --- تصميم سجل اللعبة المتطور (Game Log) --- */
+    .game-log-container { background: #333; border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
+    #log-content { flex: 1; background: #2a2a2a; border-radius: 4px; font-size: 0.65rem; overflow-y: auto; color: white; padding: 5px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* فقاعة التلميح (قائد) */
+    .log-clue-item { display: flex; align-items: center; gap: 5px; background: #444; border-radius: 5px; padding: 2px 5px; border: 1px solid #666; }
+    .log-clue-blue { background: #3498db !important; }
+    .log-clue-red { background: #e74c3c !important; }
+    .log-avatar { width: 18px; height: 18px; border-radius: 50%; border: 1px solid white; }
+    .log-text-clue { flex: 1; font-weight: bold; text-align: center; color: black; background: white; border-radius: 3px; margin: 0 5px; padding: 1px 0; }
+    .log-num-circle { width: 16px; height: 16px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.6rem; }
+
+    /* فقاعة الاختيار (عميل) */
+    .log-guess-item { display: flex; align-items: center; gap: 5px; padding-right: 5px; }
+    .log-guess-text { padding: 2px 8px; border-radius: 4px; font-weight: bold; color: black; min-width: 40px; text-align: center; }
+    .bg-blue { background: #3498db; }
+    .bg-red { background: #e74c3c; }
+    .bg-brown { background: #d2b48c; }
+    .bg-black { background: #333; color: white !important; }
 
     /* --- الجزء الثاني: الشبكة --- */
     .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; }
@@ -64,13 +81,10 @@
     .clue-input-wrapper { flex: 1; background: white; border-radius: 20px; height: 35px; display: flex; align-items: center; padding: 0 12px; }
     .clue-input { width: 100%; border: none; outline: none; font-weight: bold; color: #333; text-align: center; font-size: 0.8rem; background: transparent; }
     .clue-select { width: 45px; height: 35px; border-radius: 50%; border: 2px solid #555; background: white; color: #19a8ff; font-weight: bold; text-align: center; appearance: none; outline: none; font-size: 0.9rem; transition: 0.3s; }
-    
     .send-btn { width: 55px; height: 35px; background: linear-gradient(to bottom, #7ed321, #417505); border: 1px solid #fff; border-radius: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
     .end-turn-btn { background: linear-gradient(to bottom, #d0021b, #8b0000) !important; }
-    
     .arrow-icon { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid white; }
     .x-icon { color: white; font-weight: 900; font-size: 1.2rem; }
-    
     .disabled-area { opacity: 0.7; pointer-events: none; filter: grayscale(0.5); }
     .error-border { border-color: #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
 </style>
@@ -122,6 +136,9 @@
         'img/avatar_women.webp'
     ];
     
+    // حفظ مسارات الصور المسندة لكل لاعب لاستخدامها في اللوج
+    let playerAvatars = {};
+
     const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
     
     let gameState = {
@@ -129,10 +146,13 @@
     };
 
     function initGame() {
-        // توزيع الأفاتارات
         const shuffledAvatars = [...avatarImages].sort(() => Math.random() - 0.5);
+        const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+        
         document.querySelectorAll('.avatar-box').forEach((box, i) => {
-            box.innerHTML = `<img src="${shuffledAvatars[i]}" class="avatar-img">`;
+            const avatarPath = shuffledAvatars[i];
+            box.innerHTML = `<img src="${avatarPath}" class="avatar-img">`;
+            playerAvatars[roles[i]] = avatarPath; // حفظ صورة كل دور
         });
 
         gameState.turn = Math.random() > 0.5 ? 'blue' : 'red';
@@ -184,12 +204,12 @@
             icon.innerHTML = '';
             select.value = '-';
         } else {
-            uiArea.classList.add('disabled-area'); // جعل المنطقة رمادية وغير قابلة للضغط
-            uiArea.style.pointerEvents = 'auto'; // السماح بالضغط على الزر فقط
+            uiArea.classList.add('disabled-area');
+            uiArea.style.pointerEvents = 'auto';
             input.readOnly = true;
             select.disabled = true;
             btn.classList.add('end-turn-btn');
-            btn.style.pointerEvents = 'auto'; // تفعيل زر إنهاء الدور
+            btn.style.pointerEvents = 'auto';
             icon.className = 'x-icon';
             icon.innerHTML = '✕';
         }
@@ -201,26 +221,34 @@
     }
 
     function sendClue() {
-    const input = document.getElementById('clueInput');
-    const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
-    const select = document.getElementById('clueNum');
+        const input = document.getElementById('clueInput');
+        const input_wrapper = document.querySelector('.clue-input-wrapper');
+        const select = document.getElementById('clueNum');
 
-    // التحقق من النص
-    if (!input.value.trim()) {
-        input_wrapper.classList.add('error-border');
-        setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
-        return;
-    }
+        if (!input.value.trim()) {
+            input_wrapper.classList.add('error-border');
+            setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
+            return;
+        }
+        if (select.value === '-') {
+            select.classList.add('error-border');
+            setTimeout(() => select.classList.remove('error-border'), 1000);
+            return;
+        }
 
-    // التحقق من قائمة الاختيار
-    if (select.value === '-') {
-        select.classList.add('error-border');
-        setTimeout(() => select.classList.remove('error-border'), 1000);
-        return;
-    }
-
+        // إضافة التلميح بالتصميم الجديد (الصورة الأولى)
         const log = document.getElementById('log-content');
-        log.innerHTML = `<div style="color:${gameState.turn === 'blue' ? '#3498db' : '#e74c3c'}; border-bottom:1px solid rgba(255,255,255,0.1); padding:2px;">${gameState.turn.toUpperCase()}: ${input.value} | ${select.value}</div>` + log.innerHTML;
+        const avatar = playerAvatars[`${gameState.turn}-spy`];
+        const teamClass = gameState.turn === 'blue' ? 'log-clue-blue' : 'log-clue-red';
+        
+        const clueHtml = `
+            <div class="log-clue-item ${teamClass}">
+                <img src="${avatar}" class="log-avatar">
+                <div class="log-text-clue">${input.value}</div>
+                <div class="log-num-circle">${select.value}</div>
+            </div>
+        `;
+        log.innerHTML = clueHtml + log.innerHTML;
         
         gameState.phase = 'operative';
         renderGrid(); updateUI();
@@ -231,15 +259,35 @@
         const card = gameState.cards[i];
         card.revealed = true;
 
+        // تحديث السجل بتصميم الكلمة المختارة (الصورة الثانية)
+        const log = document.getElementById('log-content');
+        const avatar = playerAvatars[`${gameState.turn}-op`];
+        let colorClass = '';
+        if(card.type === 'card-blue') colorClass = 'bg-blue';
+        else if(card.type === 'card-red') colorClass = 'bg-red';
+        else if(card.type === 'card-brown') colorClass = 'bg-brown';
+        else colorClass = 'bg-black';
+
+        const guessHtml = `
+            <div class="log-guess-item">
+                <img src="${avatar}" class="log-avatar">
+                <div class="log-guess-text ${colorClass}">${card.word}</div>
+            </div>
+        `;
+        log.innerHTML = guessHtml + log.innerHTML;
+
+        // منطق اللعبة المعتاد
         if (card.type === 'card-blue') gameState.scores.blue = Math.max(0, gameState.scores.blue - 1);
         else if (card.type === 'card-red') gameState.scores.red = Math.max(0, gameState.scores.red - 1);
 
         if (card.type === 'card-black') { alert("خسارة! لمست القاتل"); location.reload(); return; }
         
-        if (card.type !== `card-${gameState.turn}`) endTurn();
+        if (card.type !== `card-${gameState.turn}`) {
+            setTimeout(endTurn, 500); // تأخير بسيط ليظهر اللوج قبل انتقال الدور
+        }
         
         if (gameState.scores.blue === 0 || gameState.scores.red === 0) { 
-            alert("انتهت اللعبة بالفوز!"); location.reload(); 
+            setTimeout(() => { alert("انتهت اللعبة بالفوز!"); location.reload(); }, 600);
         }
         renderGrid(); updateUI();
     }
