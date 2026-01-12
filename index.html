@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Codenames Pro - Client Version</title>
+<title>Codenames Pro - Final Client Specs</title>
 <style>
     :root { 
         --bg-color: #0d1117; 
@@ -21,68 +21,58 @@
     }
 
     /* --- الجزء الأول: اللاعبين --- */
-    .dashboard { height: 26%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 10px; flex-shrink: 0; }
+    .dashboard { height: 30%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 10px; flex-shrink: 0; }
     .team-side { display: flex; flex-direction: column; gap: 4px; }
-    
     .player-card { 
         flex: 1; border-radius: 8px; display: flex; flex-direction: column; 
         align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); 
-        background: #222; transition: 0.3s; position: relative; padding: 2px;
+        background: #222; transition: 0.3s; position: relative;
     }
     .blue-team .player-card { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
     .red-team .player-card { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
+    
+    .role-title { position: absolute; top: 3px; font-size: 0.5rem; color: rgba(255,255,255,0.6); font-weight: bold; }
+    
     .active-blue { box-shadow: var(--blue-glow); border: 2px solid white !important; }
     .active-red { box-shadow: var(--red-glow); border: 2px solid white !important; }
-
-    /* هوية الدور واللوجو */
-    .role-header { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; width: 90%; justify-content: flex-start; }
-    .role-logo { width: 14px; height: 14px; object-fit: contain; }
-    .role-text { font-size: 0.5rem; color: #fff; font-weight: bold; white-space: nowrap; }
     
-    .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 1.5px solid white; object-fit: cover; background: #444; }
-    .score { font-size: 1.8rem; font-weight: 900; text-align: center; color: white; display: flex; align-items: center; justify-content: center; }
+    .score { font-size: 1.5rem; font-weight: 900; text-align: center; color: white; display: flex; align-items: center; justify-content: center;}
+    
+    .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; background: rgba(0,0,0,0.3); }
+    .player-name { font-size: 0.55rem; color: white; margin-top: 0px; font-weight: bold; }
 
     .game-log-container { background: linear-gradient(to bottom, #444, #222); border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
-    #log-content { flex: 1; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 0.6rem; overflow-y: auto; color: white; padding: 3px; }
+    #log-content { flex: 1; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 0.65rem; overflow-y: auto; color: white; padding: 3px; text-align: right; }
 
     /* --- الجزء الثاني: الشبكة --- */
-    .grid-container { height: 61%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; }
+    .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; }
     .card { border-radius: 5px; padding: 2px; display: flex; cursor: pointer; }
     .card-main-body { flex: 1; border-radius: 3px; display: flex; flex-direction: column; border: 1px solid; overflow: hidden; pointer-events: none; }
     .bottom-box { margin-top: auto; height: 45%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; font-weight: bold; border-top: 1px solid; color: white; }
 
-    /* حالات الكروت */
+    /* ألوان الكروت */
     .card-blue { background: #3ec1f3; } .card-blue .card-main-body { background: #19a8ff; border-color: #0b4d9b; } .card-blue .bottom-box { background: #0b4d9b; border-color: #3ec1f3; }
     .card-red { background: #ff8e7a; } .card-red .card-main-body { background: #ff6a4c; border-color: #8c2b1e; } .card-red .bottom-box { background: #8c2b1e; border-color: #ff8e7a; }
     .card-black { background: #7a7a7a; } .card-black .card-main-body { background: #444; border-color: #222; } .card-black .bottom-box { background: #1a1a1a; border-color: #7a7a7a; }
     .card-brown { background: #fbe0c3; } .card-brown .card-main-body { background: #f7cda3; border-color: #9a7452; } .card-brown .bottom-box { background: #9a7452; border-color: #fbe0c3; }
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
-    .card-revealed { pointer-events: none; opacity: 0.5; transform: scale(0.92); }
+    .card-revealed { pointer-events: none; opacity: 0.4; transform: scale(0.92); }
 
     /* --- الجزء الثالث: التحكم --- */
     .control-area { height: 13%; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
-    
-    .input-row { width: 100%; display: flex; align-items: center; gap: 8px; }
+    .clue-bar-layout { width: 100%; display: flex; align-items: center; gap: 8px; }
     .clue-input-wrapper { flex: 1; background: white; border-radius: 20px; height: 35px; display: flex; align-items: center; padding: 0 12px; }
-    .clue-input { width: 100%; border: none; outline: none; font-weight: bold; color: #333; text-align: center; font-size: 0.8rem; }
+    .clue-input { width: 100%; border: none; outline: none; font-weight: bold; color: #333; text-align: center; font-size: 0.8rem; background: transparent; }
+    .clue-select { width: 45px; height: 35px; border-radius: 50%; border: 2px solid #555; background: white; color: #19a8ff; font-weight: bold; text-align: center; appearance: none; outline: none; font-size: 0.9rem; transition: 0.3s; }
     
-    .clue-select { 
-        width: 45px; height: 35px; border-radius: 50%; border: 2px solid #555; 
-        background: white; color: #19a8ff; font-weight: bold; text-align: center; 
-        appearance: none; outline: none; font-size: 0.9rem; cursor: pointer;
-    }
-    .clue-select.error { border-color: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
-
-    .btn-main { 
-        width: 55px; height: 35px; border-radius: 18px; border: 1px solid #fff;
-        display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s;
-    }
-    .btn-send { background: linear-gradient(to bottom, #7ed321, #417505); }
-    .btn-end { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
-
-    .icon-end { width: 16px; height: 16px; border: 2px solid white; border-radius: 2px; } /* أيقونة مربع التوقف */
+    .send-btn { width: 55px; height: 35px; background: linear-gradient(to bottom, #7ed321, #417505); border: 1px solid #fff; border-radius: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+    .end-turn-btn { background: linear-gradient(to bottom, #d0021b, #8b0000) !important; }
+    
     .arrow-icon { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid white; }
-
+    .x-icon { color: white; font-weight: 900; font-size: 1.2rem; }
+    
+    .disabled-area { opacity: 0.7; pointer-events: none; filter: grayscale(0.5); }
+    .error-border { border-color: #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
 </style>
 </head>
 <body>
@@ -90,70 +80,60 @@
 <div class="mobile-wrapper">
     <div class="dashboard">
         <div class="team-side blue-team">
-            <div class="player-card" id="blue-spy">
-                <div class="role-header">
-                    <img src="img/logo_spymaster.png" class="role-logo">
-                    <span class="role-text">قائد المخابرات</span>
-                </div>
-                <img src="" class="avatar-img">
-            </div>
+            <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
             <div class="score" id="blue-score">0</div>
-            <div class="player-card" id="blue-op">
-                <div class="role-header">
-                    <img src="img/logo_agents.png" class="role-logo">
-                    <span class="role-text">العميل السري</span>
-                </div>
-                <img src="" class="avatar-img">
-            </div>
+            <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
         </div>
-
         <div class="game-log-container">
             <div style="text-align:center; font-size:0.45rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
             <div id="log-content"></div>
         </div>
-
         <div class="team-side red-team">
-            <div class="player-card" id="red-spy">
-                <div class="role-header">
-                    <img src="img/logo_spymaster.png" class="role-logo">
-                    <span class="role-text">قائد المخابرات</span>
-                </div>
-                <img src="" class="avatar-img">
-            </div>
+            <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
             <div class="score" id="red-score">0</div>
-            <div class="player-card" id="red-op">
-                <div class="role-header">
-                    <img src="img/logo_agents.png" class="role-logo">
-                    <span class="role-text">العميل السري</span>
-                </div>
-                <img src="" class="avatar-img">
-            </div>
+            <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
         </div>
     </div>
 
     <div class="grid-container" id="grid"></div>
 
     <div class="control-area">
-        <div class="input-row" id="controls-container">
+        <div id="clue-ui" class="clue-bar-layout">
+            <div class="clue-input-wrapper">
+                <input type="text" id="clueInput" class="clue-input" placeholder="اكتب تلميح">
             </div>
+            <select id="clueNum" class="clue-select">
+                <option value="-">-</option>
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+            </select>
+            <div id="action-btn" class="send-btn" onclick="handleAction()">
+                <div id="btn-icon" class="arrow-icon"></div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    const avatars = ["img/avatar_little_girl.webp", "img/avatar_old_man.webp", "img/avatar_snow_man.webp", "img/avatar_women.webp"];
+    const avatarImages = [
+        'img/avatar_little_girl.webp',
+        'img/avatar_old_man.webp',
+        'img/avatar_snow_man.webp',
+        'img/avatar_women.webp'
+    ];
+    
     const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
     
     let gameState = {
-        turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: [],
-        currentClue: { word: '', num: '-' }
+        turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: []
     };
 
     function initGame() {
-        // توزيع الأفاتار عشوائياً
-        let shuffledAvatars = [...avatars];
-        shuffle(shuffledAvatars);
-        const avatarElements = document.querySelectorAll('.avatar-img');
-        avatarElements.forEach((img, i) => img.src = shuffledAvatars[i]);
+        // توزيع الأفاتارات
+        const shuffledAvatars = [...avatarImages].sort(() => Math.random() - 0.5);
+        document.querySelectorAll('.avatar-box').forEach((box, i) => {
+            box.innerHTML = `<img src="${shuffledAvatars[i]}" class="avatar-img">`;
+        });
 
         gameState.turn = Math.random() > 0.5 ? 'blue' : 'red';
         gameState.scores.blue = gameState.turn === 'blue' ? 9 : 8;
@@ -189,38 +169,58 @@
         const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
         document.getElementById(activeId).classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
 
-        const container = document.getElementById('controls-container');
+        const input = document.getElementById('clueInput');
+        const select = document.getElementById('clueNum');
+        const btn = document.getElementById('action-btn');
+        const icon = document.getElementById('btn-icon');
+        const uiArea = document.getElementById('clue-ui');
+
         if (gameState.phase === 'spy') {
-            container.innerHTML = `
-                <div class="clue-input-wrapper"><input type="text" id="clueInput" class="clue-input" placeholder="اكتب تلميح"></div>
-                <select id="clueNum" class="clue-select">
-                    <option value="-">-</option>
-                    ${[1,2,3,4,5,6,7].map(n => `<option value="${n}">${n}</option>`).join('')}
-                </select>
-                <div class="btn-main btn-send" onclick="sendClue()"><div class="arrow-icon"></div></div>
-            `;
+            uiArea.classList.remove('disabled-area');
+            input.readOnly = false;
+            select.disabled = false;
+            btn.classList.remove('end-turn-btn');
+            icon.className = 'arrow-icon';
+            icon.innerHTML = '';
+            select.value = '-';
         } else {
-            container.innerHTML = `
-                <div class="clue-input-wrapper" style="background:#eee;"><div class="clue-input" style="color:#555">${gameState.currentClue.word}</div></div>
-                <div class="clue-select" style="display:flex; align-items:center; justify-content:center; background:#eee; color:#555">${gameState.currentClue.num}</div>
-                <div class="btn-main btn-end" onclick="endTurn()"><div class="icon-end"></div></div>
-            `;
+            uiArea.classList.add('disabled-area'); // جعل المنطقة رمادية وغير قابلة للضغط
+            uiArea.style.pointerEvents = 'auto'; // السماح بالضغط على الزر فقط
+            input.readOnly = true;
+            select.disabled = true;
+            btn.classList.add('end-turn-btn');
+            btn.style.pointerEvents = 'auto'; // تفعيل زر إنهاء الدور
+            icon.className = 'x-icon';
+            icon.innerHTML = '✕';
         }
     }
 
-    function sendClue() {
-        const input = document.getElementById('clueInput');
-        const select = document.getElementById('clueNum');
-        
-        if (!input.value.trim()) return;
-        if (select.value === "-") {
-            select.classList.add('error');
-            return;
-        }
+    function handleAction() {
+        if (gameState.phase === 'spy') sendClue();
+        else endTurn();
+    }
 
-        gameState.currentClue = { word: input.value, num: select.value };
+    function sendClue() {
+    const input = document.getElementById('clueInput');
+    const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
+    const select = document.getElementById('clueNum');
+
+    // التحقق من النص
+    if (!input.value.trim()) {
+        input_wrapper.classList.add('error-border');
+        setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
+        return;
+    }
+
+    // التحقق من قائمة الاختيار
+    if (select.value === '-') {
+        select.classList.add('error-border');
+        setTimeout(() => select.classList.remove('error-border'), 1000);
+        return;
+    }
+
         const log = document.getElementById('log-content');
-        log.innerHTML = `<div style="color:${gameState.turn === 'blue' ? '#3498db' : '#e74c3c'}">${gameState.turn.toUpperCase()}: ${input.value} | ${select.value}</div>` + log.innerHTML;
+        log.innerHTML = `<div style="color:${gameState.turn === 'blue' ? '#3498db' : '#e74c3c'}; border-bottom:1px solid rgba(255,255,255,0.1); padding:2px;">${gameState.turn.toUpperCase()}: ${input.value} | ${select.value}</div>` + log.innerHTML;
         
         gameState.phase = 'operative';
         renderGrid(); updateUI();
@@ -228,7 +228,6 @@
 
     function handleCardClick(i) {
         if (gameState.phase !== 'operative' || gameState.cards[i].revealed) return;
-        
         const card = gameState.cards[i];
         card.revealed = true;
 
@@ -237,19 +236,18 @@
 
         if (card.type === 'card-black') { alert("خسارة! لمست القاتل"); location.reload(); return; }
         
-        const correctType = `card-${gameState.turn}`;
-        if (card.type !== correctType) {
-            endTurn(); // خطأ في الاختيار ينهي الدور فوراً
-        } else if (gameState.scores[gameState.turn] === 0) {
-            alert("فوز الفريق " + gameState.turn); location.reload();
+        if (card.type !== `card-${gameState.turn}`) endTurn();
+        
+        if (gameState.scores.blue === 0 || gameState.scores.red === 0) { 
+            alert("انتهت اللعبة بالفوز!"); location.reload(); 
         }
-
         renderGrid(); updateUI();
     }
 
     function endTurn() {
         gameState.turn = gameState.turn === 'blue' ? 'red' : 'blue';
         gameState.phase = 'spy';
+        document.getElementById('clueInput').value = '';
         renderGrid(); updateUI();
     }
 
