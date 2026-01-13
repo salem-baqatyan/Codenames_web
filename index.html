@@ -149,7 +149,7 @@
     
     let gameState = {
         turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: [],
-        currentSelected: null, guessesThisTurn: 0, targetClueNum: 0
+        selectedCards: new Set(), guessesThisTurn: 0, targetClueNum: 0
     };
 
     function showCustomAlert(msg, showCancel = false, onOk = null) {
@@ -249,10 +249,22 @@
             return;
         }
 
-        // التحقق من الكلمات الممنوعة
-        const onTableWords = gameState.cards.filter(c => !c.revealed).map(c => c.word);
-        if (onTableWords.some(w => clueValue.includes(w))) {
-            showCustomAlert("خطأ! التلميح يحتوي على كلمة موجودة في البطاقات.");
+        // التحقق من الكلمات الممنوعة بمطابقة تامة فقط
+        const onTableWords = gameState.cards
+            .filter(c => !c.revealed)
+            .map(c => c.word.trim().toLowerCase());
+
+        // قسّم التلميح إلى كلمات منفصلة
+        const clueWords = clueValue
+            .trim()
+            .toLowerCase()
+            .split(/\s+/); // يفصل بالمسافات
+
+        // تحقق من التطابق التام فقط
+        const hasForbiddenWord = clueWords.some(w => onTableWords.includes(w));
+
+        if (hasForbiddenWord) {
+            showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات.");
             return;
         }
 
@@ -288,25 +300,24 @@
 function handleCardSelection(i) {
     if (gameState.phase !== 'operative' || gameState.cards[i].revealed) return;
 
-    // إذا ضغط على نفس الكرت مرة أخرى → إلغاء التحديد
-    if (gameState.currentSelected === i) {
-        document.getElementById(`confirm-${i}`).style.display = 'none';
-        document.getElementById(`confirm-${i}`).parentElement.classList.remove('card-selected');
-        gameState.currentSelected = null;
+    const cardEl = document.getElementById(`confirm-${i}`).parentElement;
+    const confirmBtn = document.getElementById(`confirm-${i}`);
+
+    // إذا كانت البطاقة محددة سابقاً → ألغِ التحديد
+    if (gameState.selectedCards.has(i)) {
+        gameState.selectedCards.delete(i);
+        confirmBtn.style.display = 'none';
+        cardEl.classList.remove('card-selected');
         return;
     }
 
-    // إزالة تحديد البقية
-    document.querySelectorAll('.confirm-btn').forEach(b => b.style.display = 'none');
-    document.querySelectorAll('.card').forEach(c => c.classList.remove('card-selected'));
+    // إذا لم تكن محددة → أضفها للتحديد
+    gameState.selectedCards.add(i);
+    confirmBtn.style.display = 'flex';
+    cardEl.classList.add('card-selected');
 
-    // تحديد الكرت الحالي
-    gameState.currentSelected = i;
-    document.getElementById(`confirm-${i}`).style.display = 'flex';
-    document.getElementById(`confirm-${i}`).parentElement.classList.add('card-selected');
-
-    // زر التأكيد
-    document.getElementById(`confirm-${i}`).onclick = (e) => {
+    // زر التأكيد الخاص بهذه البطاقة فقط
+    confirmBtn.onclick = (e) => {
         e.stopPropagation();
         confirmSelection(i);
     };
