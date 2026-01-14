@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Codenames Pro - Card Peek System</title>
+<title>Codenames Pro - 3D Flip & Lift System</title>
 <style>
     :root { 
         --bg-color: #0d1117; 
@@ -20,7 +20,7 @@
         border-left: 1px solid #333; border-right: 1px solid #333; position: relative;
     }
 
-    /* --- الجزء الأول: اللاعبين --- */
+    /* --- Dashboard & Log (نفس كودك السابق تماماً) --- */
     .dashboard { height: 30%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 10px; flex-shrink: 0; }
     .team-side { display: flex; flex-direction: column; gap: 4px; }
     .player-card { flex: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); background: #222; transition: 0.3s; position: relative; }
@@ -33,7 +33,6 @@
     .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; background: rgba(0,0,0,0.3); }
     .player-name { font-size: 0.55rem; color: white; margin-top: 0px; font-weight: bold; }
 
-    /* --- سجل اللعبة المتطور (WhatsApp Style) --- */
     .game-log-container { background: #333; border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
     #log-content { flex: 1; background: #2a2a2a; border-radius: 4px; font-size: 0.6rem; overflow-y: auto; color: white; padding: 5px; display: flex; flex-direction: column-reverse; gap: 8px; scrollbar-width: none; }
     #log-content::-webkit-scrollbar { display: none; }
@@ -45,7 +44,6 @@
     .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
     .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
     .log-clue-red { background: #e74c3c; flex-direction: row; }
-    
     .log-avatar { width: 18px; height: 18px; border-radius: 50%; border: 2px solid; }
     .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 0.55rem;}
     .log-num-circle { width: 16px; height: 16px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.55rem; flex-shrink: 0;}
@@ -54,53 +52,73 @@
     .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
     .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }
 
-    /* --- الجزء الثاني: الشبكة والأنيميشن الجديد --- */
+    /* --- تطوير الشبكة ونظام الأنيميشن 3D --- */
     .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; }
-    .card { border-radius: 5px; padding: 2px; display: flex; cursor: pointer; position: relative; overflow: visible; perspective: 1000px; }
     
-    /* الحاوية الأساسية للبطاقة */
-    .card-main-body { flex: 1; border-radius: 3px; display: flex; flex-direction: column; border: 1px solid; overflow: hidden; pointer-events: none; position: relative; }
+    .card { 
+        position: relative; perspective: 1000px; cursor: pointer; transition: transform 0.2s; 
+    }
+
+    /* الحاوية التي تدور */
+    .card-inner {
+        position: relative; width: 100%; height: 100%;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-style: preserve-3d;
+    }
+
+    /* عند الكشف: اقلب البطاقة */
+    .card-revealed .card-inner { transform: rotateY(180deg); }
+
+    .card-front, .card-back {
+        position: absolute; width: 100%; height: 100%;
+        backface-visibility: hidden; border-radius: 5px; overflow: hidden;
+    }
+
+    /* الوجه الأمامي (الكلمة) */
+    .card-front {
+        background: #fbe0c3; padding: 2px; display: flex;
+    }
+    
+    .card-main-body { flex: 1; border-radius: 3px; display: flex; flex-direction: column; border: 1px solid; overflow: hidden; pointer-events: none; }
     .bottom-box { margin-top: auto; height: 45%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; font-weight: bold; border-top: 1px solid; color: white; }
 
-    /* صورة الشخصية التي تظهر عند الكشف */
-    .card-reveal-img {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        object-fit: cover; z-index: 5; border-radius: 3px;
-        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        /* Hinged Logic: تثبيت نقطة التحول في الأعلى */
-        transform-origin: top; 
-    }
-    
-    /* وضعية الكشف (رفع الصورة للأعلى مثل التقويم عند النقر) */
-    .card-peeking .card-reveal-img { 
-        transform: rotateX(-50deg) translateY(-5px); 
-        z-index: 6; 
+    /* ألوان الكروت (الوجه الأمامي) */
+    .card-blue .card-main-body { background: #19a8ff; border-color: #0b4d9b; } .card-blue .bottom-box { background: #0b4d9b; border-color: #3ec1f3; }
+    .card-red .card-main-body { background: #ff6a4c; border-color: #8c2b1e; } .card-red .bottom-box { background: #8c2b1e; border-color: #ff8e7a; }
+    .card-black .card-main-body { background: #444; border-color: #222; } .card-black .bottom-box { background: #1a1a1a; border-color: #7a7a7a; }
+    .card-brown .card-main-body { background: #f7cda3; border-color: #9a7452; } .card-brown .bottom-box { background: #9a7452; border-color: #fbe0c3; }
+
+    /* الوجه الخلفي (صورة العميل) */
+    .card-back {
+        transform: rotateY(180deg);
+        background: #222;
+        z-index: 2;
     }
 
-    /* ألوان الكروت */
-    .card-blue { background: #3ec1f3; } .card-blue .card-main-body { background: #19a8ff; border-color: #0b4d9b; } .card-blue .bottom-box { background: #0b4d9b; border-color: #3ec1f3; }
-    .card-red { background: #ff8e7a; } .card-red .card-main-body { background: #ff6a4c; border-color: #8c2b1e; } .card-red .bottom-box { background: #8c2b1e; border-color: #ff8e7a; }
-    .card-black { background: #7a7a7a; } .card-black .card-main-body { background: #444; border-color: #222; } .card-black .bottom-box { background: #1a1a1a; border-color: #7a7a7a; }
-    .card-brown { background: #fbe0c3; } .card-brown .card-main-body { background: #f7cda3; border-color: #9a7452; } .card-brown .bottom-box { background: #9a7452; border-color: #fbe0c3; }
-    .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
-    
-    .card-revealed .card-reveal-img { display: block; }
-    .card-revealed { cursor: default; }
+    .card-back img {
+        width: 100%; height: 100%; object-fit: cover;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* أنيميشن الرفع (Lift) */
+    .card-peeking .card-back img {
+        transform: translateY(-40%) scale(1.05) rotateX(10deg);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.8);
+    }
 
     /* زر التأكيد العائم */
-    .confirm-btn { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: #7ed321; border: 2px solid white; border-radius: 50%; display: none; justify-content: center; align-items: center; z-index: 10; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    .confirm-btn { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: #7ed321; border: 2px solid white; border-radius: 50%; display: none; justify-content: center; align-items: center; z-index: 100; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
     .confirm-btn svg { width: 14px; height: 14px; fill: white; }
-    .card-selected { transform: scale(0.95); box-shadow: 0 0 10px #7ed321; }
+    .card-selected { transform: scale(0.95); z-index: 50; }
+    .card-selected .card-front { border: 2px solid #7ed321; box-shadow: 0 0 15px #7ed321; }
 
-    /* --- التنبيهات المخصصة --- */
+    /* --- Alerts & Control --- */
     .custom-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; border: 2px solid #555; border-radius: 15px; padding: 20px; text-align: center; z-index: 1000; color: white; display: none; width: 80%; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
     .alert-btns { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
     .alert-btn { padding: 8px 15px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; }
     .btn-ok { background: #7ed321; color: white; }
     .btn-cancel { background: #d0021b; color: white; }
 
-    /* --- التحكم --- */
     .control-area { height: 13%; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
     .clue-bar-layout { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0 10px;}
     .clue-input-wrapper { flex: 1; background: white; border-radius: 20px; height: 35px; display: flex; align-items: center; padding: 0 12px; }
@@ -111,7 +129,6 @@
     .arrow-icon { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid white; }
     .x-icon { color: white; font-weight: 900; font-size: 1.2rem; }
     .disabled-area { opacity: 0.7; pointer-events: none; filter: grayscale(0.5); }
-    .error-border { border-color: #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
 </style>
 </head>
 <body>
@@ -163,7 +180,6 @@
 
 <script>
     const avatarImages = ['img/avatar_little_girl.webp','img/avatar_old_man.webp','img/avatar_snow_man.webp','img/avatar_women.webp'];
-    
     const cardVisuals = {
         'card-blue': ['img/card/Blue1.png', 'img/card/Blue2.png'],
         'card-red': ['img/card/Red1.png', 'img/card/Red2.png'],
@@ -183,7 +199,6 @@
         const modal = document.getElementById('customAlert');
         document.getElementById('alertMsg').innerText = msg;
         modal.style.display = 'block';
-        document.getElementById('alertCancel').style.display = showCancel ? 'block' : 'none';
         document.getElementById('alertOk').onclick = () => { modal.style.display = 'none'; if(onOk) onOk(); };
         document.getElementById('alertCancel').onclick = () => { modal.style.display = 'none'; };
     }
@@ -221,17 +236,20 @@
         gameState.cards.forEach((card, i) => {
             const div = document.createElement('div');
             const isHidden = gameState.phase === 'operative' && !card.revealed;
-            
-            div.className = `card ${isHidden ? 'card-hidden' : card.type} ${card.revealed ? 'card-revealed' : ''}`;
+            div.className = `card ${card.type} ${card.revealed ? 'card-revealed' : ''}`;
             div.id = `card-${i}`;
             
             div.innerHTML = `
                 <div class="confirm-btn" id="confirm-${i}">
                     <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                 </div>
-                <img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">
-                <div class="card-main-body">
-                    <div class="bottom-box">${card.word}</div>
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="card-main-body"><div class="bottom-box">${card.word}</div></div>
+                    </div>
+                    <div class="card-back" onclick="toggleLift(${i}, event)">
+                        <img src="${card.visual}">
+                    </div>
                 </div>`;
             
             div.onclick = () => handleCardSelection(i);
@@ -239,98 +257,12 @@
         });
     }
 
-    function togglePeek(i, event) {
+    function toggleLift(i, event) {
         event.stopPropagation();
         const cardEl = document.getElementById(`card-${i}`);
         if (gameState.cards[i].revealed) {
             cardEl.classList.toggle('card-peeking');
         }
-    }
-
-    function updateUI() {
-        document.getElementById('blue-score').innerText = gameState.scores.blue;
-        document.getElementById('red-score').innerText = gameState.scores.red;
-        document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-        const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
-        document.getElementById(activeId).classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
-
-        const uiArea = document.getElementById('clue-ui');
-        const btn = document.getElementById('action-btn');
-        const icon = document.getElementById('btn-icon');
-        const select = document.getElementById('clueNum');
-
-        if (gameState.phase === 'spy') {
-            uiArea.classList.remove('disabled-area');
-            btn.classList.remove('end-turn-btn');
-            icon.className = 'arrow-icon'; icon.innerHTML = '';
-            select.value = '-';
-        } else {
-            uiArea.classList.add('disabled-area'); uiArea.style.pointerEvents = 'auto';
-            btn.classList.add('end-turn-btn'); btn.style.pointerEvents = 'auto';
-            icon.className = 'x-icon'; icon.innerHTML = '✕';
-        }
-    }
-
-    function handleAction() {
-        if (gameState.phase === 'spy') sendClue();
-        else {
-            if (gameState.guessesThisTurn === 0) {
-                showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
-            } else if (gameState.guessesThisTurn < gameState.targetClueNum) {
-                showCustomAlert(`لم تنهِ محاولاتك بعد (${gameState.guessesThisTurn}/${gameState.targetClueNum}). هل أنت متأكد؟`, true, endTurn);
-            } else {
-                endTurn();
-            }
-        }
-    }
-
-    function sendClue() {
-        const input = document.getElementById('clueInput');
-        const clueValue = input.value.trim();
-        const select = document.getElementById('clueNum');
-        const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
-
-        if (!input.value.trim()) {
-            input_wrapper.classList.add('error-border');
-            setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
-            return;
-        }
-
-        const onTableWords = gameState.cards.filter(c => !c.revealed).map(c => c.word.trim().toLowerCase());
-        const clueWords = clueValue.trim().toLowerCase().split(/\s+/);
-        const hasForbiddenWord = clueWords.some(w => onTableWords.includes(w));
-
-        if (hasForbiddenWord) {
-            showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات.");
-            return;
-        }
-
-        if (select.value === '-') {
-            select.classList.add('error-border');
-            setTimeout(() => select.classList.remove('error-border'), 1000);
-            return;
-        }
-
-        gameState.targetClueNum = parseInt(select.value);
-        gameState.guessesThisTurn = 0;
-
-        const log = document.getElementById('log-content');
-        const avatar = playerAvatars[`${gameState.turn}-spy`];
-        const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
-        const clueClass = gameState.turn === 'blue' ? 'log-clue-blue' : 'log-clue-red';
-        
-        const html = `
-            <div class="log-row ${rowClass}">
-                <div class="log-clue-item ${clueClass}">
-                    <img src="${avatar}" class="log-avatar" style="border-color:#fff">
-                    <div class="log-text-clue">${clueValue}</div>
-                    <div class="log-num-circle">${select.value}</div>
-                </div>
-            </div>`;
-        log.insertAdjacentHTML('afterbegin', html);
-        
-        gameState.phase = 'operative';
-        renderGrid(); updateUI();
     }
 
     function handleCardSelection(i) {
@@ -362,6 +294,13 @@
         gameState.guessesThisTurn++;
         gameState.selectedCards.delete(i);
 
+        // تحديث الواجهة فوراً لبدء الأنيميشن
+        const cardEl = document.getElementById(`card-${i}`);
+        cardEl.classList.add('card-revealed');
+        cardEl.classList.remove('card-selected');
+        document.getElementById(`confirm-${i}`).style.display = 'none';
+
+        // لوج الاختيار
         const log = document.getElementById('log-content');
         const avatar = playerAvatars[`${gameState.turn}-op`];
         const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
@@ -380,15 +319,68 @@
         else if (card.type === 'card-red') gameState.scores.red = Math.max(0, gameState.scores.red - 1);
 
         if (card.type === 'card-black') { 
-            showCustomAlert("انتهت اللعبة! لمست القاتل.", false, () => location.reload()); 
+            setTimeout(() => showCustomAlert("انتهت اللعبة! لمست القاتل.", false, () => location.reload()), 800); 
             return; 
         }
         
         if (card.type !== `card-${gameState.turn}`) {
-            setTimeout(endTurn, 800);
+            setTimeout(endTurn, 1200);
         } else if (gameState.scores.blue === 0 || gameState.scores.red === 0) {
-            showCustomAlert("فوز رائع! انتهت اللعبة.", false, () => location.reload());
+            setTimeout(() => showCustomAlert("فوز رائع! انتهت اللعبة.", false, () => location.reload()), 800);
         }
+        updateUI();
+    }
+
+    // بقية الوظائف (updateUI, sendClue, handleAction, endTurn) كما هي تماماً
+    function updateUI() {
+        document.getElementById('blue-score').innerText = gameState.scores.blue;
+        document.getElementById('red-score').innerText = gameState.scores.red;
+        document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
+        const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
+        document.getElementById(activeId).classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
+        const uiArea = document.getElementById('clue-ui');
+        const btn = document.getElementById('action-btn');
+        const icon = document.getElementById('btn-icon');
+        const select = document.getElementById('clueNum');
+        if (gameState.phase === 'spy') {
+            uiArea.classList.remove('disabled-area');
+            btn.classList.remove('end-turn-btn');
+            icon.className = 'arrow-icon'; icon.innerHTML = '';
+            select.value = '-';
+        } else {
+            uiArea.classList.add('disabled-area'); uiArea.style.pointerEvents = 'auto';
+            btn.classList.add('end-turn-btn'); btn.style.pointerEvents = 'auto';
+            icon.className = 'x-icon'; icon.innerHTML = '✕';
+        }
+    }
+
+    function handleAction() {
+        if (gameState.phase === 'spy') sendClue();
+        else {
+            if (gameState.guessesThisTurn === 0) showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
+            else if (gameState.guessesThisTurn < gameState.targetClueNum) showCustomAlert(`لم تنهِ محاولاتك بعد (${gameState.guessesThisTurn}/${gameState.targetClueNum}). هل أنت متأكد؟`, true, endTurn);
+            else endTurn();
+        }
+    }
+
+    function sendClue() {
+        const input = document.getElementById('clueInput');
+        const clueValue = input.value.trim();
+        const select = document.getElementById('clueNum');
+        const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
+        if (!input.value.trim()) { input_wrapper.classList.add('error-border'); setTimeout(() => input_wrapper.classList.remove('error-border'), 1000); return; }
+        const onTableWords = gameState.cards.filter(c => !c.revealed).map(c => c.word.trim().toLowerCase());
+        const clueWords = clueValue.trim().toLowerCase().split(/\s+/);
+        if (clueWords.some(w => onTableWords.includes(w))) { showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات."); return; }
+        if (select.value === '-') { select.classList.add('error-border'); setTimeout(() => select.classList.remove('error-border'), 1000); return; }
+        gameState.targetClueNum = parseInt(select.value);
+        gameState.guessesThisTurn = 0;
+        const log = document.getElementById('log-content');
+        const avatar = playerAvatars[`${gameState.turn}-spy`];
+        const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
+        const html = `<div class="log-row ${rowClass}"><div class="log-clue-item ${gameState.turn==='blue'?'log-clue-blue':'log-clue-red'}"><img src="${avatar}" class="log-avatar" style="border-color:#fff"><div class="log-text-clue">${clueValue}</div><div class="log-num-circle">${select.value}</div></div></div>`;
+        log.insertAdjacentHTML('afterbegin', html);
+        gameState.phase = 'operative';
         renderGrid(); updateUI();
     }
 
