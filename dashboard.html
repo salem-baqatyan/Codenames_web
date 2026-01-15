@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Codenames Pro - Lobby</title>
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --panel-bg: #1a1a1a;
+            --blue-team: #3498db;
+            --red-team: #e74c3c;
+            --green-action: #4caf50;
+            --text-gray: #aaaaaa;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background-color: var(--bg-dark); color: white; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        .mobile-wrapper {
+            width: 100%; max-width: 450px; height: 100%; background: #000;
+            display: flex; flex-direction: column; position: relative;
+            border-left: 1px solid #333; border-right: 1px solid #333;
+        }
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; flex-shrink: 0;
+        }
+        .top-left, .top-right { display: flex; gap: 10px; align-items: center; }
+        .icon-circle {
+            width: 35px; height: 35px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #444; cursor: pointer;
+        }
+        .btn-pill {
+            background: rgba(255,255,255,0.1); border: 1px solid #444;
+            padding: 5px 12px; border-radius: 20px; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 5px; cursor: pointer;
+        }
+        .host-area {display: flex; flex-direction: column; align-items: center; margin-top: -10px;}
+        .host-avatar-wrap { position: relative; }
+        .crown { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 1.2rem; }
+        .host-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+        .host-name { font-size: 0.7rem; color: #ccc; margin-top: 4px; }
+        /* --- تنسيق قسم الجمهور المتفرجين --- */
+.spectators-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    padding: 0 20px;
+}
+
+.spectators-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* المسافة بين العين والزر */
+    width: 100%;
+}
+
+.view-icon {
+    font-size: 1.2rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+
+.join-spectators-btn {
+    background: transparent;
+    border: 1.5px solid #fff;
+    color: #fff;
+    padding: 4px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.spectators-list {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.spectator-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.spec-avatar-wrap {
+    position: relative;
+    width: 45px;
+    height: 45px;
+}
+
+.spec-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #666; /* إطار رمادي مثل الصورة */
+    background: #333;
+    object-fit: cover;
+}
+
+.spec-name {
+    background: rgba(50, 50, 50, 0.9);
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-top: -8px;
+    z-index: 2;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.spec-crown {
+    position: absolute;
+    top: -10px;
+    left: 0px;
+    font-size: 0.9rem;
+    transform: rotate(-20deg);
+}
+        .settings-panel {
+            background: #252525; margin: 15px; border-radius: 20px;
+            padding: 20px 15px; flex-shrink: 0;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        .panel-label { text-align: center; color: #888; font-size: 0.7rem; font-weight: bold; margin-bottom: 15px; letter-spacing: 1px; }
+        .setting-row {
+            background: rgba(255,255,255,0.05); border-radius: 12px;
+            margin-bottom: 10px; display: flex; align-items: center;
+            padding: 8px 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .mode-card {
+            background: #333; border-radius: 12px; padding: 10px;
+            display: flex; align-items: center; gap: 10px; border: 2px solid transparent; cursor: pointer;
+        }
+        .mode-card.active { border-color: #3498db; background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
+        .mode-img { width: 35px; height: 50px; object-fit: cover; border-radius: 4px; }
+        .mode-info b { font-size: 0.75rem; display: block; }
+        .mode-info span { font-size: 0.6rem; color: #eee; }
+        .setting-text { flex: 1; font-size: 0.8rem; }
+        .setting-subtext { font-size: 0.6rem; color: #888; display: block; }
+        .timer-icon { font-size: 1.5rem; margin-left: 15px; }
+        
+/* --- تعديلات الـ CSS لتحسين التصميم --- */
+        .teams-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 5px;
+            padding: 10px 15px;
+        }
+
+        .team-box {
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* تدرج الألوان حسب الصورة */
+        .blue-box { 
+            background: linear-gradient(to bottom, #2196F3, #1976D2); 
+        }
+        .red-box { 
+            background: linear-gradient(to bottom, #ff5f43, #d32f2f); 
+        }
+
+        .box-title { 
+            font-size: 0.7rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: white;
+            letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .join-btn {
+            width: 90%;
+            height: 20%;
+            font-size: 0.5rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(to bottom, #7ed321, #417505);
+            border: 2px solid #b8e986;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #2e5a03;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+        }
+
+        /* تنسيق اللاعب داخل البطاقة */
+        .player-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 5px;
+        }
+        .player-avatar {
+            width: clamp(40px, 6vw, 100px); 
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            border: 0.2vw solid white; 
+            background: rgba(255,255,255,0.2);
+            position: relative;
+        }
+        .player-name {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 0.2vw 1.5vw; 
+            border-radius: 10px;
+            font-size: clamp(10px, 1.2vw, 18px);
+            margin-top: -1vw; 
+            z-index: 2;
+            white-space: nowrap; /* لمنع النص من النزول لسطر جديد إذا صغرت الشاشة */
+        }
+        .footer {
+            padding: 10px 0;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111;
+            border-top: 1px solid #333;
+        }
+        .start-btn {
+            width: 92%;
+            height: 55px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: white;
+            background: linear-gradient(to bottom, #7ed321 0%, #5ca904 50%, #417505 100%);
+            border: 2px solid #b8e986;
+            border-radius: 40px;
+            box-shadow: 0 5px 0 #2e5a03;
+            cursor: pointer;
+        }    
+    </style>
+</head>
+<body>
+
+<div class="mobile-wrapper">
+    <div class="top-bar">
+        <div class="top-left">
+            <div class="icon-circle">👥<span style="font-size: 0.6rem; margin-right: 2px;">1</span></div>
+        </div>
+
+        <div class="top-right">
+            <div class="btn-pill">🔖 القواعد</div>
+            <div class="icon-circle">⚙️</div>
+        </div>
+    </div>
+
+<div class="spectators-section">
+        <div class="spectators-header">
+            <span class="view-icon">👁️</span>
+             <div class="box-title">OPERATIVES</div>
+
+        </div>
+
+        <div class="spectators-list">
+            <div class="spectator-item">
+                <div class="spec-avatar-wrap">
+                    <span class="spec-crown">👑</span>
+                    <img src="img/avatar_old_man.webp" class="spec-img">
+                </div>
+                <div class="spec-name">Salem</div>
+            </div>
+
+            <div class="spectator-item">
+                <div class="spec-avatar-wrap">
+                    <img src="img/avatar_old_man.webp" class="spec-img">
+                </div>
+                <div class="spec-name">عبدالعزيز</div>
+            </div>
+            <button class="join-spectators-btn">Join Spectators</button>
+
+        </div>
+    </div>    <div class="settings-panel">
+        <div class="panel-label">أعدادات اللعبة</div>
+        
+        <div class="mode-options">
+            <div class="mode-card active">
+                <img src="img/local.webp" class="mode-img">
+                <div class="mode-info"><b>اوفلاين(للاختبار فقط)</b><span>4+ لاعبين</span></div>
+            </div>
+            <div class="mode-card">
+                <img src="img/online.webp" class="mode-img">
+                <div class="mode-info"><b>اونلاين</b><span>4+ لاعبين</span></div>
+            </div>
+        </div>
+
+        <div class="setting-row">
+            <div class="timer-icon">⏱️</div>
+            <div class="setting-text" style="margin-right: 15px;">
+                <b>المؤقت</b>
+                <span class="setting-subtext">بدون</span>
+            </div>
+        </div>
+
+
+    </div>
+
+<div class="teams-grid">
+        <div class="team-box blue-box">
+            <div class="box-title">OPERATIVES</div>
+            
+            <div class="player-slot">
+                <div class="player-avatar" style="background-image: url('img/avatar_old_man.webp'); background-size: cover;">
+                    <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%);">👑</span>
+                </div>
+                <div class="player-name">Salem</div>
+            </div>
+
+            <button class="join-btn">أنضم</button>
+        </div>
+
+        <div class="team-box red-box">
+            <div class="box-title">OPERATIVES</div>
+            <div class="player-slot"></div> <button class="join-btn">أنضم</button>
+        </div>
+
+        <div class="team-box blue-box">
+            <div class="box-title">SPYMASTERS</div>
+            <div class="player-slot"></div> <button class="join-btn">أنضم</button>
+        </div>
+
+        <div class="team-box red-box">
+            <div class="box-title">SPYMASTERS</div>
+            <div class="player-slot"></div> <button class="join-btn">أنضم</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <button class="start-btn" onclick="goToIndex()">بدء اللعبة</button>
+    </div>
+</div>
+<script>
+function goToIndex() {
+    // يمكنك إضافة أي تأثير هنا قبل الانتقال
+    window.location.href = "index.html";
+}
+</script>
+</body>
+</html>
