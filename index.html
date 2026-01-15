@@ -176,51 +176,64 @@
 </div>
 
 <script>
-// مصفوفة بكل مسارات الصور
-    const allImagesToPreload = [
-        ...avatarImages,
-        ...cardVisuals['card-blue'],
-        ...cardVisuals['card-red'],
-        ...cardVisuals['card-black'],
-        ...cardVisuals['card-brown']
-    ];
+    const avatarImages = ['img/avatar_little_girl.webp','img/avatar_old_man.webp','img/avatar_snow_man.webp','img/avatar_women.webp'];
+    const cardVisuals = {
+        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+        'card-black': ['img/card/Black.webp'],
+        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+    };
+    
+    let playerAvatars = {};
+    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
+    
+    let gameState = {
+        turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: [],
+        selectedCards: new Set(), guessesThisTurn: 0, targetClueNum: 0
+    };
 
-    // وظيفة التحقق: هل الصور محملة بالفعل في ذاكرة المتصفح؟
-    function areImagesCached() {
-        return allImagesToPreload.every(src => {
+// 1. تجميع كل المسارات في مصفوفة واحدة
+const allImagesToPreload = [
+    ...avatarImages,
+    ...cardVisuals['card-blue'],
+    ...cardVisuals['card-red'],
+    ...cardVisuals['card-black'],
+    ...cardVisuals['card-brown']
+];
+
+// 2. دالة التحقق من الـ Cache
+function areImagesCached() {
+    for (let src of allImagesToPreload) {
+        let img = new Image();
+        img.src = src;
+        if (!img.complete) return false;
+    }
+    return true;
+}
+
+// 3. دالة التحميل المسبق (تستخدم فقط عند الحاجة)
+function preloadImages() {
+    const promises = allImagesToPreload.map(src => {
+        return new Promise((resolve) => {
             const img = new Image();
             img.src = src;
-            return img.complete; // تعيد true إذا كانت الصورة محملة مسبقاً
+            img.onload = resolve;
+            img.onerror = resolve; 
         });
-    }
+    });
+    return Promise.all(promises);
+}
 
-    // وظيفة التحميل المسبق المطورة
-    function preloadImages() {
-        // إذا كانت الصور محملة مسبقاً، لا داعي للوعود الطويلة
-        if (areImagesCached()) {
-            return Promise.resolve(); 
-        }
-
-        const promises = allImagesToPreload.map(src => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.src = src;
-                img.onload = resolve;
-                img.onerror = resolve; 
-            });
-        });
-        return Promise.all(promises);
-    }
-
-    // تشغيل النظام
+// 4. المحرك الرئيسي لتشغيل اللعبة (Logic Controller)
+function startGameManager() {
     const loader = document.getElementById('loading-screen');
 
-    // فحص فوري: إذا كانت الصور جاهزة، اخفِ الشاشة فوراً قبل أي انتظار
     if (areImagesCached()) {
+        // إذا الصور محملة مسبقاً، ادخل للعبة فوراً
         loader.style.display = 'none';
         initGame();
     } else {
-        // إذا لم تكن جاهزة، انتظر تحميلها
+        // إذا أول مرة أو الصور غير جاهزة، انتظر التحميل
         preloadImages().then(() => {
             loader.style.opacity = '0';
             setTimeout(() => {
@@ -229,7 +242,10 @@
             }, 300);
         });
     }
-    
+}
+
+// 5. استدعاء المحرك فوراً عند تشغيل السكريبت
+startGameManager();
     function showCustomAlert(msg, showCancel = false, onOk = null) {
         const modal = document.getElementById('customAlert');
         document.getElementById('alertMsg').innerText = msg;
