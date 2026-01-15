@@ -11,6 +11,19 @@
         --red-glow: 0 0 20px #e74c3c;
     }
 
+    /* --- شاشة التحميل --- */
+    #loading-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 9999; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; color: white;
+    }
+    .loader {
+        border: 4px solid #333; border-top: 4px solid #3498db;
+        border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Tahoma', sans-serif; }
 
@@ -33,7 +46,7 @@
     .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; background: rgba(0,0,0,0.3); }
     .player-name { font-size: 0.55rem; color: white; margin-top: 0px; font-weight: bold; }
 
-    /* --- سجل اللعبة المتطور (WhatsApp Style) --- */
+    /* --- سجل اللعبة --- */
     .game-log-container { background: #333; border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
     #log-content { flex: 1; background: #2a2a2a; border-radius: 4px; font-size: 0.6rem; overflow-y: auto; color: white; padding: 5px; display: flex; flex-direction: column-reverse; gap: 8px; scrollbar-width: none; }
     #log-content::-webkit-scrollbar { display: none; }
@@ -54,53 +67,49 @@
     .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
     .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }
 
-    /* --- الجزء الثاني: الشبكة والأنيميشن الجديد --- */
+    /* --- الشبكة --- */
     .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; }
     .card { border-radius: 5px; padding: 2px; display: flex; cursor: pointer; position: relative; overflow: visible; perspective: 1000px; }
     
-    /* الحاوية الأساسية للبطاقة */
     .card-main-body { flex: 1; border-radius: 3px; display: flex; flex-direction: column; border: 1px solid; overflow: hidden; pointer-events: none; position: relative; }
     .bottom-box { margin-top: auto; height: 45%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; font-weight: bold; border-top: 1px solid; color: white; }
 
-    /* صورة الشخصية التي تظهر عند الكشف */
+    /* تعديل: الصورة موجودة دائماً لكن شفافة (Opacity 0) لضمان تحميل المتصفح لها */
     .card-reveal-img {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         object-fit: cover; z-index: 5; border-radius: 3px;
-        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        /* Hinged Logic: تثبيت نقطة التحول في الأعلى */
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+        opacity: 0; pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         transform-origin: top; 
     }
     
-    /* وضعية الكشف (رفع الصورة للأعلى مثل التقويم عند النقر) */
+    /* عند الكشف: تصبح مرئية */
+    .card-revealed .card-reveal-img { opacity: 1; pointer-events: auto; }
+
     .card-peeking .card-reveal-img { 
-        transform: rotateX(-50deg) translateY(-5px); 
+        transform: rotateX(-55deg) translateY(-5px); 
         z-index: 6; 
     }
 
-    /* ألوان الكروت */
     .card-blue { background: #3ec1f3; } .card-blue .card-main-body { background: #19a8ff; border-color: #0b4d9b; } .card-blue .bottom-box { background: #0b4d9b; border-color: #3ec1f3; }
     .card-red { background: #ff8e7a; } .card-red .card-main-body { background: #ff6a4c; border-color: #8c2b1e; } .card-red .bottom-box { background: #8c2b1e; border-color: #ff8e7a; }
     .card-black { background: #7a7a7a; } .card-black .card-main-body { background: #444; border-color: #222; } .card-black .bottom-box { background: #1a1a1a; border-color: #7a7a7a; }
     .card-brown { background: #fbe0c3; } .card-brown .card-main-body { background: #f7cda3; border-color: #9a7452; } .card-brown .bottom-box { background: #9a7452; border-color: #fbe0c3; }
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
-    .card-revealed .card-reveal-img { display: block; }
     .card-revealed { cursor: default; }
 
-    /* زر التأكيد العائم */
+    /* الأزرار والتنبيهات */
     .confirm-btn { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: #7ed321; border: 2px solid white; border-radius: 50%; display: none; justify-content: center; align-items: center; z-index: 10; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
     .confirm-btn svg { width: 14px; height: 14px; fill: white; }
     .card-selected { transform: scale(0.95); box-shadow: 0 0 10px #7ed321; }
 
-    /* --- التنبيهات المخصصة --- */
     .custom-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; border: 2px solid #555; border-radius: 15px; padding: 20px; text-align: center; z-index: 1000; color: white; display: none; width: 80%; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
     .alert-btns { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
     .alert-btn { padding: 8px 15px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; }
     .btn-ok { background: #7ed321; color: white; }
     .btn-cancel { background: #d0021b; color: white; }
 
-    /* --- التحكم --- */
     .control-area { height: 13%; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
     .clue-bar-layout { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0 10px;}
     .clue-input-wrapper { flex: 1; background: white; border-radius: 20px; height: 35px; display: flex; align-items: center; padding: 0 12px; }
@@ -115,6 +124,11 @@
 </style>
 </head>
 <body>
+
+<div id="loading-screen">
+    <div class="loader"></div>
+    <div>جاري التحميل...</div>
+</div>
 
 <div class="mobile-wrapper">
     <div id="customAlert" class="custom-alert">
@@ -162,23 +176,60 @@
 </div>
 
 <script>
-    const avatarImages = ['img/avatar_little_girl.webp','img/avatar_old_man.webp','img/avatar_snow_man.webp','img/avatar_women.webp'];
-    
-    const cardVisuals = {
-        'card-blue': ['img/card/Blue1.png', 'img/card/Blue2.png'],
-        'card-red': ['img/card/Red1.png', 'img/card/Red2.png'],
-        'card-black': ['img/card/Black.png'],
-        'card-brown': ['img/card/Normal1.png', 'img/card/Normal2.png']
-    };
+// مصفوفة بكل مسارات الصور
+    const allImagesToPreload = [
+        ...avatarImages,
+        ...cardVisuals['card-blue'],
+        ...cardVisuals['card-red'],
+        ...cardVisuals['card-black'],
+        ...cardVisuals['card-brown']
+    ];
 
-    let playerAvatars = {};
-    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
-    
-    let gameState = {
-        turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: [],
-        selectedCards: new Set(), guessesThisTurn: 0, targetClueNum: 0
-    };
+    // وظيفة التحقق: هل الصور محملة بالفعل في ذاكرة المتصفح؟
+    function areImagesCached() {
+        return allImagesToPreload.every(src => {
+            const img = new Image();
+            img.src = src;
+            return img.complete; // تعيد true إذا كانت الصورة محملة مسبقاً
+        });
+    }
 
+    // وظيفة التحميل المسبق المطورة
+    function preloadImages() {
+        // إذا كانت الصور محملة مسبقاً، لا داعي للوعود الطويلة
+        if (areImagesCached()) {
+            return Promise.resolve(); 
+        }
+
+        const promises = allImagesToPreload.map(src => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = src;
+                img.onload = resolve;
+                img.onerror = resolve; 
+            });
+        });
+        return Promise.all(promises);
+    }
+
+    // تشغيل النظام
+    const loader = document.getElementById('loading-screen');
+
+    // فحص فوري: إذا كانت الصور جاهزة، اخفِ الشاشة فوراً قبل أي انتظار
+    if (areImagesCached()) {
+        loader.style.display = 'none';
+        initGame();
+    } else {
+        // إذا لم تكن جاهزة، انتظر تحميلها
+        preloadImages().then(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                initGame();
+            }, 300);
+        });
+    }
+    
     function showCustomAlert(msg, showCancel = false, onOk = null) {
         const modal = document.getElementById('customAlert');
         document.getElementById('alertMsg').innerText = msg;
@@ -225,6 +276,7 @@
             div.className = `card ${isHidden ? 'card-hidden' : card.type} ${card.revealed ? 'card-revealed' : ''}`;
             div.id = `card-${i}`;
             
+            // تعديل: الصورة موجودة دائماً، التحكم في ظهورها عبر الـ CSS (opacity)
             div.innerHTML = `
                 <div class="confirm-btn" id="confirm-${i}">
                     <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
@@ -376,6 +428,8 @@
             </div>`;
         log.insertAdjacentHTML('afterbegin', html);
 
+        renderGrid(); updateUI();
+        
         if (card.type === 'card-blue') gameState.scores.blue = Math.max(0, gameState.scores.blue - 1);
         else if (card.type === 'card-red') gameState.scores.red = Math.max(0, gameState.scores.red - 1);
 
@@ -389,7 +443,6 @@
         } else if (gameState.scores.blue === 0 || gameState.scores.red === 0) {
             showCustomAlert("فوز رائع! انتهت اللعبة.", false, () => location.reload());
         }
-        renderGrid(); updateUI();
     }
 
     function endTurn() {
@@ -400,7 +453,15 @@
         renderGrid(); updateUI();
     }
 
-    initGame();
+    // تشغيل نظام التحميل المسبق ثم بدء اللعبة
+    preloadImages().then(() => {
+        const loader = document.getElementById('loading-screen');
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            initGame();
+        }, 300);
+    });
 </script>
 </body>
 </html>
