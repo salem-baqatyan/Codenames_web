@@ -54,7 +54,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px; /* المسافة بين العين والزر */
+    gap: 5px; /* المسافة بين العين والزر */
     width: 100%;
 }
 
@@ -66,6 +66,7 @@
 }
 
 .join-spectators-btn {
+    align-self: center;
     background: transparent;
     border: 1.5px solid #fff;
     color: #fff;
@@ -90,13 +91,13 @@
     position: relative;
 }
 
-.spec-avatar-wrap {
+.player-avatar-wrap {
     position: relative;
     width: 45px;
     height: 45px;
 }
 
-.spec-img {
+.player-img {
     width: 100%;
     height: 100%;
     border-radius: 50%;
@@ -105,7 +106,7 @@
     object-fit: cover;
 }
 
-.spec-name {
+.player-name {
     background: rgba(50, 50, 50, 0.9);
     color: #fff;
     font-size: 0.65rem;
@@ -119,7 +120,7 @@
     white-space: nowrap;
 }
 
-.spec-crown {
+.admin-crown {
     position: absolute;
     top: -10px;
     left: 0px;
@@ -203,8 +204,19 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
             transition: all 0.1s;
         }
+        /* حاوية اللاعب داخل مربعات الفرق لضمان الترتيب */
+.player-slot-container {
+    min-height: 60px; /* مساحة محجوزة للاعب حتى لا يقفز الزر */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-        /* تنسيق اللاعب داخل البطاقة */
+/* تعديل بسيط للاعب عند وجوده داخل الفريق ليكون أصغر قليلاً */
+.team-box .player-slot {
+    margin-bottom: 5px;
+}
+
         .player-slot {
             display: flex;
             flex-direction: column;
@@ -268,28 +280,19 @@
 <div class="spectators-section">
         <div class="spectators-header">
             <span class="view-icon">👁️</span>
-             <div class="box-title">OPERATIVES</div>
+             <div class="box-title">الجمهور</div>
 
         </div>
 
-        <div class="spectators-list">
-            <div class="spectator-item">
-                <div class="spec-avatar-wrap">
-                    <span class="spec-crown">👑</span>
-                    <img src="img/avatar_old_man.webp" class="spec-img">
-                </div>
-                <div class="spec-name">Salem</div>
-            </div>
-
-            <div class="spectator-item">
-                <div class="spec-avatar-wrap">
-                    <img src="img/avatar_old_man.webp" class="spec-img">
-                </div>
-                <div class="spec-name">عبدالعزيز</div>
-            </div>
-            <button class="join-spectators-btn">Join Spectators</button>
-
+<div class="spectators-list" id="spectators-list">
+    <div class="player-slot" id="main-player">
+        <div class="player-avatar-wrap">
+            <img src="img/avatar_snow_man.webp" class="player-img">
         </div>
+        <div class="player-name">Player</div>
+    </div>
+    <button class="join-spectators-btn" onclick="joinTeam(this, 'spectators-list')">أنضم</button>
+</div>
     </div>    <div class="settings-panel">
         <div class="panel-label">أعدادات اللعبة</div>
         
@@ -318,30 +321,22 @@
 <div class="teams-grid">
         <div class="team-box blue-box">
             <div class="box-title">OPERATIVES</div>
-            
-            <div class="player-slot">
-                <div class="player-avatar" style="background-image: url('img/avatar_old_man.webp'); background-size: cover;">
-                    <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%);">👑</span>
-                </div>
-                <div class="player-name">Salem</div>
-            </div>
-
-            <button class="join-btn">أنضم</button>
+<div class="player-slot-container"></div> <button class="join-btn" onclick="joinTeam(this, 'blue-spy')">أنضم</button>
         </div>
 
         <div class="team-box red-box">
             <div class="box-title">OPERATIVES</div>
-            <div class="player-slot"></div> <button class="join-btn">أنضم</button>
+<div class="player-slot-container"></div> <button class="join-btn" onclick="joinTeam(this, 'blue-spy')">أنضم</button>
         </div>
 
         <div class="team-box blue-box">
             <div class="box-title">SPYMASTERS</div>
-            <div class="player-slot"></div> <button class="join-btn">أنضم</button>
+<div class="player-slot-container"></div> <button class="join-btn" onclick="joinTeam(this, 'blue-spy')">أنضم</button>
         </div>
 
         <div class="team-box red-box">
             <div class="box-title">SPYMASTERS</div>
-            <div class="player-slot"></div> <button class="join-btn">أنضم</button>
+<div class="player-slot-container"></div> <button class="join-btn" onclick="joinTeam(this, 'blue-spy')">أنضم</button>            
         </div>
     </div>
 
@@ -350,9 +345,56 @@
     </div>
 </div>
 <script>
+function joinTeam(clickedBtn, teamId) {
+    const playerElement = document.getElementById('main-player');
+    
+    // 1. إعادة كافة الأزرار لشكلها الطبيعي أولاً
+    resetAllButtons();
+
+    // 2. تغيير شكل الزر الذي تم ضغطه
+    if (teamId === 'spectators-list') {
+        // إذا انضم للجمهور
+        clickedBtn.innerText = "منضم";
+        clickedBtn.style.background = "transparent";
+        clickedBtn.style.border = "1.5px solid #fff";
+        
+        // نقل اللاعب إلى قائمة الجمهور (قبل الزر)
+        const spectatorsList = document.getElementById('spectators-list');
+        spectatorsList.insertBefore(playerElement, clickedBtn);
+    } else {
+        // إذا انضم لأحد الفرق الأربعة
+        clickedBtn.innerText = "منضم";
+        clickedBtn.style.background = "transparent";
+        clickedBtn.style.border = "1.5px solid #fff";
+        clickedBtn.style.boxShadow = "none";
+
+        // البحث عن حاوية اللاعب فوق الزر مباشرة ونقله إليها
+        const container = clickedBtn.previousElementSibling;
+        container.appendChild(playerElement);
+    }
+}
+
+function resetAllButtons() {
+    // إعادة أزرار الفرق
+    const teamBtns = document.querySelectorAll('.join-btn');
+    teamBtns.forEach(btn => {
+        btn.innerText = "أنضم";
+        btn.style.background = "linear-gradient(to bottom, #7ed321, #417505)";
+        btn.style.border = "2px solid #b8e986";
+        btn.style.boxShadow = "0 3px 0 #2e5a03";
+    });
+
+    // إعادة زر الجمهور
+    const specBtn = document.querySelector('.join-spectators-btn');
+    if(specBtn) {
+        specBtn.innerText = "أنضم";
+        specBtn.style.background = "transparent";
+        specBtn.style.border = "1.5px solid #fff";
+    }
+}
+
 function goToIndex() {
-    // يمكنك إضافة أي تأثير هنا قبل الانتقال
-    window.location.href = "index.html";
+    window.location.href = "game.html";
 }
 </script>
 </body>
