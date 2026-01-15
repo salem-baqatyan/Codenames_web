@@ -32,7 +32,6 @@
         background-color: var(--bg-color); display: flex; flex-direction: column;
         border-left: 1px solid #333; border-right: 1px solid #333; position: relative;
     }
-
     /* --- الجزء الأول: اللاعبين --- */
     .dashboard { height: 30%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 10px; flex-shrink: 0; }
     .team-side { display: flex; flex-direction: column; gap: 4px; }
@@ -166,8 +165,9 @@
             </div>
             <select id="clueNum" class="clue-select">
                 <option value="-">-</option>
-                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
                 <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                <option value="∞">∞</option>
             </select>
         </div>
         <div id="action-btn" class="send-btn" onclick="handleAction()">
@@ -452,43 +452,49 @@ function handleCardSelection(i) {
     renderGrid(); // إعادة الرسم لإظهار الأزرار والتنسيقات الجديدة
 }
 
-    function confirmSelection(i) {
-        const card = gameState.cards[i];
-        card.revealed = true;
-        gameState.guessesThisTurn++;
-        gameState.selectedCards.delete(i);
+function confirmSelection(i) {
+    const card = gameState.cards[i];
+    card.revealed = true;
+    gameState.guessesThisTurn++;
+    gameState.selectedCards.delete(i);
 
-        const log = document.getElementById('log-content');
-        const avatar = playerAvatars[`${gameState.turn}-op`];
-        const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
-        const colorClass = card.type === 'card-blue' ? 'bg-blue' : (card.type === 'card-red' ? 'bg-red' : (card.type === 'card-brown' ? 'bg-brown' : 'bg-black'));
+    const log = document.getElementById('log-content');
+    const avatar = playerAvatars[`${gameState.turn}-op`];
+    const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
+    const colorClass = card.type === 'card-blue' ? 'bg-blue' : (card.type === 'card-red' ? 'bg-red' : (card.type === 'card-brown' ? 'bg-brown' : 'bg-black'));
 
-        const html = `
-            <div class="log-row ${rowClass}">
-                <div class="log-guess-item" style="flex-direction:${gameState.turn==='blue'?'row-reverse':'row'}">
-                    <img src="${avatar}" class="log-avatar" style="border-color:${gameState.turn==='blue'?'#3498db':'#e74c3c'}">
-                    <div class="log-guess-text ${colorClass}">${card.word}</div>
-                </div>
-            </div>`;
-        log.insertAdjacentHTML('afterbegin', html);
+    const html = `
+        <div class="log-row ${rowClass}">
+            <div class="log-guess-item" style="flex-direction:${gameState.turn==='blue'?'row-reverse':'row'}">
+                <img src="${avatar}" class="log-avatar" style="border-color:${gameState.turn==='blue'?'#3498db':'#e74c3c'}">
+                <div class="log-guess-text ${colorClass}">${card.word}</div>
+            </div>
+        </div>`;
+    log.insertAdjacentHTML('afterbegin', html);
 
-        renderGrid(); updateUI();
-        
-        if (card.type === 'card-blue') gameState.scores.blue = Math.max(0, gameState.scores.blue - 1);
-        else if (card.type === 'card-red') gameState.scores.red = Math.max(0, gameState.scores.red - 1);
+    renderGrid(); updateUI();
+    
+    if (card.type === 'card-blue') gameState.scores.blue = Math.max(0, gameState.scores.blue - 1);
+    else if (card.type === 'card-red') gameState.scores.red = Math.max(0, gameState.scores.red - 1);
 
-        if (card.type === 'card-black') { 
-            showCustomAlert("انتهت اللعبة! لمست القاتل.", false, () => location.reload()); 
-            return; 
-        }
-        
-        if (card.type !== `card-${gameState.turn}`) {
-            setTimeout(endTurn, 800);
-        } else if (gameState.scores.blue === 0 || gameState.scores.red === 0) {
-            showCustomAlert("فوز رائع! انتهت اللعبة.", false, () => location.reload());
-        }
+    // الحالة الأولى: لمس الكارت الأسود (الخسارة)
+    if (card.type === 'card-black') { 
+        showCustomAlert("انتهت اللعبة! لمست القاتل.", false, () => {
+            window.location.href = 'index.html'; // العودة للرئيسية
+        }); 
+        return; 
     }
-
+    
+    if (card.type !== `card-${gameState.turn}`) {
+        setTimeout(endTurn, 800);
+    } 
+    // الحالة الثانية: انتهاء الكلمات (الفوز)
+    else if (gameState.scores.blue === 0 || gameState.scores.red === 0) {
+        showCustomAlert("فوز رائع! انتهت اللعبة.", false, () => {
+            window.location.href = 'index.html'; // العودة للرئيسية
+        });
+    }
+}
 function endTurn() {
     gameState.turn = gameState.turn === 'blue' ? 'red' : 'blue';
     gameState.phase = 'spy';

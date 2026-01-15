@@ -12,6 +12,8 @@
             --red-team: #e74c3c;
             --green-action: #4caf50;
             --text-gray: #aaaaaa;
+            --modal-bg: #2a2a2a;
+            --accordion-bg: #252525;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
@@ -34,52 +36,78 @@
             flex-direction: column; 
             border-left: 1px solid #333; 
             border-right: 1px solid #333;
+            position: relative;
         }
 
-        /* تقسيم الشاشة لنصفين */
-        .top-section {
-            height: 50vh;
-            display: flex;
-            flex-direction: column;
-            padding-bottom: 5px;
+        /* تقسيم الشاشة */
+        .top-section { height: 50vh; display: flex; flex-direction: column; padding-bottom: 5px; }
+        .bottom-section { height: 50vh; display: flex; flex-direction: column; border-top: 1px solid #222; }
+        /* تحسين شكل شريط التمرير (Scrollbar) لكل المتصفحات */
+        .settings-modal::-webkit-scrollbar {
+            width: 5px; /* جعل الشريط نحيف جداً */
         }
 
-        .bottom-section {
-            height: 50vh;
-            display: flex;
-            flex-direction: column;
-            border-top: 1px solid #222;
+        .settings-modal::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2); /* خلفية مسار التمرير */
+            border-radius: 10px;
         }
 
-        /* القسم العلوي */
-        .top-bar {
-            display: flex; 
-            justify-content: space-between; 
-            padding: 10px 15px; 
-            flex-shrink: 0;
+        .settings-modal::-webkit-scrollbar-thumb {
+            background: var(--green-action); /* لون المقبض نفس لون اللعبة الأخضر */
+            border-radius: 10px;
         }
 
+        /* لمنع السكرول من الظهور بشكل مفاجئ وتغيير عرض الصفحة */
+        .settings-modal {
+            scrollbar-gutter: stable;
+            padding-right: 10px; /* مساحة إضافية لراحة العين */
+        }
+
+        /* تحسين شكل الـ Accordion لتقليل الحاجة للسكرول الطويل */
+        .accordion-content {
+            max-height: 300px; /* تحديد أقصى ارتفاع للمحتوى داخل القائمة الواحدة */
+            overflow-y: auto;
+        }
+.top-bar { 
+    display: flex; 
+    justify-content: space-between; /* توزيع المحتوى بين اليمين واليسار */
+    align-items: center; 
+    padding: 10px 15px; 
+    flex-shrink: 0; 
+}
+
+.top-left {
+    display: flex;
+    align-items: center;
+}
+
+.top-right { 
+    display: flex; 
+    flex-direction: row; /* جعلهم بجانب بعض */
+    gap: 8px; /* مسافة بين الأزرار */
+    align-items: center; 
+}
         .icon-circle {
             width: 40px; height: 40px; background: rgba(255,255,255,0.1);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 2px solid white; cursor: pointer;
+            border: 0.5px solid white; cursor: pointer;
         }
 
-        .btn-pill {
-            background: rgba(255,255,255,0.1); border: 1px solid #444;
-            padding: 4px 10px; border-radius: 20px; font-size: 0.7rem;
-            display: flex; align-items: center; gap: 5px; cursor: pointer;
-            margin-bottom:2.5px;
-        }
+.btn-pill {
+    background: rgba(255,255,255,0.1); 
+    border: 1px solid #444;
+    padding: 6px 12px; 
+    border-radius: 20px; 
+    font-size: 0.75rem;
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+    cursor: pointer;
+    margin-bottom: 0; /* إزالة الهامش السفلي لضمان الاستقامة */
+}
 
-        .spectators-section {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 5px; padding: 0 15px; flex-shrink: 0;
-        }
-
-        .spectators-list {
-            display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px;
-        }
+        .spectators-section { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 0 15px; flex-shrink: 0; }
+        .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; }
 
         .settings-panel {
             background: #1a1a1a; margin: 5px 15px; border-radius: 15px;
@@ -105,31 +133,16 @@
             background: rgba(255,255,255,0.05); border-radius: 10px;
             margin-top: 8px; display: flex; align-items: center;
             padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
         }
 
-        /* القسم السفلي */
-        .teams-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 6px;
-            padding: 10px 15px;
-        }
-
-        .team-box {
-            border-radius: 15px; display: flex; flex-direction: column;
-            justify-content: space-around; align-items: center; padding: 8px;
-            border: 1.5px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .blue-box { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%);  }
+        .teams-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 10px 15px; }
+        .team-box { border-radius: 15px; display: flex; flex-direction: column; justify-content: space-around; align-items: center; padding: 8px; border: 1.5px solid rgba(255, 255, 255, 0.3); }
+        .blue-box { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
         .red-box { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
-
         .box-title { font-size: 0.6rem; font-weight: 800; color: white; letter-spacing: 1px; }
 
         .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
-
         .join-btn {
             width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold;
             color: white; background: linear-gradient(to bottom, #7ed321, #417505);
@@ -140,10 +153,7 @@
         .player-slot { display: flex; flex-direction: column; align-items: center; }
         .player-avatar-wrap { width: 40px; height: 40px; position: relative; }
         .player-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; background: #333; }
-        .player-name {
-            background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px;
-            border-radius: 5px; margin-top: -5px; z-index: 2;
-        }
+        .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; }
 
         .footer { padding: 10px 15px; background: #000; }
         .start-btn {
@@ -153,25 +163,322 @@
             box-shadow: 0 4px 0 #2e5a03;
         }
 
-        .join-spectators-btn {
-            background: transparent; border: 1.5px solid #fff; color: #fff;
-            padding: 3px 12px; border-radius: 15px; font-size: 0.7rem; cursor: pointer;
+        .join-spectators-btn { background: transparent; border: 1.5px solid #fff; color: #fff; padding: 3px 12px; border-radius: 15px; font-size: 0.7rem; cursor: pointer; }
+
+        /* --- النوافذ المنبثقة (Modals) --- */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100;
         }
+        .settings-modal {
+            width: 90%; max-height: 85%; background: var(--modal-bg); border-radius: 20px; padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid #444; position: relative;
+            overflow-y: auto;
+        }
+        .close-icon { position: absolute; top: 15px; left: 15px; cursor: pointer; font-size: 1.2rem; color: #888; z-index: 10; }
+        .modal-header { font-size: 1rem; font-weight: bold; margin-bottom: 15px; text-align: center; text-transform: uppercase; }
+
+        /* --- تصميم القواعد (Accordion) --- */
+        .rules-intro { font-size: 0.75rem; text-align: center; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
+        .accordion-item { margin-bottom: 8px; border-radius: 12px; overflow: hidden; }
+        .accordion-header {
+            background: var(--accordion-bg); padding: 12px 15px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 0.85rem;
+        }
+        .accordion-header:hover { background: #333; }
+        .accordion-header.active { background: var(--green-action); color: white; }
+        .accordion-content {
+            background: #1e1e1e; display: none; padding: 15px; font-size: 0.75rem; line-height: 1.6; color: #ddd;
+            border: 1px solid #333; border-top: none; border-radius: 0 0 12px 12px;
+        }
+        .accordion-content ul { padding-right: 20px; margin: 0; }
+        .accordion-content li { margin-bottom: 8px; }
+        .accordion-header span:last-child {
+            transition: transform 0.3s;
+        }
+        .accordion-header.active span:last-child {
+            transform: rotate(180deg);
+        }
+
+        .log-row { display: flex; width: 100%; align-items: center; gap: 5px; }
+        .row-blue { justify-content: flex-start; flex-direction: row-reverse; } 
+        .row-red { justify-content: flex-start; flex-direction: row; } 
+
+        .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
+        .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
+        .log-clue-red { background: #e74c3c; flex-direction: row; }
+        
+        .log-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; }
+        .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 1rem;}
+        .log-num-circle { width: 30px; height: 30px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; flex-shrink: 0;}
+
+        .log-guess-item { display: flex; align-items: center; gap: 4px; }
+        .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
+        .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }
+
+        /* --- إعدادات المؤقت (Slider) --- */
+        .timer-display { text-align: center; margin-bottom: 20px; }
+        .timer-icon { font-size: 2.5rem; display: block; margin-bottom: 5px; }
+        .timer-status { font-size: 0.8rem; color: #fff; font-weight: bold; }
+        .slider-container { width: 100%; padding: 10px 0; }
+        .timer-slider {
+            width: 100%; -webkit-appearance: none; appearance: none; background: #444;
+            height: 4px; border-radius: 2px; outline: none;
+        }
+        .timer-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px;
+            background: #7ed321; border-radius: 50%; cursor: pointer; border: 2px solid white;
+        }
+        .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; }
+        .slider-labels span { font-size: 0.55rem; color: #888; }
+        .slider-labels span.active-label { color: #7ed321; font-weight: bold; }
+
+        /* --- خيارات الملف الشخصي --- */
+        .setting-item { margin-bottom: 20px; }
+        .setting-item label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 8px; }
+        .nickname-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: white; padding: 10px; border-radius: 10px; font-size: 0.9rem; outline: none; }
+        .avatar-selector { display: flex; gap: 10px; overflow-x: auto; padding: 5px; }
+        .avatar-option { width: 50px; height: 50px; border-radius: 50%; border: 2px solid white; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .avatar-option.selected { border-color: #7ed321; transform: scale(1.1); }
+        .leave-btn { width: 100%; background: #c62828; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
+        .close-modal-btn { width: 100%; background: #444; color: white; border: none; padding: 10px; border-radius: 12px; cursor: pointer; margin-top: 10px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
 <div class="mobile-wrapper">
-    <div class="top-section">
-        <div class="top-bar">
-            <div class="top-left">
-                <div class="icon-circle">👥<span style="font-size: 0.6rem;">1</span></div>
+    
+    <div class="modal-overlay" id="rulesModal">
+        <div class="settings-modal">
+            <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
+            <div class="modal-header">كيفية اللعب</div>
+            <div class="rules-intro">
+                كودنايمز هي لعبة تعتمد على ربط الكلمات والعمل الجماعي بين فريقين: <b>الأزرق</b> و <b>الأحمر</b>. يحاول كل فريق تخمين كلماتهم السرية قبل الفريق الآخر.
             </div>
-            <div class="top-right">
-                <div class="btn-pill">⚙️الاعدادات</div>
-                <div class="btn-pill">🔖القواعد</div>
+
+            <div id="rulesAccordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🎮 الإعداد والأدوار</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>ينقسم اللاعبون إلى فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</li>
+                            <li>يجب أن يحتوي كل فريق على <b>جاسوس (Spymaster)</b> واحد على الأقل و<b>عميل (Operative)</b>.</li>
+                            <li>يتم عرض شبكة 5×5 مكونة من 25 بطاقة كودنايمز على الطاولة.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🕵️ قادة الجواسيس</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
+                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة</b> و <b>رقم</b> لمساعدة فريقه.</li>
+                        </ul>
+                        <div class="log-row row-red">
+                                <div class="log-clue-item log-clue-red">
+                                <img src="img/avatar_snow_man.webp" id="currentAvatarImg" class="log-avatar" style="border-color:#fff">
+                                <div class="log-text-clue">حيوان</div>
+                                <div class="log-num-circle">3</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🙋‍♂️ العملاء (Operatives)</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>لا يعرف العملاء هويات البطاقات مسبقاً.</li>
+                            <li>يعملون معاً لتخمين الكلمات الصحيحة بناءً على تلميح قائد الجواسيس.</li>
+                            <li>يجب عليهم تجنب كلمات الفريق المنافس، وبطاقة الاغتيال.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🟦 أنواع البطاقات</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p>يتم تعيين كل كلمة في الشبكة سرياً لواحد من أربعة أصناف:</p>
+                        <ul>
+                            <li><b>بطاقات زرقاء:</b> يجب على الفريق الأزرق العثور عليها.</li>
+                            <li><b>بطاقات حمراء:</b> يجب على الفريق الأحمر العثور عليها.</li>
+                            <li><b>المارة الأبرياء:</b> بطاقات محايدة تنهي الدور فقط.</li>
+                            <li><b>المغتال (البطاقة السوداء):</b> إذا لمستها، يخسر فريقك فوراً!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>💬 إعطاء التلميحات</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p>عندما يأتي دورك كقائد جاسوس:</p>
+                        <ol>
+                            <li>ابحث عن كلمة واحدة تربط أكبر عدد ممكن من بطاقات فريقك.</li>
+                            <li>أضف رقماً يوضح عدد الكلمات المرتبطة بهذا التلميح.</li>
+                            <li><b>تنبيه:</b> لا يصح إعطاء تلميح هو جزء من كلمة موجودة على الشبكة!</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🧠 التلميحات الصالحة</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>يجب أن يتعلق التلميح <b>بمعنى</b> الكلمات وليس بطريقة كتابتها أو موقعها.</li>
+                            <li>لا يجوز استخدام ترجمات للكلمات الموجودة بلغات أخرى.</li>
+                            <li>إذا لم تكن متأكداً من قانونية التلميح، اسأل القائد المنافس سرياً.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🕹️ التخمين (للعملاء)</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p>بعد سماع التلميح، يقوم العملاء بـ:</p>
+                        <ol>
+                            <li>مناقشة الكلمات المحتملة فيما بينهم.</li>
+                            <li>تحديد اختيارهم عن طريق الضغط على الكلمة.</li>
+                            <li>إذا كان التخمين صحيحاً، يمكنك الاستمرار بتخمين كلمة إضافية (الرقم المذكور + 1).</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🔢 أرقام التلميحات الخاصة</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li><b>التلميح 0:</b> يعني أن لا توجد أي كلمة من كلمات فريقك ترتبط بالتلميح (يُستخدم لإبعاد الفريق عن خطر المغتال).</li>
+                            <li><b>التلميح لا نهائي (∞):</b> يسمح للعملاء بالتخمين بلا حدود حتى يخطئوا أو يتوقفوا.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🔄 تدفق اللعبة</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p>تنتهي نوبة الفريق في الحالات التالية:</p>
+                        <ul>
+                            <li>اختيار بطاقة "مار بريء" أو بطاقة الفريق المنافس.</li>
+                            <li>استنفاد عدد المحاولات المسموح بها.</li>
+                            <li>اختيار الفريق التوقف طواعيةً لعدم المخاطرة.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🎯 الفوز والخسارة</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li><b>الفوز:</b> الفريق الذي ينجح في كشف جميع بطاقاته أولاً هو الفائز.</li>
+                            <li><b>الخسارة الفورية:</b> الفريق الذي يلمس بطاقة "المغتال" الأسود يخسر اللعبة فوراً مهما كانت نتيجته.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🥳 نصائح ختامية</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>كودنايمز لعبة اجتماعية؛ حافظ على روح المنافسة الممتعة.</li>
+                            <li>كقائد جاسوس، حاول الحفاظ على "وجه البوكر" ولا تعطي أي إشارات جسدية.</li>
+                            <li>استمتع بالتفكير الإبداعي والربط العجيب بين الكلمات!</li>
+                        </ul>
+                    </div>
+                </div>
+                
+            </div>
+
+            <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="profileModal">
+        <div class="settings-modal">
+            <div class="modal-header">إعدادات الملف الشخصي</div>
+            <div class="setting-item">
+                <label>اللقب (Nickname)</label>
+                <input type="text" id="nicknameInput" class="nickname-input" placeholder="أدخل اسمك هنا..." value="Player">
+            </div>
+            <div class="setting-item">
+                <label>اختر صورتك</label>
+                <div class="avatar-selector">
+                    <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
+                    <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
+                    <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
+                    <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
+                </div>
+            </div>
+            <button class="leave-btn" onclick="leaveMatch()">مغادرة اللعبة</button>
+            <button class="close-modal-btn" onclick="toggleProfileModal(false)">حفظ وإغلاق</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="timerModal">
+        <div class="settings-modal">
+            <span class="close-icon" onclick="toggleTimerModal(false)">✕</span>
+            <div class="modal-header">إعدادات المؤقت</div>
+            <div class="timer-display">
+                <span class="timer-icon" id="modalTimerIcon">🚫</span>
+                <span class="timer-status" id="modalTimerText">بدون مؤقت</span>
+            </div>
+            <div class="slider-container">
+                <input type="range" min="0" max="3" value="0" class="timer-slider" id="timerSlider" oninput="updateTimerValue(this.value)">
+                <div class="slider-labels">
+                    <span id="label0" class="active-label">بدون</span>
+                    <span id="label1">سريع</span>
+                    <span id="label2">متوسط</span>
+                    <span id="label3">بطيء</span>
+                </div>
             </div>
         </div>
+    </div>
+
+<div class="top-section">
+    <div class="top-bar">
+        <div class="top-left">
+            <div class="icon-circle">
+                <span style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">1</span> 👥
+            </div>
+        </div>
+
+        <div class="top-right">
+            <div class="btn-pill" onclick="toggleRulesModal(true)">📝 القواعد</div>
+            <div class="icon-circle" onclick="toggleProfileModal(true)">⚙️</div>
+        </div>
+    </div>
 
         <div class="spectators-section">
             <div class="spectators-header">
@@ -181,9 +488,9 @@
             <div class="spectators-list" id="spectators-list">
                 <div class="player-slot" id="main-player">
                     <div class="player-avatar-wrap">
-                        <img src="img/avatar_snow_man.webp" class="player-img">
+                        <img src="img/avatar_snow_man.webp" id="currentAvatarImg" class="player-img">
                     </div>
-                    <div class="player-name">Player</div>
+                    <div class="player-name" id="currentPlayerName">Player</div>
                 </div>
                 <button class="join-spectators-btn" onclick="joinTeam(this, 'spectators-list')">أنضمام</button>
             </div>
@@ -194,18 +501,18 @@
             <div class="mode-options">
                 <div class="mode-card active" onclick="selectMode(this)">
                     <img src="img/local.webp" class="mode-img">
-                    <div class="mode-info"><b>اوفلاين(للاختبار فقط)</b><span>4+ لاعبين</span></div>
+                    <div class="mode-info"><b>اوفلاين</b><span>4+ لاعبين</span></div>
                 </div>
                 <div class="mode-card" onclick="selectMode(this)">
                     <img src="img/online.webp" class="mode-img">
                     <div class="mode-info"><b>اونلاين</b><span>4+ لاعبين</span></div>
                 </div>
             </div>
-            <div class="setting-row">
-                <span style="font-size: 1.2rem;">⏱️</span>
+            <div class="setting-row" onclick="toggleTimerModal(true)">
+                <span style="font-size: 1.2rem;" id="mainTimerIcon">🚫</span>
                 <div style="margin-right: 10px;">
                     <b style="font-size: 0.7rem; display: block;">المؤقت</b>
-                    <span style="font-size: 0.55rem; color: #888;">بدون</span>
+                    <span style="font-size: 0.55rem; color: #888;" id="mainTimerText">بدون</span>
                 </div>
             </div>
         </div>
@@ -218,26 +525,22 @@
                 <div class="player-slot-container"></div>
                 <button class="join-btn" onclick="joinTeam(this, 'blue-op')">أنضمام</button>
             </div>
-
             <div class="team-box red-box">
                 <div class="box-title">OPERATIVES</div>
                 <div class="player-slot-container"></div>
                 <button class="join-btn" onclick="joinTeam(this, 'red-op')">أنضمام</button>
             </div>
-
             <div class="team-box blue-box">
                 <div class="box-title">SPYMASTERS</div>
                 <div class="player-slot-container"></div>
                 <button class="join-btn" onclick="joinTeam(this, 'blue-spy')">أنضمام</button>
             </div>
-
             <div class="team-box red-box">
                 <div class="box-title">SPYMASTERS</div>
                 <div class="player-slot-container"></div>
                 <button class="join-btn" onclick="joinTeam(this, 'red-spy')">أنضمام</button>
             </div>
         </div>
-
         <div class="footer">
             <button class="start-btn" onclick="goToIndex()">بدء اللعبة</button>
         </div>
@@ -245,33 +548,92 @@
 </div>
 
 <script>
-// دالة اختيار الوضع (أوفلاين / أونلاين)
+    // --- الملف الشخصي ---
+function toggleProfileModal(show) {
+    const modal = document.getElementById('profileModal');
+    modal.style.display = show ? 'flex' : 'none';
+    if (!show) {
+        const newName = document.getElementById('nicknameInput').value;
+        if(newName.trim() !== "") document.getElementById('currentPlayerName').innerText = newName;
+    }
+}
+
+function selectAvatar(imgElement) {
+    document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+    imgElement.classList.add('selected');
+    document.getElementById('currentAvatarImg').src = imgElement.src;
+}
+
+function leaveMatch() {
+    if(confirm("هل أنت متأكد من رغبتك في مغادرة اللعبة؟")) {
+        window.location.reload(); 
+    }
+}
+
+// --- وظائف القواعد (جديد) ---
+function toggleRulesModal(show) {
+    document.getElementById('rulesModal').style.display = show ? 'flex' : 'none';
+}
+
+function toggleAccordion(header) {
+    const content = header.nextElementSibling;
+    const isVisible = content.style.display === 'block';
+    
+    // إغلاق الكل أولاً
+    document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none');
+    document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
+    
+    // فتح المختار فقط
+    if (!isVisible) {
+        content.style.display = 'block';
+        header.classList.add('active');
+    }
+}
+
+// --- إعدادات المؤقت ---
+const timerConfigs = [
+    { label: "بدون مؤقت", main: "بدون", icon: "🚫", color: "#888" },
+    { label: "سريع (30 ثانية)", main: "30 ثانية", icon: "⚡", color: "#7ed321" },
+    { label: "متوسط (دقيقة)", main: "1 دقيقة", icon: "⏱️", color: "#f5a623" },
+    { label: "بطيء (دقيقتين)", main: "2 دقيقة", icon: "🐢", color: "#4a90e2" }
+];
+
+function toggleTimerModal(show) {
+    document.getElementById('timerModal').style.display = show ? 'flex' : 'none';
+}
+
+function updateTimerValue(val) {
+    const config = timerConfigs[val];
+    document.getElementById('modalTimerText').innerText = config.label;
+    document.getElementById('modalTimerIcon').innerText = config.icon;
+    document.getElementById('mainTimerText').innerText = config.main;
+    document.getElementById('mainTimerIcon').innerText = config.icon;
+    for(let i=0; i<=3; i++) {
+        document.getElementById('label'+i).classList.remove('active-label');
+    }
+    document.getElementById('label'+val).classList.add('active-label');
+}
+
+
+// --- وظائف اللعبة الأساسية ---
 function selectMode(element) {
-    // إزالة فئة active من جميع البطاقات
-    document.querySelectorAll('.mode-card').forEach(card => {
-        card.classList.remove('active');
-    });
-    // إضافة فئة active للبطاقة التي تم الضغط عليها
+    document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
     element.classList.add('active');
 }
 
 function joinTeam(clickedBtn, teamId) {
     const playerElement = document.getElementById('main-player');
     resetAllButtons();
-
     clickedBtn.innerText = "منضم";
     clickedBtn.style.background = "transparent";
     clickedBtn.style.border = "1.5px solid #fff";
     clickedBtn.style.boxShadow = "none";
 
     if (teamId === 'spectators-list') {
-        const spectatorsList = document.getElementById('spectators-list');
-        spectatorsList.insertBefore(playerElement, clickedBtn);
+        document.getElementById('spectators-list').insertBefore(playerElement, clickedBtn);
         clickedBtn.innerText = "أنضمام";
-
     } else {
-        const container = clickedBtn.previousElementSibling;
-        container.appendChild(playerElement);
+        clickedBtn.previousElementSibling.appendChild(playerElement);
     }
 }
 
@@ -282,10 +644,8 @@ function resetAllButtons() {
         btn.style.border = "1.5px solid #b8e986";
         btn.style.boxShadow = "0 2px 0 #2e5a03";
     });
-    
     const specBtn = document.querySelector('.join-spectators-btn');
     specBtn.innerText = "أنضمام";
-    specBtn.style.background = "transparent";
     specBtn.style.border = "1.5px solid #fff";
 }
 
