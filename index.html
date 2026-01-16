@@ -13,7 +13,6 @@
             --green-action: #4caf50;
             --text-gray: #aaaaaa;
             --modal-bg: #2a2a2a;
-            --accordion-bg: #252525;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
@@ -247,7 +246,28 @@
 <body>
 
 <div class="mobile-wrapper">
-    
+        <div class="modal-overlay" id="profileModal">
+        <div class="settings-modal">
+            <div class="modal-header">إعدادات الملف الشخصي</div>
+            <div class="setting-item">
+                <label>اللقب (Nickname)</label>
+                <input type="text" id="nicknameInput" class="nickname-input" placeholder="أدخل اسمك هنا..." value="Player">
+            </div>
+            <div class="setting-item">
+                <label>اختر صورتك</label>
+                <div class="avatar-selector">
+                    <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
+                    <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
+                    <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
+                    <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
+                </div>
+            </div>
+            <button class="leave-btn" onclick="leaveMatch()">مغادرة اللعبة</button>
+            <button class="close-modal-btn" onclick="toggleProfileModal(false)">حفظ وإغلاق</button>
+        </div>
+    </div>
+
+
     <div class="modal-overlay" id="rulesModal">
         <div class="settings-modal">
             <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
@@ -283,7 +303,7 @@
                         </ul>
                         <div class="log-row row-red">
                                 <div class="log-clue-item log-clue-red">
-                                <img src="img/avatar_snow_man.webp" id="currentAvatarImg" class="log-avatar" style="border-color:#fff">
+                                <img src="img/avatar_snow_man.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
                                 <div class="log-text-clue">حيوان</div>
                                 <div class="log-num-circle">3</div>
                             </div>
@@ -424,28 +444,6 @@
             <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
         </div>
     </div>
-
-    <div class="modal-overlay" id="profileModal">
-        <div class="settings-modal">
-            <div class="modal-header">إعدادات الملف الشخصي</div>
-            <div class="setting-item">
-                <label>اللقب (Nickname)</label>
-                <input type="text" id="nicknameInput" class="nickname-input" placeholder="أدخل اسمك هنا..." value="Player">
-            </div>
-            <div class="setting-item">
-                <label>اختر صورتك</label>
-                <div class="avatar-selector">
-                    <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
-                    <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
-                    <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
-                    <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
-                </div>
-            </div>
-            <button class="leave-btn" onclick="leaveMatch()">مغادرة اللعبة</button>
-            <button class="close-modal-btn" onclick="toggleProfileModal(false)">حفظ وإغلاق</button>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="timerModal">
         <div class="settings-modal">
             <span class="close-icon" onclick="toggleTimerModal(false)">✕</span>
@@ -548,7 +546,7 @@
 </div>
 
 <script>
-    // --- الملف الشخصي ---
+// --- الملف الشخصي ---
 function toggleProfileModal(show) {
     const modal = document.getElementById('profileModal');
     modal.style.display = show ? 'flex' : 'none';
