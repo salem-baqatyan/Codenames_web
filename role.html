@@ -174,3 +174,58 @@
             <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
         </div>
     </div>
+function toggleRulesModal(show) {
+    document.getElementById('rulesModal').style.display = show ? 'flex' : 'none';
+}
+function toggleAccordion(header) {
+    const content = header.nextElementSibling;
+    const isVisible = content.style.display === 'block';
+    
+    // إغلاق الكل أولاً
+    document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none');
+    document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
+    
+    // فتح المختار فقط
+    if (!isVisible) {
+        content.style.display = 'block';
+        header.classList.add('active');
+    }
+}
+
+        /* --- تصميم القواعد (Accordion) --- */
+        .rules-intro { font-size: 0.75rem; text-align: center; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
+        .accordion-item { margin-bottom: 8px; border-radius: 12px; overflow: hidden; }
+        .accordion-header {
+            background: var(--accordion-bg); padding: 12px 15px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 0.85rem;
+        }
+        .accordion-header:hover { background: #333; }
+        .accordion-header.active { background: var(--green-action); color: white; }
+        .accordion-content {
+            background: #1e1e1e; display: none; padding: 15px; font-size: 0.75rem; line-height: 1.6; color: #ddd;
+            border: 1px solid #333; border-top: none; border-radius: 0 0 12px 12px;
+        }
+        .accordion-content ul { padding-right: 20px; margin: 0; }
+        .accordion-content li { margin-bottom: 8px; }
+        .accordion-header span:last-child {
+            transition: transform 0.3s;
+        }
+        .accordion-header.active span:last-child {
+            transform: rotate(180deg);
+        }
+
+        .log-row { display: flex; width: 100%; align-items: center; gap: 5px; }
+        .row-blue { justify-content: flex-start; flex-direction: row-reverse; } 
+        .row-red { justify-content: flex-start; flex-direction: row; } 
+
+        .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
+        .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
+        .log-clue-red { background: #e74c3c; flex-direction: row; }
+        
+        .log-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; }
+        .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 1rem;}
+        .log-num-circle { width: 30px; height: 30px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; flex-shrink: 0;}
+
+        .log-guess-item { display: flex; align-items: center; gap: 4px; }
+        .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
+        .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }

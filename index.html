@@ -37,68 +37,31 @@
         }
         .top-section { height: 50vh; display: flex; flex-direction: column; padding-bottom: 5px; }
         .bottom-section { height: 50vh; display: flex; flex-direction: column; border-top: 1px solid #222; }
-        .settings-modal::-webkit-scrollbar {
-            width: 5px; /* جعل الشريط نحيف جداً */
-        }
-        .settings-modal::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2); /* خلفية مسار التمرير */
-            border-radius: 10px;
-        }
-        .settings-modal::-webkit-scrollbar-thumb {
-            background: var(--green-action); /* لون المقبض نفس لون اللعبة الأخضر */
-            border-radius: 10px;
-        }
-        .settings-modal {
-            scrollbar-gutter: stable;
-            padding-right: 10px; /* مساحة إضافية لراحة العين */
-        }
-        .accordion-content {
-            max-height: 300px; /* تحديد أقصى ارتفاع للمحتوى داخل القائمة الواحدة */
-            overflow-y: auto;
-        }
-        .top-bar { 
-            display: flex; 
-            justify-content: space-between; /* توزيع المحتوى بين اليمين واليسار */
-            align-items: center; 
-            padding: 10px 15px; 
-            flex-shrink: 0; 
-        }
-        .top-left {
-            display: flex;
-            align-items: center;
-        }
-        .top-right { 
-            display: flex; 
-            flex-direction: row; /* جعلهم بجانب بعض */
-            gap: 8px; /* مسافة بين الأزرار */
-            align-items: center; 
-        }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; }
+        .top-left { display: flex; align-items: center; }
+        .top-right { display: flex; gap: 8px; align-items: center; }
+        
         .icon-circle {
             width: 40px; height: 40px; background: rgba(255,255,255,0.1);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             border: 0.5px solid white; cursor: pointer;
         }
         .btn-pill {
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid #444;
-            padding: 6px 12px; 
-            border-radius: 20px; 
-            font-size: 0.75rem;
-            display: flex; 
-            align-items: center; 
-            gap: 5px; 
-            cursor: pointer;
-            margin-bottom: 0; /* إزالة الهامش السفلي لضمان الاستقامة */
+            background: rgba(255,255,255,0.1); border: 1px solid #444;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 5px; cursor: pointer;
         }
+
         .spectators-section { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 0 15px; flex-shrink: 0; }
-        .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; }
+        .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; flex-wrap: wrap;}
+
         .settings-panel {
             background: #1a1a1a; margin: 5px 15px; border-radius: 15px;
             padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
-
-        .panel-label { text-align: center; color: #888; font-size: 0.65rem; font-weight: bold; margin-bottom: 15px; }
+        .panel-label { text-align: center; color: #888; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; }
 
         .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .mode-card {
@@ -111,6 +74,7 @@
         .mode-info { pointer-events: none; }
         .mode-info b { font-size: 0.65rem; display: block; }
         .mode-info span { font-size: 0.55rem; color: #aaa; }
+
         .setting-row {
             background: rgba(255,255,255,0.05); border-radius: 10px;
             margin-top: 8px; display: flex; align-items: center;
@@ -123,6 +87,7 @@
         .blue-box { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
         .red-box { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
         .box-title { font-size: 0.6rem; font-weight: 800; color: white; letter-spacing: 1px; }
+
         .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
         .join-btn {
             width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold;
@@ -130,191 +95,112 @@
             border: 1.5px solid #b8e986; border-radius: 15px; cursor: pointer;
             box-shadow: 0 2px 0 #2e5a03;
         }
-        .player-slot { display: flex; flex-direction: column; align-items: center; }
+        .join-btn.locked {
+            background: transparent !important; border: 1.5px solid #fff !important;
+            box-shadow: none !important; cursor: not-allowed; opacity: 0.7;
+        }
+
+        .player-slot { display: flex; flex-direction: column; align-items: center; position: relative; }
         .player-avatar-wrap { width: 40px; height: 40px; position: relative; }
         .player-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; background: #333; }
-        .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; }
+        .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; white-space: nowrap;}
+        
         .player-avatar-wrap.is-admin::after {
-            content: "👑";
-            position: absolute;
-            top: -10px;
-            left: 0px;
-            font-size: 0.9rem;
-            transform: rotate(-20deg);
+            content: "👑"; position: absolute; top: -12px; left: -5px; font-size: 1.1rem; transform: rotate(-20deg);
         }
-        .join-btn.locked {
-            background: transparent !important;
-            border: 1.5px solid #fff !important;
-            box-shadow: none !important;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        .footer { padding: 10px 15px; background: #000; height: 30%;}
+
+        .footer { padding: 10px 15px; background: #000; height: 80px;}
         .start-btn {
             width: 100%; height: 45px; font-size: 1.1rem; font-weight: 900;
             color: white; background: linear-gradient(to bottom, #7ed321, #417505);
             border: 2px solid #b8e986; border-radius: 30px; cursor: pointer;
-            box-shadow: 0 4px 0 #2e5a03;
+            box-shadow: 0 4px 0 #2e5a03; display: none;
         }
-        .join-spectators-btn { background: transparent; border: 1.5px solid #fff; color: #fff; padding: 3px 12px; border-radius: 15px; font-size: 0.7rem; cursor: pointer; }
+
         .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100;
+            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
         .settings-modal {
             width: 90%; max-height: 85%; background: var(--modal-bg); border-radius: 20px; padding: 20px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid #444; position: relative;
-            overflow-y: auto;
+            border: 1px solid #444; position: relative;
         }
-        .close-icon { position: absolute; top: 15px; left: 15px; cursor: pointer; font-size: 1.2rem; color: #888; z-index: 10; }
-        .modal-header { font-size: 1rem; font-weight: bold; margin-bottom: 15px; text-align: center; text-transform: uppercase; }
-        .rules-intro { font-size: 0.75rem; text-align: center; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
-        .accordion-item { margin-bottom: 8px; border-radius: 12px; overflow: hidden; }
-        .accordion-header {
-            background: var(--accordion-bg); padding: 12px 15px; display: flex; justify-content: space-between;
-            align-items: center; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 0.85rem;
-        }
-        .accordion-header:hover { background: #333; }
-        .accordion-header.active { background: var(--green-action); color: white; }
-        .accordion-content {
-            background: #1e1e1e; display: none; padding: 15px; font-size: 0.75rem; line-height: 1.6; color: #ddd;
-            border: 1px solid #333; border-top: none; border-radius: 0 0 12px 12px;
-        }
-        .accordion-content ul { padding-right: 20px; margin: 0; }
-        .accordion-content li { margin-bottom: 8px; }
-        .accordion-header span:last-child {
-            transition: transform 0.3s;
-        }
-        .accordion-header.active span:last-child {
-            transform: rotate(180deg);
-        }
-
-        .log-row { display: flex; width: 100%; align-items: center; gap: 5px; }
-        .row-blue { justify-content: flex-start; flex-direction: row-reverse; } 
-        .row-red { justify-content: flex-start; flex-direction: row; } 
-
-        .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
-        .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
-        .log-clue-red { background: #e74c3c; flex-direction: row; }
-        
-        .log-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; }
-        .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 1rem;}
-        .log-num-circle { width: 30px; height: 30px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; flex-shrink: 0;}
-
-        .log-guess-item { display: flex; align-items: center; gap: 4px; }
-        .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
-        .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }
-
-        /* --- إعدادات المؤقت (Slider) --- */
-        .timer-display { text-align: center; margin-bottom: 20px; }
-        .timer-icon { font-size: 2.5rem; display: block; margin-bottom: 5px; }
-        .timer-status { font-size: 0.8rem; color: #fff; font-weight: bold; }
-        .slider-container { width: 100%; padding: 10px 0; }
-        .timer-slider {
-            width: 100%; -webkit-appearance: none; appearance: none; background: #444;
-            height: 4px; border-radius: 2px; outline: none;
-        }
-        .timer-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 18px; height: 18px;
-            background: #7ed321; border-radius: 50%; cursor: pointer; border: 2px solid white;
-        }
-        .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; }
-        .slider-labels span { font-size: 0.55rem; color: #888; }
-        .slider-labels span.active-label { color: #7ed321; font-weight: bold; }
-
-        /* --- خيارات الملف الشخصي --- */
-        .setting-item { margin-bottom: 20px; }
-        .setting-item label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 8px; }
-        .nickname-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: white; padding: 10px; border-radius: 10px; font-size: 0.9rem; outline: none; }
-        .avatar-selector { display: flex; gap: 10px; overflow-x: auto; padding: 5px; }
-        .avatar-option { width: 50px; height: 50px; border-radius: 50%; border: 2px solid white; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .avatar-selector { display: flex; gap: 10px; overflow-x: auto; padding: 10px 5px; }
+        .avatar-option { width: 60px; height: 60px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
         .avatar-option.selected { border-color: #7ed321; transform: scale(1.1); }
-        .leave-btn { width: 100%; background: #c62828; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
-        .close-modal-btn { width: 100%; background: #444; color: white; border: none; padding: 10px; border-radius: 12px; cursor: pointer; margin-top: 10px; font-size: 0.8rem; }
+        .nickname-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; font-size: 1rem; outline: none; margin-top: 10px;}
+        .save-btn { width: 100%; background: var(--green-action); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1rem; }
+
+        .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.6rem; color: #888; }
+        .active-label { color: #7ed321; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="mobile-wrapper">
-        <div class="modal-overlay" id="profileModal">
+    <div class="modal-overlay" id="profileModal" style="display: flex;">
         <div class="settings-modal">
-            <div class="modal-header">إعدادات الملف الشخصي</div>
-            <div class="setting-item">
-                <label>اللقب (Nickname)</label>
-                <input type="text" id="nicknameInput" class="nickname-input" placeholder="أدخل اسمك هنا..." value="Player">
+            <div class="modal-header" id="profileHeader">أهلاً بك! جهز ملفك</div>
+            <div class="avatar-selector">
+                <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
+                <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
+                <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
+                <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
             </div>
-            <div class="setting-item">
-                <label>اختر صورتك</label>
-                <div class="avatar-selector">
-                    <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
-                    <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
-                    <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
-                    <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
-                </div>
-            </div>
-            <button class="leave-btn" onclick="leaveMatch()">مغادرة اللعبة</button>
-            <button class="close-modal-btn" onclick="toggleProfileModal(false)">حفظ وإغلاق</button>
+            <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
+            <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
         </div>
     </div>
+
     <div class="modal-overlay" id="timerModal">
         <div class="settings-modal">
-            <span class="close-icon" onclick="toggleTimerModal(false)">✕</span>
             <div class="modal-header">إعدادات المؤقت</div>
-            <div class="timer-display">
-                <span class="timer-icon" id="modalTimerIcon">🚫</span>
-                <span class="timer-status" id="modalTimerText">بدون مؤقت</span>
+            <div style="text-align:center; font-size: 3rem; margin: 10px 0;" id="modalTimerIcon">🚫</div>
+            <div style="text-align:center; font-weight:bold;" id="modalTimerText">بدون مؤقت</div>
+            <input type="range" min="0" max="3" value="0" style="width:100%; margin-top:20px;" id="timerSlider" oninput="changeTimer(this.value)">
+            <div class="slider-labels">
+                <span id="label0" class="active-label">بدون</span>
+                <span id="label1">30ث</span>
+                <span id="label2">1د</span>
+                <span id="label3">2د</span>
             </div>
-            <div class="slider-container">
-                <input type="range" min="0" max="3" value="0" class="timer-slider" id="timerSlider" oninput="updateTimerValue(this.value)">
-                <div class="slider-labels">
-                    <span id="label0" class="active-label">بدون</span>
-                    <span id="label1">سريع</span>
-                    <span id="label2">متوسط</span>
-                    <span id="label3">بطيء</span>
+            <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
+        </div>
+    </div>
+
+    <div class="top-section">
+        <div class="top-bar">
+            <div class="top-left">
+                <div class="icon-circle">
+                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👥
                 </div>
             </div>
-        </div>
-    </div>
-<div class="top-section">
-    <div class="top-bar">
-        <div class="top-left">
-            <div class="icon-circle">
-                <span style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">1</span> 👥
+            <div class="top-right">
+                <div class="btn-pill">📝 القواعد</div>
+                <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
             </div>
         </div>
-        <div class="top-right">
-            <div class="btn-pill" onclick="toggleRulesModal(true)">📝 القواعد</div>
-            <div class="icon-circle" onclick="toggleProfileModal(true)">⚙️</div>
-        </div>
-    </div>
+
         <div class="spectators-section">
-            <div class="spectators-header">
-                <span class="view-icon">👁️</span>
-                <span class="box-title">الجمهور</span>
-            </div>
+            <div class="box-title">الجمهور</div>
             <div class="spectators-list" id="spectators-list">
-                <div class="player-slot" id="main-player">
-                    <div class="player-avatar-wrap">
-                        <img src="img/avatar_snow_man.webp" id="currentAvatarImg" class="player-img">
-                    </div>
-                    <div class="player-name" id="currentPlayerName">Player</div>
                 </div>
-                <button class="join-spectators-btn" onclick="joinTeam(this, 'spectators-list')">أنضمام</button>
-            </div>
+            <button class="join-btn" style="width:100px; margin-top:5px; background:none; border:1px solid #fff;" onclick="joinTeam('spectators-list')">انضمام</button>
         </div>
+
         <div class="settings-panel">
-            <div class="panel-label">أعدادات اللعبة</div>
+            <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
             <div class="mode-options">
-                <div class="mode-card active" onclick="selectMode(this)">
+                <div class="mode-card active" id="mode-offline" onclick="setGameMode('offline')">
                     <img src="img/local.webp" class="mode-img">
-                    <div class="mode-info"><b>اوفلاين</b><span>4 لاعبين = جهاز واحد</span></div>
+                    <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
                 </div>
-                <div class="mode-card" onclick="selectMode(this)">
+                <div class="mode-card" id="mode-online" onclick="setGameMode('online')">
                     <img src="img/online.webp" class="mode-img">
-                    <div class="mode-info"><b>اونلاين</b><span>4 لاعبين = 4 أجهزة</span></div>
+                    <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
                 </div>
             </div>
-            <div class="setting-row" onclick="toggleTimerModal(true)">
+            <div class="setting-row" onclick="openTimerModal()">
                 <span style="font-size: 1.2rem;" id="mainTimerIcon">🚫</span>
                 <div style="margin-right: 10px;">
                     <b style="font-size: 0.7rem; display: block;">المؤقت</b>
@@ -323,118 +209,51 @@
             </div>
         </div>
     </div>
+
     <div class="bottom-section">
         <div class="teams-grid">
             <div class="team-box blue-box">
                 <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container"></div>
-                <button class="join-btn" onclick="joinTeam(this, 'blue-op')">أنضمام</button>
+                <div class="player-slot-container" id="blue-op-container"></div>
+                <button class="join-btn" id="btn-blue-op" onclick="joinTeam('blue-op')">أنضمام</button>
             </div>
             <div class="team-box red-box">
                 <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container"></div>
-                <button class="join-btn" onclick="joinTeam(this, 'red-op')">أنضمام</button>
+                <div class="player-slot-container" id="red-op-container"></div>
+                <button class="join-btn" id="btn-red-op" onclick="joinTeam('red-op')">أنضمام</button>
             </div>
             <div class="team-box blue-box">
                 <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container"></div>
-                <button class="join-btn" onclick="joinTeam(this, 'blue-spy')">أنضمام</button>
+                <div class="player-slot-container" id="blue-spy-container"></div>
+                <button class="join-btn" id="btn-blue-spy" onclick="joinTeam('blue-spy')">أنضمام</button>
             </div>
             <div class="team-box red-box">
                 <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container"></div>
-                <button class="join-btn" onclick="joinTeam(this, 'red-spy')">أنضمام</button>
+                <div class="player-slot-container" id="red-spy-container"></div>
+                <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
             </div>
         </div>
         <div class="footer">
-            <button class="start-btn" onclick="goToIndex()">بدء اللعبة</button>
+            <button class="start-btn" id="startBtn" onclick="location.href='game.html'">بدء اللعبة</button>
         </div>
     </div>
 </div>
-<script>
-    // متغيرات عالمية للتحكم في حالة اللاعب المحلي
-    let currentTeam = 'spectators-list';
-    let currentAvatar = "img/avatar_snow_man.webp";
-    let currentNickname = "Player";
-    function joinTeam(clickedBtn, teamId) {
-        currentTeam = teamId;
-        if (window.updatePlayerOnServer) {
-            window.updatePlayerOnServer();
-        }
-    }
-    function selectAvatar(imgElement) {
-        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
-        imgElement.classList.add('selected');
-        currentAvatar = imgElement.src.split('/').pop(); // نأخذ اسم الملف فقط
-        currentAvatar = "img/" + currentAvatar;
-        
-        document.getElementById('currentAvatarImg').src = currentAvatar;
-        
-        if (window.updatePlayerOnServer) {
-            window.updatePlayerOnServer();
-        }
-    }
-let isAdmin = false; // متغير لمعرفة هل المستخدم هو الآدمن
-function toggleProfileModal(show) {
-    const modal = document.getElementById('profileModal');
-    modal.style.display = show ? 'flex' : 'none';
-    if (!show) {
-        const inputVal = document.getElementById('nicknameInput').value;
-        if (inputVal.trim() !== "") {
-            currentNickname = inputVal;
-            // تحديث الواجهة فوراً قبل انتظار السيرفر
-            document.getElementById('currentPlayerName').innerText = currentNickname;
-            if (window.updatePlayerOnServer) {
-                window.updatePlayerOnServer();
-            }
-        }
-    }
-}
-function selectMode(element) {
-    if(!isAdmin) return;
-    document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
-    element.classList.add('active');
-
-}
-function toggleTimerModal(show) {
-    if(!isAdmin) return;
-    document.getElementById('timerModal').style.display = show ? 'flex' : 'none';
-}
-const timerConfigs = [
-    { label: "بدون مؤقت", main: "بدون", icon: "🚫", color: "#888" },
-    { label: "سريع (30 ثانية)", main: "30 ثانية", icon: "⚡", color: "#7ed321" },
-    { label: "متوسط (دقيقة)", main: "1 دقيقة", icon: "⏱️", color: "#f5a623" },
-    { label: "بطيء (دقيقتين)", main: "2 دقيقة", icon: "🐢", color: "#4a90e2" }
-];
-function updateTimerValue(val) {
-    const config = timerConfigs[val];
-    document.getElementById('modalTimerText').innerText = config.label;
-    document.getElementById('modalTimerIcon').innerText = config.icon;
-    document.getElementById('mainTimerText').innerText = config.main;
-    document.getElementById('mainTimerIcon').innerText = config.icon;
-    for(let i=0; i<=3; i++) {
-        document.getElementById('label'+i).classList.remove('active-label');
-    }
-    document.getElementById('label'+val).classList.add('active-label');
-}
-    function goToIndex() { window.location.href = "game.html"; }
-</script>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
     import { getDatabase, ref, set, onValue, onDisconnect, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
         authDomain: "codenames-5fd71.firebaseapp.com",
         projectId: "codenames-5fd71",
-        storageBucket: "codenames-5fd71.firebasestorage.app",
-        messagingSenderId: "57751572026",
-        appId: "1:57751572026:web:907eb7d57c61eb00d5af03",
-        measurementId: "G-BGXGT364NM"
+        databaseURL: "https://codenames-5fd71-default-rtdb.firebaseio.com",
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // معرفات الغرفة واللاعب
     let urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
     if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
@@ -442,88 +261,154 @@ function updateTimerValue(val) {
     let playerId = sessionStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
     sessionStorage.setItem('codenames_playerId', playerId);
 
+    // مراجع الـ Firebase
     const playersRef = ref(db, `rooms/${roomId}/players`);
     const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
     const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
-    // --- 1. نظام الآدمن ---
+    // حالة اللاعب المحلية
+    let myData = {
+        id: playerId,
+        name: "",
+        avatar: "img/avatar_snow_man.webp",
+        team: "spectators-list",
+        joinedAt: Date.now()
+    };
+    let isAdmin = false;
+    let hasJoined = false;
+
+    // --- وظائف الواجهة ---
+    window.selectAvatar = (el) => {
+        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+        el.classList.add('selected');
+        myData.avatar = el.src.split('/').pop();
+        myData.avatar = "img/" + myData.avatar;
+    };
+
+    window.saveProfile = () => {
+        const name = document.getElementById('nicknameInput').value.trim();
+        if (!name) return alert("الرجاء إدخال اسمك");
+        myData.name = name;
+        hasJoined = true;
+        document.getElementById('profileModal').style.display = 'none';
+        updateServer();
+    };
+
+    window.openProfileSettings = () => {
+        document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
+        document.getElementById('nicknameInput').value = myData.name;
+        document.getElementById('profileModal').style.display = 'flex';
+    };
+
+    window.joinTeam = (teamId) => {
+        if (!hasJoined) return;
+        myData.team = teamId;
+        updateServer();
+    };
+
+    function updateServer() {
+        if (!hasJoined) return;
+        set(myPlayerRef, {
+            ...myData,
+            lastActive: Date.now()
+        });
+    }
+
+    // --- إعدادات اللعبة (للآدمن) ---
+    window.setGameMode = (mode) => {
+        if (!isAdmin) return;
+        update(settingsRef, { mode: mode });
+    };
+
+    window.openTimerModal = () => {
+        if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
+    };
+
+    window.changeTimer = (val) => {
+        if (!isAdmin) return;
+        const configs = [
+            { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
+            { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
+            { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
+            { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
+        ];
+        update(settingsRef, { timer: configs[val] });
+    };
+
+    // --- مراقبة التغييرات ---
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val();
         if (!players) return;
-        const sortedIds = Object.keys(players).sort((a, b) => players[a].joinedAt - players[b].joinedAt);
-        const adminId = sortedIds[0];
+
+        const playerList = Object.values(players);
+        document.getElementById('playerCount').innerText = playerList.length;
+
+        // تحديد الآدمن (أول من انضم)
+        const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
+        const adminId = sorted[0].id;
         isAdmin = (playerId === adminId);
-        document.querySelector('.start-btn').style.display = isAdmin ? 'block' : 'none';
-        document.querySelector('.top-left b, .top-left span').innerText = Object.keys(players).length;
+        document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
+
         renderLobby(players, adminId);
     });
 
-    // --- 2. إرسال البيانات (تعديل: إضافة وقت الانضمام) ---
-    window.updatePlayerOnServer = async function() {
-        const snapshot = await get(myPlayerRef);
-        const existingData = snapshot.val() || {};
-        set(myPlayerRef, {
-            id: playerId,
-            name: currentNickname,
-            avatar: currentAvatar,
-            team: currentTeam,
-            joinedAt: existingData.joinedAt || Date.now(),
-            lastActive: Date.now()
-        });
-    };
+    onValue(settingsRef, (snapshot) => {
+        const s = snapshot.val();
+        if (!s) return;
+        
+        // تحديث المود
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+        if (s.mode) document.getElementById('mode-' + s.mode).classList.add('active');
 
-    // --- 3. قفل الأدوار وتحديث الواجهة ---
+        // تحديث المؤقت
+        if (s.timer) {
+            document.getElementById('mainTimerText').innerText = s.timer.main;
+            document.getElementById('mainTimerIcon').innerText = s.timer.icon;
+            document.getElementById('modalTimerText').innerText = s.timer.label;
+            document.getElementById('modalTimerIcon').innerText = s.timer.icon;
+            document.getElementById('timerSlider').value = s.timer.val;
+            for(let i=0; i<4; i++) document.getElementById('label'+i).className = (i==s.timer.val ? 'active-label':'');
+        }
+    });
+
     function renderLobby(players, adminId) {
-        const playersArray = Object.values(players);
-        document.querySelectorAll('.player-slot-container').forEach(c => c.innerHTML = '');
-        document.getElementById('spectators-list').querySelectorAll('.player-slot').forEach(p => p.remove());
-        document.querySelectorAll('.join-btn').forEach(btn => {
-            btn.innerText = "أنضمام";
-            btn.classList.remove('locked');
-            btn.disabled = false;
+        // تفريغ الحاويات
+        const containers = {
+            'spectators-list': document.getElementById('spectators-list'),
+            'blue-op': document.getElementById('blue-op-container'),
+            'red-op': document.getElementById('red-op-container'),
+            'blue-spy': document.getElementById('blue-spy-container'),
+            'red-spy': document.getElementById('red-spy-container')
+        };
+        Object.values(containers).forEach(c => c.innerHTML = '');
+        document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
+            b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
         });
 
-        playersArray.forEach(player => {
-            const isMe = player.id === playerId;
-            const isPlayerAdmin = player.id === adminId;
-            const playerHtml = `
+        Object.values(players).forEach(p => {
+            const isMe = p.id === playerId;
+            const isPlayerAdmin = p.id === adminId;
+            const html = `
                 <div class="player-slot">
                     <div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}">
-                        <img src="${player.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321;' : ''}">
+                        <img src="${p.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321' : ''}">
                     </div>
-                    <div class="player-name">${player.name} ${isMe ? '(أنت)' : ''}</div>
+                    <div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div>
                 </div>`;
-
-            if (player.team === 'spectators-list') {
-                document.getElementById('spectators-list').insertAdjacentHTML('afterbegin', playerHtml);
-            } else {
-                const teamsMap = { 'blue-op': 0, 'red-op': 1, 'blue-spy': 2, 'red-spy': 3 };
-                const index = teamsMap[player.team];
-                const container = document.querySelectorAll('.player-slot-container')[index];
-                container.innerHTML = playerHtml;
-                const btn = container.nextElementSibling; // الزر يتبع الحاوية
-                btn.innerText = "منضم";
-                btn.classList.add('locked');
-                btn.disabled = true;
+            
+            const target = containers[p.team];
+            if (target) {
+                target.insertAdjacentHTML('beforeend', html);
+                // قفل الزر للأدوار الفردية
+                if (p.team !== 'spectators-list') {
+                    const btn = document.getElementById('btn-' + p.team);
+                    if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
+                }
             }
         });
     }
 
-    // --- 4. تحديث الإعدادات (للمود) ---
-    window.updateGameSettings = function(newSettings) {
-        update(settingsRef, newSettings);
-    };
-    onValue(settingsRef, (snapshot) => {
-        const settings = snapshot.val();
-        if (!settings) return;
-        // تحديث شكل المود للجميع
-        const cards = document.querySelectorAll('.mode-card');
-        cards.forEach(card => card.classList.remove('active'));
-        if (settings.mode === 'online') cards[1].classList.add('active');
-        else cards[0].classList.add('active');
-    });
     onDisconnect(myPlayerRef).remove();
-    setInterval(() => update(myPlayerRef, { lastActive: Date.now() }), 20000);
-    window.updatePlayerOnServer();
-</script></body>
+</script>
+</body>
 </html>
