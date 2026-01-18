@@ -234,16 +234,15 @@
                 <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
             </div>
         </div>
-        <div class="footer">
-            <button class="start-btn" id="startBtn" onclick="location.href='game.html'">بدء اللعبة</button>
-        </div>
+<div class="footer">
+    <button class="start-btn" id="startBtn" onclick="window.startGame()">بدء اللعبة</button>
+</div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-
+    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
         authDomain: "codenames-5fd71.firebaseapp.com",
@@ -323,7 +322,6 @@
                 // التأكد هل يوجد شخص آخر في هذا الفريق غيري؟
                 const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
                 if (isTaken) {
-                    alert("عذراً! هذا الدور تم أخذه للتو.");
                     return; // إلغاء العملية
                 }
             }
@@ -403,6 +401,41 @@
             for(let i=0; i<4; i++) document.getElementById('label'+i).className = (i==s.timer.val ? 'active-label':'');
         }
     });
+// ... (الأكواد السابقة لـ Firebase والتعريفات تبقى كما هي)
+
+// 1. دالة بدء اللعبة (للآدمن فقط)
+window.startGame = async () => {
+    if (!isAdmin) return;
+    
+    try {
+        const snapshot = await get(settingsRef);
+        const settings = snapshot.val();
+        const mode = settings?.mode || 'offline';
+        
+        // تحديد الصفحة الهدف بناءً على المود
+        const targetPage = (mode === 'online') ? 'game_multiplayer.html' : 'game.html';
+        
+        // تحديث حالة الغرفة لجميع اللاعبين
+        await update(ref(db, `rooms/${roomId}/status`), { 
+            state: 'playing',
+            target: targetPage,
+            timestamp: Date.now() // لضمان حدوث تغيير يلاحظه المستمع
+        });
+    } catch (error) {
+        console.error("Error starting game:", error);
+    }
+};
+
+// 2. مستمع الحالة (لجميع اللاعبين)
+// هذا الجزء هو المسؤول عن نقل اللاعبين بمجرد ضغط الآدمن للزر
+onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
+    const status = snapshot.val();
+    if (status && status.state === 'playing') {
+        // الانتقال للصفحة المحددة مع تمرير رقم الغرفة
+        window.location.href = `${status.target}?r=${roomId}`;
+    }
+});
+
 
     function renderLobby(players, adminId) {
         const containers = {
@@ -440,6 +473,11 @@
                 }
             }
         });
+            const startBtn = document.getElementById('startBtn');
+    if (startBtn) {
+        startBtn.style.display = (playerId === adminId) ? 'block' : 'none';
+    }
+
     }
 
     onDisconnect(myPlayerRef).remove();
