@@ -153,7 +153,23 @@
         .player-avatar-wrap { width: 40px; height: 40px; position: relative; }
         .player-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; background: #333; }
         .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; }
-
+        /* أيقونة التاج للآدمن */
+.player-avatar-wrap.is-admin::after {
+    content: "👑";
+    position: absolute;
+    top: -12px;
+    right: -5px;
+    font-size: 1.2rem;
+    z-index: 10;
+}
+/* تعطيل الأزرار عندما يكون الدور مشغولاً */
+.join-btn.locked {
+    background: #555 !important;
+    border-color: #777 !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
         .footer { padding: 10px 15px; background: #000; height: 30%;}
         .start-btn {
             width: 100%; height: 45px; font-size: 1.1rem; font-weight: 900;
@@ -396,118 +412,161 @@
             window.updatePlayerOnServer();
         }
     }
+let isAdmin = false; // متغير لمعرفة هل المستخدم هو الآدمن
 
-    // 3. حفظ الاسم من النافذة المنبثقة
-    function toggleProfileModal(show) {
-        const modal = document.getElementById('profileModal');
-        modal.style.display = show ? 'flex' : 'none';
-        if (!show) {
-            const inputVal = document.getElementById('nicknameInput').value;
-            if (inputVal.trim() !== "") {
-                currentNickname = inputVal;
-                document.getElementById('currentPlayerName').innerText = currentNickname;
-                if (window.updatePlayerOnServer) {
-                    window.updatePlayerOnServer();
-                }
+function toggleProfileModal(show) {
+    const modal = document.getElementById('profileModal');
+    modal.style.display = show ? 'flex' : 'none';
+    if (!show) {
+        const inputVal = document.getElementById('nicknameInput').value;
+        if (inputVal.trim() !== "") {
+            currentNickname = inputVal;
+            // تحديث الواجهة فوراً قبل انتظار السيرفر
+            document.getElementById('currentPlayerName').innerText = currentNickname;
+            if (window.updatePlayerOnServer) {
+                window.updatePlayerOnServer();
             }
         }
     }
+}
 
-    // وظائف المؤقت وتغيير المود (شكلية حالياً)
-    function selectMode(element) {
-        document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
-        element.classList.add('active');
+// تعديل وظيفة اختيار المود لتكون للآدمن فقط
+function selectMode(element, modeType) {
+    if(!isAdmin) return; // منع غير الآدمن
+    if (window.updateGameSettings) {
+        window.updateGameSettings({ mode: modeType });
     }
-    function toggleTimerModal(show) { document.getElementById('timerModal').style.display = show ? 'flex' : 'none'; }
-    function updateTimerValue(val) {
-        // ... (كود المؤقت السابق)
+}
+function toggleTimerModal(show) {
+    document.getElementById('timerModal').style.display = show ? 'flex' : 'none';
+}
+
+function updateTimerValue(val) {
+    const config = timerConfigs[val];
+    document.getElementById('modalTimerText').innerText = config.label;
+    document.getElementById('modalTimerIcon').innerText = config.icon;
+    document.getElementById('mainTimerText').innerText = config.main;
+    document.getElementById('mainTimerIcon').innerText = config.icon;
+    for(let i=0; i<=3; i++) {
+        document.getElementById('label'+i).classList.remove('active-label');
     }
+    document.getElementById('label'+val).classList.add('active-label');
+}
+
     function goToIndex() { window.location.href = "game.html"; }
 </script>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
-        authDomain: "codenames-5fd71.firebaseapp.com",
-        projectId: "codenames-5fd71",
-        storageBucket: "codenames-5fd71.firebasestorage.app",
-        messagingSenderId: "57751572026",
-        appId: "1:57751572026:web:907eb7d57c61eb00d5af03",
-        measurementId: "G-BGXGT364NM"
-    };
-
+    const firebaseConfig = { /* إعداداتك كما هي */ };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     let urlParams = new URLSearchParams(window.location.search);
-    let roomId = urlParams.get('r');
-    if (!roomId) {
-        roomId = Math.random().toString(36).substring(2, 8);
-        window.history.pushState({}, '', '?r=' + roomId);
-    }
+    let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
+    if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
 
     let playerId = sessionStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
     sessionStorage.setItem('codenames_playerId', playerId);
 
     const playersRef = ref(db, `rooms/${roomId}/players`);
     const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+    const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
-    // وظيفة التحديث للسيرفر (تستخدم المتغيرات العالمية لضمان الدقة)
-    window.updatePlayerOnServer = function() {
+    // --- 1. نظام الآدمن ---
+    onValue(playersRef, (snapshot) => {
+        const players = snapshot.val();
+        if (!players) return;
+        
+        // أول لاعب في القائمة (حسب الوقت) يصبح الآدمن
+        const sortedIds = Object.keys(players).sort((a, b) => players[a].joinedAt - players[b].joinedAt);
+        const adminId = sortedIds[0];
+        isAdmin = (playerId === adminId);
+
+        // إخفاء/إظهار زر البدء بناءً على الآدمن
+        document.querySelector('.start-btn').style.display = isAdmin ? 'block' : 'none';
+        
+        // تحديث عداد اللاعبين
+        document.querySelector('.top-left b, .top-left span').innerText = Object.keys(players).length;
+
+        renderLobby(players, adminId);
+    });
+
+    // --- 2. إرسال البيانات (تعديل: إضافة وقت الانضمام) ---
+    window.updatePlayerOnServer = async function() {
+        const snapshot = await get(myPlayerRef);
+        const existingData = snapshot.val() || {};
+        
         set(myPlayerRef, {
             id: playerId,
             name: currentNickname,
             avatar: currentAvatar,
             team: currentTeam,
+            joinedAt: existingData.joinedAt || Date.now(),
             lastActive: Date.now()
         });
     };
 
-    // منع حذف اللاعب المفاجئ (OnDisconnect)
-    onDisconnect(myPlayerRef).remove();
-
-    // "نبضات القلب" - تحديث الوقت كل 20 ثانية لمنع Firebase من اعتبار اللاعب خامل
-    setInterval(() => {
-        update(myPlayerRef, { lastActive: Date.now() });
-    }, 20000);
-
-    onValue(playersRef, (snapshot) => {
-        const players = snapshot.val();
+    // --- 3. قفل الأدوار وتحديث الواجهة ---
+    function renderLobby(players, adminId) {
+        const playersArray = Object.values(players);
         
-        // تنظيف الواجهة
+        // تصفير الحاويات والأزرار
         document.querySelectorAll('.player-slot-container').forEach(c => c.innerHTML = '');
-        const spectatorsList = document.getElementById('spectators-list');
-        spectatorsList.querySelectorAll('.player-slot').forEach(p => p.remove());
+        document.getElementById('spectators-list').querySelectorAll('.player-slot').forEach(p => p.remove());
+        document.querySelectorAll('.join-btn').forEach(btn => {
+            btn.innerText = "أنضمام";
+            btn.classList.remove('locked');
+            btn.disabled = false;
+        });
 
-        if (!players) return;
-
-        Object.values(players).forEach(player => {
+        playersArray.forEach(player => {
             const isMe = player.id === playerId;
+            const isPlayerAdmin = player.id === adminId;
             const playerHtml = `
                 <div class="player-slot">
-                    <div class="player-avatar-wrap">
+                    <div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}">
                         <img src="${player.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321;' : ''}">
                     </div>
                     <div class="player-name">${player.name} ${isMe ? '(أنت)' : ''}</div>
                 </div>`;
 
             if (player.team === 'spectators-list') {
-                spectatorsList.insertAdjacentHTML('afterbegin', playerHtml);
+                document.getElementById('spectators-list').insertAdjacentHTML('afterbegin', playerHtml);
             } else {
                 const teamsMap = { 'blue-op': 0, 'red-op': 1, 'blue-spy': 2, 'red-spy': 3 };
                 const index = teamsMap[player.team];
-                if (index !== undefined) {
-                    document.querySelectorAll('.player-slot-container')[index].innerHTML = playerHtml;
-                }
+                const container = document.querySelectorAll('.player-slot-container')[index];
+                container.innerHTML = playerHtml;
+                
+                // قفل الزر لهذا الدور
+                const btn = container.nextElementSibling; // الزر يتبع الحاوية
+                btn.innerText = "منضم";
+                btn.classList.add('locked');
+                btn.disabled = true;
             }
         });
+    }
+
+    // --- 4. تحديث الإعدادات (للمود) ---
+    window.updateGameSettings = function(newSettings) {
+        update(settingsRef, newSettings);
+    };
+
+    onValue(settingsRef, (snapshot) => {
+        const settings = snapshot.val();
+        if (!settings) return;
+        // تحديث شكل المود للجميع
+        const cards = document.querySelectorAll('.mode-card');
+        cards.forEach(card => card.classList.remove('active'));
+        if (settings.mode === 'online') cards[1].classList.add('active');
+        else cards[0].classList.add('active');
     });
 
-    // تسجيل الدخول الأول
+    onDisconnect(myPlayerRef).remove();
+    setInterval(() => update(myPlayerRef, { lastActive: Date.now() }), 20000);
     window.updatePlayerOnServer();
-</script>
-</body>
+</script></body>
 </html>
