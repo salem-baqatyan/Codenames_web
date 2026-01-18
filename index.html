@@ -460,8 +460,16 @@ function updateTimerValue(val) {
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
     import { getDatabase, ref, set, onValue, onDisconnect, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-    const firebaseConfig = { /* إعداداتك كما هي */ };
-    const app = initializeApp(firebaseConfig);
+    const firebaseConfig = {
+        apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
+        authDomain: "codenames-5fd71.firebaseapp.com",
+        projectId: "codenames-5fd71",
+        storageBucket: "codenames-5fd71.firebasestorage.app",
+        messagingSenderId: "57751572026",
+        appId: "1:57751572026:web:907eb7d57c61eb00d5af03",
+        measurementId: "G-BGXGT364NM"
+    };
+        const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     let urlParams = new URLSearchParams(window.location.search);
