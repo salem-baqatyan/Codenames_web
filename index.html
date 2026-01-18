@@ -547,12 +547,24 @@
 
 <script>
 // --- الملف الشخصي ---
+// function toggleProfileModal(show) {
+//     const modal = document.getElementById('profileModal');
+//     modal.style.display = show ? 'flex' : 'none';
+//     if (!show) {
+//         const newName = document.getElementById('nicknameInput').value;
+//         if(newName.trim() !== "") document.getElementById('currentPlayerName').innerText = newName;
+//     }
+// }
 function toggleProfileModal(show) {
     const modal = document.getElementById('profileModal');
     modal.style.display = show ? 'flex' : 'none';
     if (!show) {
         const newName = document.getElementById('nicknameInput').value;
-        if(newName.trim() !== "") document.getElementById('currentPlayerName').innerText = newName;
+        if(newName.trim() !== "") {
+            document.getElementById('currentPlayerName').innerText = newName;
+            // تحديث السيرفر بالاسم الجديد
+            window.updatePlayerOnServer();
+        }
     }
 }
 
@@ -618,22 +630,27 @@ function selectMode(element) {
     document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
     element.classList.add('active');
 }
-
 function joinTeam(clickedBtn, teamId) {
-    const playerElement = document.getElementById('main-player');
-    resetAllButtons();
-    clickedBtn.innerText = "منضم";
-    clickedBtn.style.background = "transparent";
-    clickedBtn.style.border = "1.5px solid #fff";
-    clickedBtn.style.boxShadow = "none";
-
-    if (teamId === 'spectators-list') {
-        document.getElementById('spectators-list').insertBefore(playerElement, clickedBtn);
-        clickedBtn.innerText = "أنضمام";
-    } else {
-        clickedBtn.previousElementSibling.appendChild(playerElement);
+    // بدلاً من تحريك العناصر يدوياً، نحدث السيرفر والسيرفر سيقوم بتحديث الجميع
+    if(window.updatePlayerOnServer) {
+        window.updatePlayerOnServer(teamId);
     }
 }
+// function joinTeam(clickedBtn, teamId) {
+//     const playerElement = document.getElementById('main-player');
+//     resetAllButtons();
+//     clickedBtn.innerText = "منضم";
+//     clickedBtn.style.background = "transparent";
+//     clickedBtn.style.border = "1.5px solid #fff";
+//     clickedBtn.style.boxShadow = "none";
+
+//     if (teamId === 'spectators-list') {
+//         document.getElementById('spectators-list').insertBefore(playerElement, clickedBtn);
+//         clickedBtn.innerText = "أنضمام";
+//     } else {
+//         clickedBtn.previousElementSibling.appendChild(playerElement);
+//     }
+// }
 
 function resetAllButtons() {
     document.querySelectorAll('.join-btn').forEach(btn => {
@@ -648,6 +665,100 @@ function resetAllButtons() {
 }
 
 function goToIndex() { window.location.href = "game.html"; }
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, push, onDisconnect } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
+    authDomain: "codenames-5fd71.firebaseapp.com",
+    projectId: "codenames-5fd71",
+    storageBucket: "codenames-5fd71.firebasestorage.app",
+    messagingSenderId: "57751572026",
+    appId: "1:57751572026:web:907eb7d57c61eb00d5af03",
+    measurementId: "G-BGXGT364NM"
+  };
+
+  // 1. تشغيل Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // 2. إدارة الرابط (الردهة)
+  let urlParams = new URLSearchParams(window.location.search);
+  let roomId = urlParams.get('r');
+
+  if (!roomId) {
+      // إذا دخل الشخص للموقع بدون كود ردهة، نصنع له كود جديد
+      roomId = Math.random().toString(36).substring(2, 8);
+      window.history.pushState({}, '', '?r=' + roomId);
+  }
+
+  // 3. هوية اللاعب الحالي (تخزن في المتصفح لكي لا تتغير عند تحديث الصفحة)
+  let playerId = localStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
+  localStorage.setItem('codenames_playerId', playerId);
+
+  // المراجع في قاعدة البيانات
+  const roomRef = ref(db, 'rooms/' + roomId);
+  const playersRef = ref(db, 'rooms/' + roomId + '/players');
+  const myPlayerRef = ref(db, 'rooms/' + roomId + '/players/' + playerId);
+
+  // 4. وظيفة تحديث بياناتي في السيرفر
+  window.updatePlayerOnServer = function(teamRole = 'spectators-list') {
+      const name = document.getElementById('currentPlayerName').innerText;
+      const avatar = document.getElementById('currentAvatarImg').getAttribute('src');
+      
+      set(myPlayerRef, {
+          id: playerId,
+          name: name,
+          avatar: avatar,
+          team: teamRole,
+          lastActive: Date.now()
+      });
+  };
+
+  // حذف اللاعب عند إغلاق المتصفح (اختياري)
+  onDisconnect(myPlayerRef).remove();
+
+  // 5. الاستماع لأي تغيير في الردهة (عند دخول أي لاعب أو تغيير فريقه)
+  onValue(playersRef, (snapshot) => {
+      const players = snapshot.val();
+      if (!players) return;
+
+      // تنظيف الأماكن في الصفحة قبل إعادة الرسم
+      document.querySelectorAll('.player-slot-container').forEach(c => c.innerHTML = '');
+      document.getElementById('spectators-list').querySelectorAll('.player-slot').forEach(p => p.remove());
+
+      // توزيع اللاعبين على الفرق بناءً على البيانات القادمة من السيرفر
+      Object.values(players).forEach(player => {
+          const playerHtml = `
+            <div class="player-slot" id="player-${player.id}">
+                <div class="player-avatar-wrap">
+                    <img src="${player.avatar}" class="player-img">
+                </div>
+                <div class="player-name">${player.name}</div>
+            </div>`;
+
+          if (player.team === 'spectators-list') {
+              const list = document.getElementById('spectators-list');
+              list.insertAdjacentHTML('afterbegin', playerHtml);
+          } else {
+              // ابحث عن الحاوية الصحيحة بناءً على الـ teamId
+              // ملاحظة: قمت بربطها بـ previousElementSibling للزر في كودك الأصلي
+              const containers = {
+                  'blue-op': 0, 'red-op': 1, 'blue-spy': 2, 'red-spy': 3
+              };
+              const index = containers[player.team];
+              if (index !== undefined) {
+                  document.querySelectorAll('.player-slot-container')[index].innerHTML = playerHtml;
+              }
+          }
+      });
+  });
+
+  // تحديث الدخول الأول
+  window.updatePlayerOnServer();
+
 </script>
 </body>
 </html>
