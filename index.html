@@ -268,182 +268,6 @@
     </div>
 
 
-    <div class="modal-overlay" id="rulesModal">
-        <div class="settings-modal">
-            <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
-            <div class="modal-header">كيفية اللعب</div>
-            <div class="rules-intro">
-                كودنايمز هي لعبة تعتمد على ربط الكلمات والعمل الجماعي بين فريقين: <b>الأزرق</b> و <b>الأحمر</b>. يحاول كل فريق تخمين كلماتهم السرية قبل الفريق الآخر.
-            </div>
-
-            <div id="rulesAccordion">
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎮 الإعداد والأدوار</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>ينقسم اللاعبون إلى فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</li>
-                            <li>يجب أن يحتوي كل فريق على <b>جاسوس (Spymaster)</b> واحد على الأقل و<b>عميل (Operative)</b>.</li>
-                            <li>يتم عرض شبكة 5×5 مكونة من 25 بطاقة كودنايمز على الطاولة.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕵️ قادة الجواسيس</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
-                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة</b> و <b>رقم</b> لمساعدة فريقه.</li>
-                        </ul>
-                        <div class="log-row row-red">
-                                <div class="log-clue-item log-clue-red">
-                                <img src="img/avatar_snow_man.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
-                                <div class="log-text-clue">حيوان</div>
-                                <div class="log-num-circle">3</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🙋‍♂️ العملاء (Operatives)</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>لا يعرف العملاء هويات البطاقات مسبقاً.</li>
-                            <li>يعملون معاً لتخمين الكلمات الصحيحة بناءً على تلميح قائد الجواسيس.</li>
-                            <li>يجب عليهم تجنب كلمات الفريق المنافس، وبطاقة الاغتيال.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🟦 أنواع البطاقات</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>يتم تعيين كل كلمة في الشبكة سرياً لواحد من أربعة أصناف:</p>
-                        <ul>
-                            <li><b>بطاقات زرقاء:</b> يجب على الفريق الأزرق العثور عليها.</li>
-                            <li><b>بطاقات حمراء:</b> يجب على الفريق الأحمر العثور عليها.</li>
-                            <li><b>المارة الأبرياء:</b> بطاقات محايدة تنهي الدور فقط.</li>
-                            <li><b>المغتال (البطاقة السوداء):</b> إذا لمستها، يخسر فريقك فوراً!</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>💬 إعطاء التلميحات</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>عندما يأتي دورك كقائد جاسوس:</p>
-                        <ol>
-                            <li>ابحث عن كلمة واحدة تربط أكبر عدد ممكن من بطاقات فريقك.</li>
-                            <li>أضف رقماً يوضح عدد الكلمات المرتبطة بهذا التلميح.</li>
-                            <li><b>تنبيه:</b> لا يصح إعطاء تلميح هو جزء من كلمة موجودة على الشبكة!</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🧠 التلميحات الصالحة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يجب أن يتعلق التلميح <b>بمعنى</b> الكلمات وليس بطريقة كتابتها أو موقعها.</li>
-                            <li>لا يجوز استخدام ترجمات للكلمات الموجودة بلغات أخرى.</li>
-                            <li>إذا لم تكن متأكداً من قانونية التلميح، اسأل القائد المنافس سرياً.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕹️ التخمين (للعملاء)</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>بعد سماع التلميح، يقوم العملاء بـ:</p>
-                        <ol>
-                            <li>مناقشة الكلمات المحتملة فيما بينهم.</li>
-                            <li>تحديد اختيارهم عن طريق الضغط على الكلمة.</li>
-                            <li>إذا كان التخمين صحيحاً، يمكنك الاستمرار بتخمين كلمة إضافية (الرقم المذكور + 1).</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔢 أرقام التلميحات الخاصة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>التلميح 0:</b> يعني أن لا توجد أي كلمة من كلمات فريقك ترتبط بالتلميح (يُستخدم لإبعاد الفريق عن خطر المغتال).</li>
-                            <li><b>التلميح لا نهائي (∞):</b> يسمح للعملاء بالتخمين بلا حدود حتى يخطئوا أو يتوقفوا.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔄 تدفق اللعبة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>تنتهي نوبة الفريق في الحالات التالية:</p>
-                        <ul>
-                            <li>اختيار بطاقة "مار بريء" أو بطاقة الفريق المنافس.</li>
-                            <li>استنفاد عدد المحاولات المسموح بها.</li>
-                            <li>اختيار الفريق التوقف طواعيةً لعدم المخاطرة.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎯 الفوز والخسارة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>الفوز:</b> الفريق الذي ينجح في كشف جميع بطاقاته أولاً هو الفائز.</li>
-                            <li><b>الخسارة الفورية:</b> الفريق الذي يلمس بطاقة "المغتال" الأسود يخسر اللعبة فوراً مهما كانت نتيجته.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🥳 نصائح ختامية</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>كودنايمز لعبة اجتماعية؛ حافظ على روح المنافسة الممتعة.</li>
-                            <li>كقائد جاسوس، حاول الحفاظ على "وجه البوكر" ولا تعطي أي إشارات جسدية.</li>
-                            <li>استمتع بالتفكير الإبداعي والربط العجيب بين الكلمات!</li>
-                        </ul>
-                    </div>
-                </div>
-                
-            </div>
-
-            <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
-        </div>
-    </div>
     <div class="modal-overlay" id="timerModal">
         <div class="settings-modal">
             <span class="close-icon" onclick="toggleTimerModal(false)">✕</span>
@@ -546,219 +370,150 @@
 </div>
 
 <script>
-// --- الملف الشخصي ---
-// function toggleProfileModal(show) {
-//     const modal = document.getElementById('profileModal');
-//     modal.style.display = show ? 'flex' : 'none';
-//     if (!show) {
-//         const newName = document.getElementById('nicknameInput').value;
-//         if(newName.trim() !== "") document.getElementById('currentPlayerName').innerText = newName;
-//     }
-// }
-function toggleProfileModal(show) {
-    const modal = document.getElementById('profileModal');
-    modal.style.display = show ? 'flex' : 'none';
-    if (!show) {
-        const newName = document.getElementById('nicknameInput').value;
-        if(newName.trim() !== "") {
-            document.getElementById('currentPlayerName').innerText = newName;
-            // تحديث السيرفر بالاسم الجديد
-            window.updatePlayerOnServer();
+    // متغيرات عالمية للتحكم في حالة اللاعب المحلي
+    let currentTeam = 'spectators-list';
+
+    // 1. وظيفة تغيير الفريق
+    function joinTeam(clickedBtn, teamId) {
+        currentTeam = teamId;
+        if (window.updatePlayerOnServer) {
+            window.updatePlayerOnServer(teamId);
         }
     }
-}
 
-function selectAvatar(imgElement) {
-    document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
-    imgElement.classList.add('selected');
-    document.getElementById('currentAvatarImg').src = imgElement.src;
-}
-
-function leaveMatch() {
-    if(confirm("هل أنت متأكد من رغبتك في مغادرة اللعبة؟")) {
-        window.location.reload(); 
+    // 2. وظيفة اختيار الأفاتار (تم تحديثها لترسل للسيرفر فوراً)
+    function selectAvatar(imgElement) {
+        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+        imgElement.classList.add('selected');
+        document.getElementById('currentAvatarImg').src = imgElement.src;
+        
+        // إبلاغ السيرفر بتغيير الصورة
+        if (window.updatePlayerOnServer) {
+            window.updatePlayerOnServer(currentTeam);
+        }
     }
-}
 
-// --- وظائف القواعد (جديد) ---
-function toggleRulesModal(show) {
-    document.getElementById('rulesModal').style.display = show ? 'flex' : 'none';
-}
+    // 3. حفظ الاسم من النافذة المنبثقة
+    function toggleProfileModal(show) {
+        const modal = document.getElementById('profileModal');
+        modal.style.display = show ? 'flex' : 'none';
+        if (!show) {
+            const newName = document.getElementById('nicknameInput').value;
+            if (newName.trim() !== "") {
+                document.getElementById('currentPlayerName').innerText = newName;
+                if (window.updatePlayerOnServer) {
+                    window.updatePlayerOnServer(currentTeam);
+                }
+            }
+        }
+    }
 
-function toggleAccordion(header) {
-    const content = header.nextElementSibling;
-    const isVisible = content.style.display === 'block';
+    // بقية الوظائف الشكلية
+    function selectMode(element) {
+        document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
+        element.classList.add('active');
+    }
     
-    // إغلاق الكل أولاً
-    document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none');
-    document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
+    function toggleTimerModal(show) { document.getElementById('timerModal').style.display = show ? 'flex' : 'none'; }
     
-    // فتح المختار فقط
-    if (!isVisible) {
-        content.style.display = 'block';
-        header.classList.add('active');
+    function updateTimerValue(val) {
+        const config = timerConfigs[val];
+        document.getElementById('modalTimerText').innerText = config.label;
+        document.getElementById('modalTimerIcon').innerText = config.icon;
+        document.getElementById('mainTimerText').innerText = config.main;
+        document.getElementById('mainTimerIcon').innerText = config.icon;
+        for(let i=0; i<=3; i++) document.getElementById('label'+i).classList.remove('active-label');
+        document.getElementById('label'+val).classList.add('active-label');
     }
-}
 
-// --- إعدادات المؤقت ---
-const timerConfigs = [
-    { label: "بدون مؤقت", main: "بدون", icon: "🚫", color: "#888" },
-    { label: "سريع (30 ثانية)", main: "30 ثانية", icon: "⚡", color: "#7ed321" },
-    { label: "متوسط (دقيقة)", main: "1 دقيقة", icon: "⏱️", color: "#f5a623" },
-    { label: "بطيء (دقيقتين)", main: "2 دقيقة", icon: "🐢", color: "#4a90e2" }
-];
-
-function toggleTimerModal(show) {
-    document.getElementById('timerModal').style.display = show ? 'flex' : 'none';
-}
-
-function updateTimerValue(val) {
-    const config = timerConfigs[val];
-    document.getElementById('modalTimerText').innerText = config.label;
-    document.getElementById('modalTimerIcon').innerText = config.icon;
-    document.getElementById('mainTimerText').innerText = config.main;
-    document.getElementById('mainTimerIcon').innerText = config.icon;
-    for(let i=0; i<=3; i++) {
-        document.getElementById('label'+i).classList.remove('active-label');
-    }
-    document.getElementById('label'+val).classList.add('active-label');
-}
-
-
-// --- وظائف اللعبة الأساسية ---
-function selectMode(element) {
-    document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
-    element.classList.add('active');
-}
-function joinTeam(clickedBtn, teamId) {
-    // بدلاً من تحريك العناصر يدوياً، نحدث السيرفر والسيرفر سيقوم بتحديث الجميع
-    if(window.updatePlayerOnServer) {
-        window.updatePlayerOnServer(teamId);
-    }
-}
-// function joinTeam(clickedBtn, teamId) {
-//     const playerElement = document.getElementById('main-player');
-//     resetAllButtons();
-//     clickedBtn.innerText = "منضم";
-//     clickedBtn.style.background = "transparent";
-//     clickedBtn.style.border = "1.5px solid #fff";
-//     clickedBtn.style.boxShadow = "none";
-
-//     if (teamId === 'spectators-list') {
-//         document.getElementById('spectators-list').insertBefore(playerElement, clickedBtn);
-//         clickedBtn.innerText = "أنضمام";
-//     } else {
-//         clickedBtn.previousElementSibling.appendChild(playerElement);
-//     }
-// }
-
-function resetAllButtons() {
-    document.querySelectorAll('.join-btn').forEach(btn => {
-        btn.innerText = "أنضمام";
-        btn.style.background = "linear-gradient(to bottom, #7ed321, #417505)";
-        btn.style.border = "1.5px solid #b8e986";
-        btn.style.boxShadow = "0 2px 0 #2e5a03";
-    });
-    const specBtn = document.querySelector('.join-spectators-btn');
-    specBtn.innerText = "أنضمام";
-    specBtn.style.border = "1.5px solid #fff";
-}
-
-function goToIndex() { window.location.href = "game.html"; }
+    function goToIndex() { window.location.href = "game.html"; }
 </script>
+
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue, push, onDisconnect } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
-    authDomain: "codenames-5fd71.firebaseapp.com",
-    projectId: "codenames-5fd71",
-    storageBucket: "codenames-5fd71.firebasestorage.app",
-    messagingSenderId: "57751572026",
-    appId: "1:57751572026:web:907eb7d57c61eb00d5af03",
-    measurementId: "G-BGXGT364NM"
-  };
+    const firebaseConfig = {
+        apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
+        authDomain: "codenames-5fd71.firebaseapp.com",
+        projectId: "codenames-5fd71",
+        storageBucket: "codenames-5fd71.firebasestorage.app",
+        messagingSenderId: "57751572026",
+        appId: "1:57751572026:web:907eb7d57c61eb00d5af03",
+        measurementId: "G-BGXGT364NM"
+    };
 
-  // 1. تشغيل Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-  // 2. إدارة الرابط (الردهة)
-  let urlParams = new URLSearchParams(window.location.search);
-  let roomId = urlParams.get('r');
+    // إدارة الغرفة
+    let urlParams = new URLSearchParams(window.location.search);
+    let roomId = urlParams.get('r');
+    if (!roomId) {
+        roomId = Math.random().toString(36).substring(2, 8);
+        window.history.pushState({}, '', '?r=' + roomId);
+    }
 
-  if (!roomId) {
-      // إذا دخل الشخص للموقع بدون كود ردهة، نصنع له كود جديد
-      roomId = Math.random().toString(36).substring(2, 8);
-      window.history.pushState({}, '', '?r=' + roomId);
-  }
+    // ميزة الدخول بجهازين: سنستخدم SessionStorage بدلاً من LocalStorage 
+    // لكي يعاملك السيرفر كمتصفح جديد إذا فتحت نافذة جديدة أو جهازاً جديداً
+    let playerId = sessionStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
+    sessionStorage.setItem('codenames_playerId', playerId);
 
-  // 3. هوية اللاعب الحالي (تخزن في المتصفح لكي لا تتغير عند تحديث الصفحة)
-  let playerId = localStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
-  localStorage.setItem('codenames_playerId', playerId);
+    const playersRef = ref(db, `rooms/${roomId}/players`);
+    const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 
-  // المراجع في قاعدة البيانات
-  const roomRef = ref(db, 'rooms/' + roomId);
-  const playersRef = ref(db, 'rooms/' + roomId + '/players');
-  const myPlayerRef = ref(db, 'rooms/' + roomId + '/players/' + playerId);
+    // وظيفة التحديث الأساسية
+    window.updatePlayerOnServer = function(teamRole = 'spectators-list') {
+        const name = document.getElementById('nicknameInput').value || "Player";
+        const avatar = document.getElementById('currentAvatarImg').getAttribute('src');
+        
+        set(myPlayerRef, {
+            id: playerId,
+            name: name,
+            avatar: avatar,
+            team: teamRole,
+            lastActive: Date.now()
+        });
+    };
 
-  // 4. وظيفة تحديث بياناتي في السيرفر
-  window.updatePlayerOnServer = function(teamRole = 'spectators-list') {
-      const name = document.getElementById('currentPlayerName').innerText;
-      const avatar = document.getElementById('currentAvatarImg').getAttribute('src');
-      
-      set(myPlayerRef, {
-          id: playerId,
-          name: name,
-          avatar: avatar,
-          team: teamRole,
-          lastActive: Date.now()
-      });
-  };
+    onDisconnect(myPlayerRef).remove();
 
-  // حذف اللاعب عند إغلاق المتصفح (اختياري)
-  onDisconnect(myPlayerRef).remove();
+    // الاستماع للتغييرات وتحديث الواجهة
+    onValue(playersRef, (snapshot) => {
+        const players = snapshot.val();
+        
+        // إفراغ الحاويات
+        document.querySelectorAll('.player-slot-container').forEach(c => c.innerHTML = '');
+        const spectatorsList = document.getElementById('spectators-list');
+        // نحذف فقط اللاعبين (player-slot) ونترك زر الانضمام
+        spectatorsList.querySelectorAll('.player-slot').forEach(p => p.remove());
 
-  // 5. الاستماع لأي تغيير في الردهة (عند دخول أي لاعب أو تغيير فريقه)
-  onValue(playersRef, (snapshot) => {
-      const players = snapshot.val();
-      if (!players) return;
+        if (!players) return;
 
-      // تنظيف الأماكن في الصفحة قبل إعادة الرسم
-      document.querySelectorAll('.player-slot-container').forEach(c => c.innerHTML = '');
-      document.getElementById('spectators-list').querySelectorAll('.player-slot').forEach(p => p.remove());
+        Object.values(players).forEach(player => {
+            const isMe = player.id === playerId;
+            const playerHtml = `
+                <div class="player-slot" id="player-${player.id}">
+                    <div class="player-avatar-wrap">
+                        <img src="${player.avatar}" class="player-img" style="${isMe ? 'border-color: #7ed321;' : ''}">
+                    </div>
+                    <div class="player-name">${player.name} ${isMe ? '(أنت)' : ''}</div>
+                </div>`;
 
-      // توزيع اللاعبين على الفرق بناءً على البيانات القادمة من السيرفر
-      Object.values(players).forEach(player => {
-          const playerHtml = `
-            <div class="player-slot" id="player-${player.id}">
-                <div class="player-avatar-wrap">
-                    <img src="${player.avatar}" class="player-img">
-                </div>
-                <div class="player-name">${player.name}</div>
-            </div>`;
+            if (player.team === 'spectators-list') {
+                spectatorsList.insertAdjacentHTML('afterbegin', playerHtml);
+            } else {
+                const teamsMap = { 'blue-op': 0, 'red-op': 1, 'blue-spy': 2, 'red-spy': 3 };
+                const index = teamsMap[player.team];
+                if (index !== undefined) {
+                    document.querySelectorAll('.player-slot-container')[index].innerHTML = playerHtml;
+                }
+            }
+        });
+    });
 
-          if (player.team === 'spectators-list') {
-              const list = document.getElementById('spectators-list');
-              list.insertAdjacentHTML('afterbegin', playerHtml);
-          } else {
-              // ابحث عن الحاوية الصحيحة بناءً على الـ teamId
-              // ملاحظة: قمت بربطها بـ previousElementSibling للزر في كودك الأصلي
-              const containers = {
-                  'blue-op': 0, 'red-op': 1, 'blue-spy': 2, 'red-spy': 3
-              };
-              const index = containers[player.team];
-              if (index !== undefined) {
-                  document.querySelectorAll('.player-slot-container')[index].innerHTML = playerHtml;
-              }
-          }
-      });
-  });
-
-  // تحديث الدخول الأول
-  window.updatePlayerOnServer();
-
+    // الدخول الأول للردهة
+    window.updatePlayerOnServer();
 </script>
 </body>
 </html>
