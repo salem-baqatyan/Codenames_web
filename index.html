@@ -130,6 +130,7 @@
         .avatar-option.selected { border-color: #7ed321; transform: scale(1.1); }
         .nickname-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; font-size: 1rem; outline: none; margin-top: 10px;}
         .save-btn { width: 100%; background: var(--green-action); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1rem; }
+        .leave-btn { width: 100%; background: #c0392b; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
 
         .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.6rem; color: #888; }
         .active-label { color: #7ed321; font-weight: bold; }
@@ -140,7 +141,7 @@
 <div class="mobile-wrapper">
     <div class="modal-overlay" id="profileModal" style="display: flex;">
         <div class="settings-modal">
-            <div class="modal-header" id="profileHeader">أهلاً بك! جهز ملفك</div>
+            <div class="modal-header" id="profileHeader" style="font-weight: bold; margin-bottom: 10px;">أهلاً بك! جهز ملفك</div>
             <div class="avatar-selector">
                 <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
                 <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
@@ -149,6 +150,7 @@
             </div>
             <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
             <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
+            <button id="leaveRoomBtn" class="leave-btn" style="display: none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
         </div>
     </div>
 
@@ -183,8 +185,7 @@
 
         <div class="spectators-section">
             <div class="box-title">الجمهور</div>
-            <div class="spectators-list" id="spectators-list">
-                </div>
+            <div class="spectators-list" id="spectators-list"></div>
             <button class="join-btn" style="width:100px; margin-top:5px; background:none; border:1px solid #fff;" onclick="joinTeam('spectators-list')">انضمام</button>
         </div>
 
@@ -241,7 +242,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
@@ -253,7 +254,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // معرفات الغرفة واللاعب
     let urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
     if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
@@ -261,12 +261,10 @@
     let playerId = sessionStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
     sessionStorage.setItem('codenames_playerId', playerId);
 
-    // مراجع الـ Firebase
     const playersRef = ref(db, `rooms/${roomId}/players`);
     const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
     const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
-    // حالة اللاعب المحلية
     let myData = {
         id: playerId,
         name: "",
@@ -281,8 +279,7 @@
     window.selectAvatar = (el) => {
         document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
         el.classList.add('selected');
-        myData.avatar = el.src.split('/').pop();
-        myData.avatar = "img/" + myData.avatar;
+        myData.avatar = "img/" + el.src.split('/').pop();
     };
 
     window.saveProfile = () => {
@@ -297,13 +294,46 @@
     window.openProfileSettings = () => {
         document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
         document.getElementById('nicknameInput').value = myData.name;
+        document.getElementById('leaveRoomBtn').style.display = 'block'; // إظهار زر المغادرة
         document.getElementById('profileModal').style.display = 'flex';
     };
 
+    window.leaveLobby = () => {
+        if(confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
+            remove(myPlayerRef).then(() => {
+                location.href = 'index.html'; // أو الصفحة الرئيسية
+            });
+        }
+    };
+
+    // --- الحل الجذري لمشكلة الانضمام المتزامن ---
     window.joinTeam = (teamId) => {
         if (!hasJoined) return;
-        myData.team = teamId;
-        updateServer();
+        
+        // إذا كان الانضمام للجمهور، لا نحتاج لمعاملة معقدة (لأنه يتسع للكل)
+        if (teamId === 'spectators-list') {
+            myData.team = teamId;
+            updateServer();
+            return;
+        }
+
+        // استخدام Transaction للتأكد من أن الدور فارغ
+        runTransaction(playersRef, (players) => {
+            if (players) {
+                // التأكد هل يوجد شخص آخر في هذا الفريق غيري؟
+                const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
+                if (isTaken) {
+                    alert("عذراً! هذا الدور تم أخذه للتو.");
+                    return; // إلغاء العملية
+                }
+            }
+            // إذا كان شاغراً، قم بتحديث بياناتي داخل القائمة
+            if (!players) players = {};
+            if (!players[playerId]) players[playerId] = myData;
+            players[playerId].team = teamId;
+            myData.team = teamId; // تحديث الحالة المحلية أيضاً
+            return players;
+        });
     };
 
     function updateServer() {
@@ -314,7 +344,7 @@
         });
     }
 
-    // --- إعدادات اللعبة (للآدمن) ---
+    // --- إعدادات اللعبة ---
     window.setGameMode = (mode) => {
         if (!isAdmin) return;
         update(settingsRef, { mode: mode });
@@ -343,11 +373,16 @@
         const playerList = Object.values(players);
         document.getElementById('playerCount').innerText = playerList.length;
 
-        // تحديد الآدمن (أول من انضم)
+        // توريث الإشراف: ترتيب اللاعبين حسب وقت الانضمام
         const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
         const adminId = sorted[0].id;
         isAdmin = (playerId === adminId);
+        
         document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
+        
+        // إخفاء إعدادات التحكم عن غير الآدمن
+        const adminElements = document.querySelectorAll('.settings-panel');
+        adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
 
         renderLobby(players, adminId);
     });
@@ -356,11 +391,9 @@
         const s = snapshot.val();
         if (!s) return;
         
-        // تحديث المود
         document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
         if (s.mode) document.getElementById('mode-' + s.mode).classList.add('active');
 
-        // تحديث المؤقت
         if (s.timer) {
             document.getElementById('mainTimerText').innerText = s.timer.main;
             document.getElementById('mainTimerIcon').innerText = s.timer.icon;
@@ -372,7 +405,6 @@
     });
 
     function renderLobby(players, adminId) {
-        // تفريغ الحاويات
         const containers = {
             'spectators-list': document.getElementById('spectators-list'),
             'blue-op': document.getElementById('blue-op-container'),
@@ -380,7 +412,10 @@
             'blue-spy': document.getElementById('blue-spy-container'),
             'red-spy': document.getElementById('red-spy-container')
         };
+        
         Object.values(containers).forEach(c => c.innerHTML = '');
+        
+        // إعادة تهيئة الأزرار
         document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
             b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
         });
@@ -399,7 +434,6 @@
             const target = containers[p.team];
             if (target) {
                 target.insertAdjacentHTML('beforeend', html);
-                // قفل الزر للأدوار الفردية
                 if (p.team !== 'spectators-list') {
                     const btn = document.getElementById('btn-' + p.team);
                     if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
