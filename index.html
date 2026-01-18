@@ -236,7 +236,7 @@
 <body>
 
 <div class="mobile-wrapper">
-    <div class="modal-overlay" id="profileModal">
+        <div class="modal-overlay" id="profileModal">
         <div class="settings-modal">
             <div class="modal-header">إعدادات الملف الشخصي</div>
             <div class="setting-item">
@@ -256,25 +256,6 @@
             <button class="close-modal-btn" onclick="toggleProfileModal(false)">حفظ وإغلاق</button>
         </div>
     </div>
-<div class="modal-overlay" id="firstLoginModal" style="display: flex;">
-    <div class="settings-modal">
-        <div class="modal-header">أهلاً بك! جهز ملفك الشخصي</div>
-        <div class="setting-item">
-            <label>اختر لقبك</label>
-            <input type="text" id="firstNicknameInput" class="nickname-input" placeholder="اسمك المستعار...">
-        </div>
-        <div class="setting-item">
-            <label>اختر صورتك</label>
-            <div class="avatar-selector" id="firstAvatarSelector">
-                <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
-                <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
-                <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
-                <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
-            </div>
-        </div>
-        <button class="start-btn" onclick="finishFirstLogin()">دخول الردهة</button>
-    </div>
-</div>
     <div class="modal-overlay" id="timerModal">
         <div class="settings-modal">
             <span class="close-icon" onclick="toggleTimerModal(false)">✕</span>
@@ -393,24 +374,7 @@
             window.updatePlayerOnServer();
         }
     }
-
-let isFirstLogin = true;
-
-function finishFirstLogin() {
-    const nick = document.getElementById('firstNicknameInput').value.trim();
-    if (nick === "") { alert("من فضلك أدخل اسماً"); return; }
-    
-    currentNickname = nick;
-    // يتم تحديث الصورة تلقائياً عبر selectAvatar
-    document.getElementById('firstLoginModal').style.display = 'none';
-    isFirstLogin = false;
-    
-    // الآن فقط نقوم بتسجيل اللاعب في السيرفر
-    if (window.initPlayerOnServer) {
-        window.initPlayerOnServer();
-    }
-}
-
+let isAdmin = false; // متغير لمعرفة هل المستخدم هو الآدمن
 function toggleProfileModal(show) {
     const modal = document.getElementById('profileModal');
     modal.style.display = show ? 'flex' : 'none';
@@ -418,32 +382,24 @@ function toggleProfileModal(show) {
         const inputVal = document.getElementById('nicknameInput').value;
         if (inputVal.trim() !== "") {
             currentNickname = inputVal;
-            // تحديث محلي فوري
+            // تحديث الواجهة فوراً قبل انتظار السيرفر
             document.getElementById('currentPlayerName').innerText = currentNickname;
-            if (window.updatePlayerOnServer) window.updatePlayerOnServer();
+            if (window.updatePlayerOnServer) {
+                window.updatePlayerOnServer();
+            }
         }
     }
 }
-
-// تعديل اختيار المود ليرسل للسيرفر فوراً
 function selectMode(element) {
     if(!isAdmin) return;
-    const mode = element.innerText.includes("اونلاين") ? "online" : "offline";
-    if (window.updateGameSettings) {
-        window.updateGameSettings({ mode: mode });
-    }
-}
+    document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
+    element.classList.add('active');
 
-// تحديث اختيار المؤقت ليرسل للسيرفر فوراً
-function updateTimerValue(val) {
+}
+function toggleTimerModal(show) {
     if(!isAdmin) return;
-    const config = timerConfigs[val];
-    // تحديث السيرفر
-    if (window.updateGameSettings) {
-        window.updateGameSettings({ timer: parseInt(val) });
-    }
+    document.getElementById('timerModal').style.display = show ? 'flex' : 'none';
 }
-
 const timerConfigs = [
     { label: "بدون مؤقت", main: "بدون", icon: "🚫", color: "#888" },
     { label: "سريع (30 ثانية)", main: "30 ثانية", icon: "⚡", color: "#7ed321" },
@@ -467,7 +423,6 @@ function updateTimerValue(val) {
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
     import { getDatabase, ref, set, onValue, onDisconnect, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
         authDomain: "codenames-5fd71.firebaseapp.com",
@@ -491,51 +446,44 @@ function updateTimerValue(val) {
     const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
     const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
-    // وظيفة الانضمام لأول مرة
-    window.initPlayerOnServer = function() {
+    // --- 1. نظام الآدمن ---
+    onValue(playersRef, (snapshot) => {
+        const players = snapshot.val();
+        if (!players) return;
+        const sortedIds = Object.keys(players).sort((a, b) => players[a].joinedAt - players[b].joinedAt);
+        const adminId = sortedIds[0];
+        isAdmin = (playerId === adminId);
+        document.querySelector('.start-btn').style.display = isAdmin ? 'block' : 'none';
+        document.querySelector('.top-left b, .top-left span').innerText = Object.keys(players).length;
+        renderLobby(players, adminId);
+    });
+
+    // --- 2. إرسال البيانات (تعديل: إضافة وقت الانضمام) ---
+    window.updatePlayerOnServer = async function() {
+        const snapshot = await get(myPlayerRef);
+        const existingData = snapshot.val() || {};
         set(myPlayerRef, {
             id: playerId,
             name: currentNickname,
             avatar: currentAvatar,
-            team: 'spectators-list',
-            joinedAt: Date.now(),
-            lastActive: Date.now()
-        });
-    };
-
-    // تحديث البيانات المستمر
-    window.updatePlayerOnServer = async function() {
-        update(myPlayerRef, {
-            name: currentNickname,
-            avatar: currentAvatar,
             team: currentTeam,
+            joinedAt: existingData.joinedAt || Date.now(),
             lastActive: Date.now()
         });
     };
 
-    // مراقبة اللاعبين وبناء الواجهة
-    onValue(playersRef, (snapshot) => {
-        const players = snapshot.val();
-        if (!players) return;
-
-        // تحديث العداد العلوي
-        const playerCount = Object.keys(players).length;
-        document.querySelector('.top-left span').innerText = playerCount;
-
-        // تحديد الآدمن
-        const sortedIds = Object.keys(players).sort((a, b) => players[a].joinedAt - players[b].joinedAt);
-        const adminId = sortedIds[0];
-        isAdmin = (playerId === adminId);
-        
-        document.querySelector('.start-btn').style.display = isAdmin ? 'block' : 'none';
-
-        // تنظيف الواجهة قبل الرسم لمنع التكرار
+    // --- 3. قفل الأدوار وتحديث الواجهة ---
+    function renderLobby(players, adminId) {
+        const playersArray = Object.values(players);
         document.querySelectorAll('.player-slot-container').forEach(c => c.innerHTML = '');
-        const spectatorsList = document.getElementById('spectators-list');
-        // حذف كل الـ player-slots القديمة
-        spectatorsList.querySelectorAll('.player-slot').forEach(p => p.remove());
+        document.getElementById('spectators-list').querySelectorAll('.player-slot').forEach(p => p.remove());
+        document.querySelectorAll('.join-btn').forEach(btn => {
+            btn.innerText = "أنضمام";
+            btn.classList.remove('locked');
+            btn.disabled = false;
+        });
 
-        Object.values(players).forEach(player => {
+        playersArray.forEach(player => {
             const isMe = player.id === playerId;
             const isPlayerAdmin = player.id === adminId;
             const playerHtml = `
@@ -547,61 +495,35 @@ function updateTimerValue(val) {
                 </div>`;
 
             if (player.team === 'spectators-list') {
-                // نضع أيقونة الانضمام دائماً في النهاية
-                const joinBtn = spectatorsList.querySelector('.join-spectators-btn');
-                joinBtn.insertAdjacentHTML('beforebegin', playerHtml);
+                document.getElementById('spectators-list').insertAdjacentHTML('afterbegin', playerHtml);
             } else {
                 const teamsMap = { 'blue-op': 0, 'red-op': 1, 'blue-spy': 2, 'red-spy': 3 };
                 const index = teamsMap[player.team];
                 const container = document.querySelectorAll('.player-slot-container')[index];
                 container.innerHTML = playerHtml;
-                
-                // قفل الزر
-                const btn = container.nextElementSibling;
+                const btn = container.nextElementSibling; // الزر يتبع الحاوية
                 btn.innerText = "منضم";
                 btn.classList.add('locked');
                 btn.disabled = true;
             }
         });
-    });
+    }
 
-    // مراقبة إعدادات اللعبة (المود والمؤقت) للجميع
+    // --- 4. تحديث الإعدادات (للمود) ---
+    window.updateGameSettings = function(newSettings) {
+        update(settingsRef, newSettings);
+    };
     onValue(settingsRef, (snapshot) => {
         const settings = snapshot.val();
         if (!settings) return;
-
-        // 1. تحديث المود
+        // تحديث شكل المود للجميع
         const cards = document.querySelectorAll('.mode-card');
         cards.forEach(card => card.classList.remove('active'));
         if (settings.mode === 'online') cards[1].classList.add('active');
         else cards[0].classList.add('active');
-
-        // 2. تحديث المؤقت
-        if (settings.timer !== undefined) {
-            const config = timerConfigs[settings.timer];
-            document.getElementById('mainTimerText').innerText = config.main;
-            document.getElementById('mainTimerIcon').innerText = config.icon;
-            // تحديث السلايدر داخل المودال للآدمن ليكون متزامناً
-            document.getElementById('timerSlider').value = settings.timer;
-            updateTimerValueLocal(settings.timer);
-        }
     });
-
-    // وظيفة مساعدة لتحديث شكل المودال محلياً عند استلام بيانات من السيرفر
-    function updateTimerValueLocal(val) {
-        const config = timerConfigs[val];
-        document.getElementById('modalTimerText').innerText = config.label;
-        document.getElementById('modalTimerIcon').innerText = config.icon;
-        for(let i=0; i<=3; i++) {
-            const lbl = document.getElementById('label'+i);
-            if(lbl) lbl.classList.remove('active-label');
-        }
-        const activeLbl = document.getElementById('label'+val);
-        if(activeLbl) activeLbl.classList.add('active-label');
-    }
-
-    window.updateGameSettings = (data) => update(settingsRef, data);
-
     onDisconnect(myPlayerRef).remove();
+    setInterval(() => update(myPlayerRef, { lastActive: Date.now() }), 20000);
+    window.updatePlayerOnServer();
 </script></body>
 </html>
