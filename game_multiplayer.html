@@ -216,51 +216,65 @@
     let currentPlayers = {};
     let gameState = {};
 
-// متغير للتأكد من أننا عرفنا من هو اللاعب قبل بدء الرسم
-    let identityResolved = false;
 
-    // --- 1. جلب اللاعبين (يجب أن تكتمل أولاً) ---
-    onValue(playersRef, (snapshot) => {
-        const players = snapshot.val() || {};
-        currentPlayers = players;
-        
-        Object.values(players).forEach(p => {
-            if (p.id === playerId) {
-                myRole = p.team.includes('spy') ? 'spy' : 'op';
-                myTeamColor = p.team.startsWith('red') ? 'red' : 'blue';
-                identityResolved = true; // الآن عرفنا من أنت
-            }
-            
-            // تحديث كروت اللاعبين في الـ HTML
-            const container = document.getElementById(p.team);
-            if (container) {
-                container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
-                container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
-            }
-        });
+// محاولة استعادة الفريق من الذاكرة المحلية فوراً
+const savedTeam = sessionStorage.getItem('codenames_myTeam');
+if (savedTeam) {
+    if (savedTeam.includes('spy')) myRole = 'spy';
+    else if (savedTeam.includes('op')) myRole = 'op';
+    myTeamColor = savedTeam.split('-')[0];
+}
 
-        // إذا كانت بيانات اللعبة قد وصلت بالفعل، أعد الرسم الآن بالهوية الجديدة
-        if (gameState.cards && identityResolved) {
-            renderGridSync();
-            updateUISync();
+// ثم في onValue(playersRef...) تأكد من تحديث هذه القيم إذا تغيرت
+onValue(playersRef, (snapshot) => {
+    const players = snapshot.val() || {};
+    currentPlayers = players;
+    
+    // تفريغ البطاقات قبل إعادة الرسم
+    ['blue-op', 'blue-spy', 'red-op', 'red-spy'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.querySelector('.avatar-box').innerHTML = '';
+            el.querySelector('.player-name').innerText = 'فارغ';
         }
     });
 
-    // --- 2. مزامنة حالة اللعبة ---
+Object.values(players).forEach(p => {
+        if (p.id === playerId) {
+            // تحديث القيم من السيرفر للتأكيد
+            if (p.team.includes('spy')) myRole = 'spy';
+            else if (p.team.includes('op')) myRole = 'op';
+            myTeamColor = p.team.split('-')[0];
+            // حفظها للزيارات القادمة
+            sessionStorage.setItem('codenames_myTeam', p.team);
+        }
+
+        // وضع اللاعب في مكانه الصحيح في الـ HTML
+        // ملاحظة: p.team هنا هي "red-spy" ويجب أن يكون id العنصر مطابقاً تماماً
+        const container = document.getElementById(p.team);
+        if (container) {
+            container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
+            container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
+        }
+    });
+    
+    // تحديث الواجهة بناءً على حالتك الجديدة
+    if(gameState && gameState.turn) updateUISync();
+});
+
+    // --- 2. مزامنة حالة اللعبة ورؤية الألوان ---
     onValue(gameRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
         gameState = data;
 
-        // لا ترسم الشبكة إلا إذا عرفنا دورك (identityResolved)
-        if (identityResolved) {
-            renderGridSync();
-            updateUISync();
-        }
+        renderGridSync();
+        updateUISync();
         
-        document.getElementById('loading-screen').style.display = 'none';
+        // إخفاء شاشة التحميل بمجرد استلام بيانات اللعبة
+        const loading = document.getElementById('loading-screen');
+        if(loading) loading.style.display = 'none';
     });
-
 
     function renderGridSync() {
         const grid = document.getElementById('grid');
