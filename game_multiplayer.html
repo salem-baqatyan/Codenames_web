@@ -5,77 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Codenames Pro - Multiplayer</title>
     <style>
-        /* الستايل كما هو - مع التأكد من إخفاء شاشة التحميل عند البدء */
+        /* الستايل الأساسي الخاص بك مع إضافة حالة الجمهور */
         :root { --bg-color: #0d1117; --blue-glow: 0 0 20px #3498db; --red-glow: 0 0 20px #e74c3c;}
-        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: 0.5s; }
+        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
         .loader { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Tahoma', sans-serif; }
         .mobile-wrapper { width: 100%; max-width: 450px; height: 100%; margin: 0 auto; background-color: var(--bg-color); display: flex; flex-direction: column; border-left: 1px solid #333; border-right: 1px solid #333; position: relative; }
-        .timer-badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #ff3e3e; padding: 2px 10px; border-radius: 10px; font-weight: bold; font-family: monospace; border: 1px solid #ff3e3e; z-index: 100; font-size: 0.9rem; }
+        
+        .timer-badge { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); background: #000; color: #ff3e3e; border: 1px solid #ff3e3e; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; z-index: 100; font-family: monospace; }
+        
         .dashboard { height: 30%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 10px; flex-shrink: 0; }
         .team-side { display: flex; flex-direction: column; gap: 4px; }
         .player-card { flex: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); background: #222; transition: 0.3s; position: relative; overflow: hidden;}
         .blue-team .player-card { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
         .red-team .player-card { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
-        .active-blue { box-shadow: var(--blue-glow); border: 2px solid white !important; }
-        .active-red { box-shadow: var(--red-glow); border: 2px solid white !important; }
-        .player-name { font-size: 0.55rem; color: white; margin-top: 2px; font-weight: bold; width: 90%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .avatar-img { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid white; object-fit: cover; }
-        .score { font-size: 1.5rem; font-weight: 900; color: white; text-align: center; }
-        .game-log-container { background: #333; border-radius: 10px; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
-        #log-content { flex: 1; background: #2a2a2a; border-radius: 4px; overflow-y: auto; padding: 5px; display: flex; flex-direction: column-reverse; gap: 5px; }
-        .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px; }
-        .card { border-radius: 5px; position: relative; cursor: pointer; background: #f7cda3; height: 100%; border: 1px solid #9a7452; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;}
-        .card-main-body { width: 100%; height: 100%; display: flex; flex-direction: column; }
-        .bottom-box { background: #9a7452; color: white; font-size: 0.55rem; text-align: center; padding: 2px 0; font-weight: bold; width: 100%; }
-        .card-reveal-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .role-title { position: absolute; top: 2px; font-size: 0.45rem; color: rgba(255,255,255,0.8); font-weight: bold; text-transform: uppercase; }
+        .active-blue { box-shadow: var(--blue-glow); border: 2px solid white !important; transform: scale(1.05); }
+        .active-red { box-shadow: var(--red-glow); border: 2px solid white !important; transform: scale(1.05); }
+        
+        .score { font-size: 1.5rem; font-weight: 900; text-align: center; color: white; }
+        .avatar-img { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid white; object-fit: cover; }
+        .player-name { font-size: 0.55rem; color: white; font-weight: bold; margin-top: 2px; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;}
+        
+        .game-log-container { background: #1a1a1a; border-radius: 10px; border: 1px solid #333; padding: 5px; display: flex; flex-direction: column; overflow: hidden;}
+        #log-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column-reverse; gap: 5px; padding: 2px; }
+        
+        /* تصميم السجلات */
+        .log-row { display: flex; align-items: center; gap: 4px; font-size: 0.6rem; }
+        .clue-tag { background: white; color: black; padding: 2px 6px; border-radius: 4px; font-weight: bold; flex: 1; text-align: center; }
+        .num-tag { background: #444; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; }
+        .card { border-radius: 5px; padding: 2px; cursor: pointer; position: relative; display: flex; flex-direction: column; }
+        .card-main-body { flex: 1; border-radius: 3px; border: 1px solid; display: flex; flex-direction: column; overflow: hidden; }
+        .bottom-box { margin-top: auto; height: 40%; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: white; font-weight: bold; }
+        
+        .card-hidden { background: #fbe0c3 !important; }
+        .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; }
+        .card-hidden .bottom-box { color: #5d4037 !important; }
+
+        .card-blue { background: #3498db; } .card-red { background: #e74c3c; } .card-brown { background: #d2b48c; } .card-black { background: #000; }
         .card-revealed .card-reveal-img { opacity: 1; }
-        .card-blue { background: #19a8ff; } .card-blue .bottom-box { background: #0b4d9b; }
-        .card-red { background: #ff6a4c; } .card-red .bottom-box { background: #8c2b1e; }
-        .card-black { background: #444; } .card-black .bottom-box { background: #000; }
-        .control-area { height: 13%; background: #222; display: flex; align-items: center; padding: 0 10px; border-top: 1px solid #444; }
-        .disabled-area { opacity: 0.5 !important; pointer-events: none !important; filter: grayscale(1); }
-        .clue-bar-layout { flex: 1; display: flex; gap: 5px; align-items: center; }
-        .clue-input { flex: 1; height: 35px; border-radius: 20px; border: none; padding: 0 15px; font-weight: bold; }
-        .send-btn { width: 60px; height: 35px; background: #7ed321; border-radius: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .card-reveal-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: 0.3s; z-index: 2; border-radius: 3px;}
+
+        .control-area { height: 13%; background: #111; padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #333; }
+        .clue-input { flex: 1; background: #fff; border: none; border-radius: 20px; padding: 8px 15px; font-weight: bold; }
+        .send-btn { width: 50px; height: 50px; border-radius: 50%; background: #4caf50; display: flex; align-items: center; justify-content: center; border: none; color: white; cursor: pointer;}
+        .disabled-area { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+        
+        /* زر التأكيد */
+        .confirm-btn { position: absolute; top: -5px; right: -5px; background: #4caf50; border: 2px solid white; border-radius: 50%; width: 20px; height: 20px; z-index: 10; display: none; }
     </style>
 </head>
 <body>
 
 <div id="loading-screen">
     <div class="loader"></div>
-    <div id="loading-text">جاري الاتصال بالقاعدة...</div>
+    <div id="loading-text">جاري مزامنة اللعبة...</div>
 </div>
 
-<div class="mobile-wrapper" id="main-wrapper">
+<div class="mobile-wrapper">
     <div id="turn-timer" class="timer-badge">00:30</div>
 
     <div class="dashboard">
         <div class="team-side blue-team">
-            <div class="player-card" id="blue-op"><div class="avatar-box"></div><div class="player-name">بانتظار...</div></div>
+            <div class="player-card" id="blue-op">
+                <span class="role-title">Operative</span>
+                <div class="avatar-box"></div>
+                <div class="player-name">...</div>
+            </div>
             <div class="score" id="blue-score">0</div>
-            <div class="player-card" id="blue-spy"><div class="avatar-box"></div><div class="player-name">بانتظار...</div></div>
+            <div class="player-card" id="blue-spy">
+                <span class="role-title">Spymaster</span>
+                <div class="avatar-box"></div>
+                <div class="player-name">...</div>
+            </div>
         </div>
-        <div class="game-log-container"><div id="log-content"></div></div>
+
+        <div class="game-log-container">
+            <div id="log-content"></div>
+        </div>
+
         <div class="team-side red-team">
-            <div class="player-card" id="red-op"><div class="avatar-box"></div><div class="player-name">بانتظار...</div></div>
+            <div class="player-card" id="red-op">
+                <span class="role-title">Operative</span>
+                <div class="avatar-box"></div>
+                <div class="player-name">...</div>
+            </div>
             <div class="score" id="red-score">0</div>
-            <div class="player-card" id="red-spy"><div class="avatar-box"></div><div class="player-name">بانتظار...</div></div>
+            <div class="player-card" id="red-spy">
+                <span class="role-title">Spymaster</span>
+                <div class="avatar-box"></div>
+                <div class="player-name">...</div>
+            </div>
         </div>
     </div>
 
     <div class="grid-container" id="grid"></div>
 
     <div class="control-area" id="control-area">
-        <div class="clue-bar-layout">
-            <input type="text" id="clueInput" class="clue-input" placeholder="التلميح...">
-            <select id="clueNum" style="width:40px; height:35px; border-radius:10px;">
-                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="∞">∞</option>
-            </select>
-            <div class="send-btn" onclick="handleAction()" id="action-btn">🚀</div>
-        </div>
+        <input type="text" id="clueInput" class="clue-input" placeholder="اكتب التلميح...">
+        <select id="clueNum" style="padding: 8px; border-radius: 10px;">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="∞">∞</option>
+        </select>
+        <button class="send-btn" onclick="handleAction()">GO</button>
     </div>
 </div>
 
@@ -97,79 +132,55 @@
     const roomId = urlParams.get('r');
     const playerId = sessionStorage.getItem('codenames_playerId');
 
-    if (!roomId || !playerId) { window.location.replace('index.html'); }
+    if (!roomId) window.location.href = 'index.html';
 
-    const roomRef = ref(db, `rooms/${roomId}`);
-    let myData = null;
-    let myRole = 'audience';
+    const gameRef = ref(db, `rooms/${roomId}/gameState`);
+    const playersRef = ref(db, `rooms/${roomId}/players`);
+    const statusRef = ref(db, `rooms/${roomId}/status`);
+
     let gameState = null;
+    let myRole = 'audience';
+    let allPlayers = {};
     let timerInt = null;
 
-    // --- الوظيفة الأساسية للمزامنة ---
-    async function start() {
-        const snap = await get(roomRef);
-        if (!snap.exists()) { window.location.replace('index.html'); return; }
+    // 1. مزامنة اللاعبين والأدوار
+    onValue(playersRef, (snap) => {
+        allPlayers = snap.val() || {};
+        const me = allPlayers[playerId];
+        if (me) {
+            myRole = me.team;
+        } else {
+            myRole = 'audience';
+        }
+        updatePlayersUI();
+    });
 
-        const data = snap.val();
-        myData = data.players[playerId];
-        if (!myData) { window.location.replace('index.html'); return; }
-        
-        myRole = myData.team; // 'blue-spy', 'red-op', 'audience'...
-
-        // 1. مراقبة اللاعبين
-        onValue(ref(db, `rooms/${roomId}/players`), (s) => {
-            const players = s.val() || {};
-            updatePlayersUI(players);
-        });
-
-        // 2. مراقبة حالة اللعبة
-        onValue(ref(db, `rooms/${roomId}/gameState`), (s) => {
-            const state = s.val();
-            if (!state) {
-                if (myData.isAdmin) initNewGame();
-                return;
-            }
-            const oldPhase = gameState?.phase;
-            const oldTurn = gameState?.turn;
-            gameState = state;
-            
+    // 2. مزامنة حالة اللعبة
+    onValue(gameRef, (snap) => {
+        gameState = snap.val();
+        if (gameState) {
             renderGrid();
-            updateUI();
-            if (oldPhase !== state.phase || oldTurn !== state.turn) resetTimer();
-            
-            document.getElementById('loading-screen').style.opacity = '0';
-            setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
-        });
+            updateGameUI();
+            resetTimer();
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+    });
 
-        // 3. مراقبة حالة الطرد أو العودة
-        onValue(ref(db, `rooms/${roomId}/status`), (s) => {
-            if (s.val()?.state === 'lobby') window.location.replace('index.html');
-        });
-    }
+    // 3. مراقبة حالة الغرفة (إذا عادت للوبي)
+    onValue(statusRef, (snap) => {
+        if (snap.val()?.state === 'lobby') {
+            window.location.href = `index.html?r=${roomId}`;
+        }
+    });
 
-    function initNewGame() {
-        const words = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"].sort(()=>Math.random()-0.5);
-        let first = Math.random() > 0.5 ? 'blue' : 'red';
-        let types = [...Array(first==='blue'?9:8).fill('card-blue'), ...Array(first==='red'?9:8).fill('card-red'), 'card-black', ...Array(7).fill('card-brown')].sort(()=>Math.random()-0.5);
-        
-        const cards = types.map((t, i) => ({
-            type: t, word: words[i], revealed: false,
-            visual: t==='card-blue'?'img/card/Blue1.webp':t==='card-red'?'img/card/Red1.webp':t==='card-black'?'img/card/Black.webp':'img/card/Normal1.webp'
-        }));
-
-        set(ref(db, `rooms/${roomId}/gameState`), {
-            turn: first, phase: 'spy', scores: {blue: first==='blue'?9:8, red: first==='red'?9:8},
-            cards: cards, logs: [], lastUpdate: Date.now()
-        });
-    }
-
-    function updatePlayersUI(players) {
-        document.querySelectorAll('.player-name').forEach(p => p.innerText = "بانتظار...");
-        Object.values(players).forEach(p => {
-            const el = document.getElementById(p.team);
-            if (el) {
-                el.querySelector('.player-name').innerText = p.name;
-                el.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
+    function updatePlayersUI() {
+        // تفريغ وتحديث بطاقات اللاعبين الأساسيين
+        ['blue-op', 'blue-spy', 'red-op', 'red-spy'].forEach(id => {
+            const card = document.getElementById(id);
+            const player = Object.values(allPlayers).find(p => p.team === id);
+            if (player) {
+                card.querySelector('.player-name').innerText = player.name;
+                card.querySelector('.avatar-box').innerHTML = `<img src="${player.avatar}" class="avatar-img">`;
             }
         });
     }
@@ -177,118 +188,148 @@
     function renderGrid() {
         const grid = document.getElementById('grid');
         grid.innerHTML = '';
-        const isSpyOrAudience = myRole.includes('spy') || myRole === 'audience';
+        
+        // الجمهور وقادة المخابرات يرون الألوان
+        const isSpymasterView = myRole.includes('spy') || myRole === 'audience' || myRole.includes('spectators');
 
         gameState.cards.forEach((card, i) => {
             const div = document.createElement('div');
-            const showColor = isSpyOrAudience || card.revealed;
-            div.className = `card ${showColor ? card.type : ''} ${card.revealed ? 'card-revealed' : ''}`;
+            const isRevealed = card.revealed;
+            const cardType = card.type; // 'card-blue', etc.
+
+            div.className = `card ${(!isRevealed && !isSpymasterView) ? 'card-hidden' : cardType} ${isRevealed ? 'card-revealed' : ''}`;
+            
             div.innerHTML = `
+                <div class="confirm-btn" id="confirm-${i}"></div>
+                <img src="${card.visual || ''}" class="card-reveal-img">
                 <div class="card-main-body">
-                    <img src="${card.visual}" class="card-reveal-img">
                     <div class="bottom-box">${card.word}</div>
                 </div>
-                <div class="confirm-btn" id="conf-${i}" style="display:none; position:absolute; top:5px; right:5px; background:white; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; color:green; font-weight:bold; cursor:pointer;" onclick="confirmCard(${i})">✓</div>
             `;
 
-            if (!card.revealed && myRole === `${gameState.turn}-op` && gameState.phase === 'operative') {
-                div.onclick = () => {
-                    document.querySelectorAll('.confirm-btn').forEach(b => b.style.display = 'none');
-                    document.getElementById(`conf-${i}`).style.display = 'block';
-                };
+            // تفاعل العملاء فقط في دورهم
+            if (!isRevealed && myRole === `${gameState.turn}-op` && gameState.phase === 'operative') {
+                div.onclick = () => selectCard(i);
             }
+
             grid.appendChild(div);
         });
     }
 
-    function updateUI() {
-        document.getElementById('blue-score').innerText = gameState.scores.blue;
-        document.getElementById('red-score').innerText = gameState.scores.red;
-        
-        const activeId = `${gameState.turn}-${gameState.phase==='spy'?'spy':'op'}`;
-        document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-        document.getElementById(activeId)?.classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
-
-        const isMyTurn = (myRole === activeId);
-        document.getElementById('control-area').className = `control-area ${isMyTurn ? '' : 'disabled-area'}`;
-        document.getElementById('action-btn').innerText = gameState.phase === 'spy' ? '🚀' : '🛑';
-
-        renderLogs();
+    function selectCard(index) {
+        document.querySelectorAll('.confirm-btn').forEach(b => b.style.display = 'none');
+        const btn = document.getElementById(`confirm-${index}`);
+        btn.style.display = 'block';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            processGuess(index);
+        };
     }
 
-    function resetTimer() {
-        clearInterval(timerInt);
-        let sec = 30;
-        timerInt = setInterval(() => {
-            sec--;
-            document.getElementById('turn-timer').innerText = `00:${sec<10?'0':''}${sec}`;
-            if (sec <= 0) {
-                clearInterval(timerInt);
-                if (myRole === `${gameState.turn}-${gameState.phase==='spy'?'spy':'op'}`) skipTurn();
-            }
-        }, 1000);
+    function processGuess(index) {
+        const card = gameState.cards[index];
+        const team = gameState.turn;
+        
+        let updates = {};
+        const newCards = [...gameState.cards];
+        newCards[index].revealed = true;
+        updates['cards'] = newCards;
+
+        // تحديث النقاط
+        let newScores = {...gameState.scores};
+        if (card.type === 'card-blue') newScores.blue--;
+        if (card.type === 'card-red') newScores.red--;
+        updates['scores'] = newScores;
+
+        // السجل
+        const logEntry = { type: 'guess', word: card.word, team: team, result: card.type };
+        updates['logs'] = [...(gameState.logs || []), logEntry];
+
+        // منطق تبديل الدور
+        const isCorrect = (card.type === `card-${team}`);
+        if (!isCorrect || card.type === 'card-black') {
+            updates['turn'] = team === 'blue' ? 'red' : 'blue';
+            updates['phase'] = 'spy';
+        }
+        
+        update(gameRef, updates);
+        
+        if (card.type === 'card-black' || newScores.blue === 0 || newScores.red === 0) {
+            setTimeout(endGame, 2000);
+        }
     }
 
     window.handleAction = () => {
         if (gameState.phase === 'spy') {
-            const txt = document.getElementById('clueInput').value;
-            if (!txt) return;
-            const log = { type: 'clue', team: gameState.turn, text: txt, num: document.getElementById('clueNum').value, sender: myRole };
-            update(ref(db, `rooms/${roomId}/gameState`), { phase: 'operative', logs: [...(gameState.logs || []), log] });
+            const val = document.getElementById('clueInput').value.trim();
+            const num = document.getElementById('clueNum').value;
+            if (!val) return;
+            
+            const logEntry = { type: 'clue', word: val, num: num, team: gameState.turn };
+            update(gameRef, {
+                phase: 'operative',
+                logs: [...(gameState.logs || []), logEntry]
+            });
             document.getElementById('clueInput').value = '';
         } else {
-            skipTurn();
+            // إنهاء الدور يدوياً للعميل
+            update(gameRef, {
+                turn: gameState.turn === 'blue' ? 'red' : 'blue',
+                phase: 'spy'
+            });
         }
     };
 
-    window.confirmCard = (i) => {
-        const card = gameState.cards[i];
-        const newCards = [...gameState.cards];
-        newCards[i].revealed = true;
+    function updateGameUI() {
+        document.getElementById('blue-score').innerText = gameState.scores.blue;
+        document.getElementById('red-score').innerText = gameState.scores.red;
+
+        // تمييز اللاعب النشط
+        document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
+        const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
+        const activeCard = document.getElementById(activeId);
+        if (activeCard) activeCard.classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
+
+        // تعطيل التحكم لغير صاحب الدور والجمهور
+        const isMyTurn = (myRole === activeId);
+        document.getElementById('control-area').className = isMyTurn ? 'control-area' : 'control-area disabled-area';
         
-        const newScores = {...gameState.scores};
-        if (card.type === 'card-blue') newScores.blue--;
-        if (card.type === 'card-red') newScores.red--;
-
-        const log = { type: 'guess', team: gameState.turn, text: card.word, cardType: card.type, sender: myRole };
-        let nextTurn = gameState.turn;
-        let nextPhase = 'operative';
-
-        if (card.type !== `card-${gameState.turn}`) {
-            nextTurn = gameState.turn === 'blue' ? 'red' : 'blue';
-            nextPhase = 'spy';
-        }
-        if (card.type === 'card-black') return finishGame();
-
-        update(ref(db, `rooms/${roomId}/gameState`), {
-            cards: newCards, scores: newScores, turn: nextTurn, phase: nextPhase, logs: [...(gameState.logs || []), log]
-        });
-    };
-
-    function skipTurn() {
-        update(ref(db, `rooms/${roomId}/gameState`), {
-            turn: gameState.turn === 'blue' ? 'red' : 'blue', phase: 'spy'
-        });
+        // تحديث السجل
+        renderLogs();
     }
 
     function renderLogs() {
-        const box = document.getElementById('log-content');
-        box.innerHTML = '';
-        (gameState.logs || []).slice(-10).forEach(l => {
+        const container = document.getElementById('log-content');
+        container.innerHTML = '';
+        (gameState.logs || []).forEach(log => {
             const div = document.createElement('div');
-            div.style.fontSize = '0.5rem';
-            div.style.color = l.team === 'blue' ? '#3498db' : '#e74c3c';
-            div.innerText = l.type === 'clue' ? `📢 ${l.text} (${l.num})` : `🎯 ${l.text}`;
-            box.appendChild(div);
+            div.className = 'log-row';
+            div.innerHTML = log.type === 'clue' ? 
+                `<span class="num-tag">${log.num}</span><span class="clue-tag">${log.word}</span>` :
+                `<div style="width:100%; text-align:center; color:#888;">🔍 اختار: ${log.word}</div>`;
+            container.appendChild(div);
         });
     }
 
-    function finishGame() {
-        alert("انتهت اللعبة!");
-        update(ref(db, `rooms/${roomId}/status`), { state: 'lobby' });
+    function resetTimer() {
+        clearInterval(timerInt);
+        let timeLeft = 30; 
+        timerInt = setInterval(() => {
+            timeLeft--;
+            document.getElementById('turn-timer').innerText = `00:${timeLeft < 10 ? '0' : ''}${timeLeft}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInt);
+                if (myRole === `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`) {
+                    handleAction(); // إنهاء تلقائي
+                }
+            }
+        }, 1000);
     }
 
-    start();
+    function endGame() {
+        set(statusRef, { state: 'lobby', timestamp: Date.now() });
+    }
+
 </script>
 </body>
 </html>
