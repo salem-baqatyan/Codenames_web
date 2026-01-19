@@ -199,94 +199,89 @@
     let currentPlayers = {};
     let gameState = {};
 
-    // --- 1. جلب بيانات اللاعبين وتوزيعهم في أماكنهم ---
-// --- 1. جلب بيانات اللاعبين وتوزيعهم بشكل صحيح ---
+    // --- 1. جلب بيانات اللاعبين وتوزيعهم في أماكنهم الصحيحة ---
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val() || {};
         currentPlayers = players;
         
-        // تفريغ الأماكن أولاً لإعادة الرسم
-        const roleMappings = {
-            'blue-op': 'blue-op',
-            'blue-spy': 'blue-spy',
-            'red-op': 'red-op',
-            'red-spy': 'red-spy'
-        };
-
-        // تعيين الجميع كـ "فارغ" في البداية
-        Object.values(roleMappings).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.querySelector('.avatar-box').innerHTML = '';
-                el.querySelector('.player-name').innerText = 'فارغ';
+        // تفريغ الكروت الافتراضية أولاً
+        const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+        roles.forEach(roleId => {
+            const container = document.getElementById(roleId);
+            if (container) {
+                container.querySelector('.avatar-box').innerHTML = '';
+                container.querySelector('.player-name').innerText = 'فارغ';
             }
         });
 
         Object.values(players).forEach(p => {
-            // حفظ دوري الحالي بدقة
+            // تحديد دوري أنا بناءً على البيانات القادمة من الردهة
             if (p.id === playerId) {
-                myTeamColor = p.team.split('-')[0]; // ستكون blue أو red
                 if (p.team.includes('spy')) myRole = 'spy';
                 else if (p.team.includes('op')) myRole = 'op';
+                myTeamColor = p.team.split('-')[0]; // ستكون blue أو red
             }
 
-            // تحديد العنصر في الـ HTML (مثلاً: red-spy-container)
-            const htmlId = p.team.includes('container') ? p.team : p.team + '-container';
-            const container = document.getElementById(htmlId);
-            
+            // وضع اللاعب في مكانه الصحيح باستخدام الـ ID الموجود في الـ HTML (مثلاً red-spy)
+            const container = document.getElementById(p.team);
             if (container) {
                 container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
                 container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
             }
         });
         
-        // تحديث الواجهة بعد توزيع اللاعبين
+        // تحديث الواجهة بعد تحميل اللاعبين
         if(gameState.turn) updateUISync();
     });
+
     // --- 2. مزامنة حالة اللعبة ورؤية الألوان ---
     onValue(gameRef, (snapshot) => {
-        gameState = snapshot.val();
-        if (!gameState) return;
+        const data = snapshot.val();
+        if (!data) return;
+        gameState = data;
 
         renderGridSync();
         updateUISync();
         
-        // إخفاء شاشة التحميل
-        document.getElementById('loading-screen').style.display = 'none';
+        // إخفاء شاشة التحميل بمجرد استلام بيانات اللعبة
+        const loading = document.getElementById('loading-screen');
+        if(loading) loading.style.display = 'none';
     });
 
     function renderGridSync() {
         const grid = document.getElementById('grid');
+        if (!grid || !gameState.cards) return;
         grid.innerHTML = '';
 
         gameState.cards.forEach((card, i) => {
             const div = document.createElement('div');
             
-            // --- منطق الرؤية الحساس ---
-            // القائد (Spy) أو الجمهور (Spectator) يرون الألوان دائماً
-            // العميل (Op) يرى اللون فقط إذا كانت البطاقة مكشوفة (revealed)
-            const shouldShowColor = (myRole === 'spy' || myRole === 'spectator' || card.revealed);
-            const cardClass = shouldShowColor ? card.type : 'card-hidden';
+            // --- منطق الرؤية المعتمد على الدور ---
+            // القائد (spy) أو الجمهور (spectator) يرون ألوان البطاقات الحقيقية
+            // العميل (op) لا يرى إلا البطاقات التي تم كشفها (revealed)
+            const isRevealed = card.revealed;
+            const canSeeAll = (myRole === 'spy' || myRole === 'spectator');
             
+            const cardClass = (canSeeAll || isRevealed) ? card.type : 'card-hidden';
             const isSelected = (gameState.selectedCards || {})[i];
 
-            div.className = `card ${cardClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+            div.className = `card ${cardClass} ${isRevealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
             div.id = `card-${i}`;
 
             div.innerHTML = `
                 <div class="confirm-btn" id="confirm-${i}" 
-                     style="display: ${isSelected && myRole === 'op' ? 'flex' : 'none'}" 
+                     style="display: ${isSelected && myRole === 'op' && gameState.turn === myTeamColor ? 'flex' : 'none'}" 
                      onclick="event.stopPropagation(); window.confirmSelection(${i});">
                     <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                 </div>
-                <img src="${card.visual}" class="card-reveal-img">
+                <img src="${card.visual}" class="card-reveal-img" style="opacity: ${isRevealed ? 1 : 0}">
                 <div class="card-main-body">
                     <div class="bottom-box">${card.word}</div>
                 </div>`;
 
-            // العميل فقط هو من يستطيع الضغط (وفي دوره فقط)
+            // العميل يختار البطاقات فقط في دوره
             div.onclick = () => {
-                if (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative') {
+                if (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative' && !isRevealed) {
                     handleCardSelectionSync(i);
                 }
             };
@@ -298,7 +293,7 @@
         document.getElementById('blue-score').innerText = gameState.scores.blue;
         document.getElementById('red-score').innerText = gameState.scores.red;
         
-        // تمييز اللاعب النشط
+        // تمييز الكرت النشط (الوميض)
         document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
         const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
         const activeElement = document.getElementById(activeId);
@@ -306,30 +301,35 @@
             activeElement.classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
         }
 
-        // التحكم في واجهة الإدخال (فقط للقائد في دوره)
-        const canISendClue = (myRole === 'spy' && gameState.turn === myTeamColor && gameState.phase === 'spy');
-        const controlArea = document.querySelector('.control-area');
-        
-        if (canISendClue) {
-            controlArea.classList.remove('disabled-area');
-            document.getElementById('clue-ui').style.opacity = "1";
-        } else {
-            controlArea.classList.add('disabled-area');
-        }
-        
-        // زر إنهاء الدور يظهر للعميل في دوره فقط
-        const canIEndTurn = (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative');
+        // إعدادات منطقة التحكم
+        const clueUI = document.getElementById('clue-ui');
         const actionBtn = document.getElementById('action-btn');
-        if (canIEndTurn) {
+        const btnIcon = document.getElementById('btn-icon');
+
+        // هل أنا القائد والدور علي؟ (لكتابة التلميح)
+        const isMySpyTurn = (myRole === 'spy' && gameState.turn === myTeamColor && gameState.phase === 'spy');
+        // هل أنا العميل والدور علي؟ (لإنهاء الدور)
+        const isMyOpTurn = (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative');
+
+        if (isMySpyTurn) {
+            clueUI.classList.remove('disabled-area');
+            actionBtn.style.pointerEvents = "auto";
+            actionBtn.classList.remove('end-turn-btn');
+            btnIcon.className = 'arrow-icon'; btnIcon.innerHTML = '';
+        } else if (isMyOpTurn) {
+            clueUI.classList.add('disabled-area');
             actionBtn.style.pointerEvents = "auto";
             actionBtn.classList.add('end-turn-btn');
-            document.getElementById('btn-icon').innerHTML = '✕';
-        } else if (!canISendClue) {
+            btnIcon.className = 'x-icon'; btnIcon.innerHTML = '✕';
+        } else {
+            // ليس دوري أو أنا جمهور
+            clueUI.classList.add('disabled-area');
             actionBtn.style.pointerEvents = "none";
+            btnIcon.innerHTML = '';
         }
     }
 
-    // --- 3. الأفعال (Actions) ومزامنتها مع الخادم ---
+    // --- 3. الأفعال ومزامنتها ---
     
     window.handleAction = () => {
         if (gameState.phase === 'spy') sendClueSync();
@@ -337,40 +337,33 @@
     };
 
     async function sendClueSync() {
-        const word = document.getElementById('clueInput').value.trim();
-        const num = document.getElementById('clueNum').value;
+        const input = document.getElementById('clueInput');
+        const select = document.getElementById('clueNum');
+        const word = input.value.trim();
+        const num = select.value;
+
         if (!word || num === '-') return;
 
-        const newLog = { 
-            type: 'clue', 
-            team: gameState.turn, 
+        const clueData = { 
             word: word, 
             num: num, 
-            sender: playerId 
+            team: gameState.turn 
         };
 
         await update(gameRef, {
             phase: 'operative',
             targetClueNum: num === '∞' ? 99 : parseInt(num),
             guessesThisTurn: 0,
-            lastClue: newLog,
-            logs: [...(gameState.logs || []), newLog]
+            currentClue: clueData,
+            // سيتم تفعيل سجل اللعبة (Logs) في الخطوة القادمة
         });
-        document.getElementById('clueInput').value = '';
+        input.value = '';
     }
 
     async function handleCardSelectionSync(i) {
-        if (gameState.cards[i].revealed) return;
-        const currentSelections = gameState.selectedCards || {};
-        
-        // إذا كان مختاراً مسبقاً، نحذفه، وإلا نختاره
-        if (currentSelections[i]) delete currentSelections[i];
-        else {
-            // نمسح الاختيارات الأخرى (اختيار واحد في كل مرة للتأكيد)
-            Object.keys(currentSelections).forEach(key => delete currentSelections[key]);
-            currentSelections[i] = true;
-        }
-        
+        const currentSelections = {};
+        // منطق اختيار بطاقة واحدة فقط في كل مرة للتأكيد
+        currentSelections[i] = true;
         await update(gameRef, { selectedCards: currentSelections });
     }
 
@@ -385,7 +378,7 @@
         let newPhase = gameState.phase;
         let newTurn = gameState.turn;
 
-        // منطق تبديل الأدوار إذا أخطأ الفريق
+        // إذا أصاب العميل بطاقة الفريق الآخر أو بطاقة محايدة، ينتهي الدور فوراً
         if (card.type !== `card-${gameState.turn}`) {
             newTurn = (gameState.turn === 'blue' ? 'red' : 'blue');
             newPhase = 'spy';
@@ -396,8 +389,7 @@
             scores: newScores,
             phase: newPhase,
             turn: newTurn,
-            selectedCards: {},
-            guessesThisTurn: (gameState.guessesThisTurn || 0) + 1
+            selectedCards: {}
         });
     };
 
@@ -409,7 +401,5 @@
             guessesThisTurn: 0
         });
     }
-
-</script>
-</body>
+</script></body>
 </html>
