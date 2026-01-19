@@ -130,13 +130,12 @@
 </head>
 <body>
 
-<div id="loading-screen">
-    <div class="loader"></div>
-    <div id="loading-text">جاري مزامنة اللعبة...</div>
+<div id="loading-screen" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;font-size:20px;z-index:9999">
+  ⏳ جاري مزامنة اللعبة...
 </div>
 
 <div class="mobile-wrapper">
-    <div id="audience-view" class="audience-badge" style="display:none">وضع المشاهد (جمهور) 👁️</div>
+    <div id="app" class="audience-badge" style="display:none">وضع المشاهد (جمهور) 👁️</div>
     
     <div id="customAlert" class="custom-alert">
         <p id="alertMsg"></p>
@@ -183,18 +182,10 @@
 </div>
 
 <script type="module">
-/* ============================================================
-   🔥 Codenames Online Multiplayer — Firebase Realtime Database
-   🧠 Server-Authoritative State
-   ⚠️ لا تغيير في التصميم — فقط منطق الشبكة
-   ============================================================ */
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { 
-  getDatabase, ref, set, onValue, update, runTransaction, get, onDisconnect 
-} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-/* ===================== Firebase ===================== */
+/* ================= Firebase ================= */
 
 const firebaseConfig = {
   apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
@@ -223,7 +214,7 @@ if (!playerId) {
 
 const roomRef = ref(db, `rooms/${roomId}`);
 const playersRef = ref(db, `rooms/${roomId}/players`);
-const gameStateRef = ref(db, `rooms/${roomId}/gameState`);
+const gameStateRef = ref(db, '/');
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
@@ -308,8 +299,11 @@ onValue(settingsRef, snap => {
 
 onValue(gameStateRef, snap => {
   const data = snap.val();
-  if (!data) return;
+  if (!data || !data.cards) return;
+
   gameState = data;
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
   renderGrid();
   updateUI();
 });
@@ -336,19 +330,14 @@ onValue(statusRef, snap => {
    فقط استبدل جسم الدالة بدون تغيير التواقيع. */
 
 window.renderGrid = function renderGrid() {
-  if (!gameState) return;
   const grid = document.querySelector('.grid-container');
-  if (!grid) return;
-
+  if (!grid || !gameState) return;
   grid.innerHTML = '';
 
   gameState.cards.forEach((card, i) => {
-    const isHidden = gameState.phase === 'operative' && !card.revealed;
     const isSelected = gameState.selectedCards?.includes(i);
-
     const div = document.createElement('div');
     div.className = `card ${card.type} ${card.revealed ? 'revealed' : ''} ${isSelected ? 'selected' : ''}`;
-
     div.innerHTML = `
       <div class="confirm-btn">✓</div>
       <img class="card-reveal-img" src="${card.visual}">
@@ -356,40 +345,30 @@ window.renderGrid = function renderGrid() {
         <div class="bottom-box">${card.word}</div>
       </div>
     `;
-
     div.onclick = () => handleCardSelection(i);
     div.querySelector('.confirm-btn').onclick = (e) => {
       e.stopPropagation();
       confirmSelection(i);
     };
-
     grid.appendChild(div);
   });
 };
 
 window.updateUI = function updateUI() {
-  if (!gameState) return;
-
   const actionBtn = $('actionBtn');
   const clueInput = $('clueInput');
   const clueNumber = $('clueNumber');
-
-  if (!actionBtn || !clueInput || !clueNumber) return;
-
-  const myTurn = isMyTurn();
-  const can = canAct();
+  if (!actionBtn || !clueInput || !clueNumber || !gameState) return;
 
   if (gameState.phase === 'spy') {
     actionBtn.innerText = 'إرسال';
-    clueInput.disabled = !(myTurn && isSpy());
-    clueNumber.disabled = !(myTurn && isSpy());
+    clueInput.disabled = false;
+    clueNumber.disabled = false;
   } else {
     actionBtn.innerText = 'إنهاء الدور';
     clueInput.disabled = true;
     clueNumber.disabled = true;
   }
-
-  actionBtn.disabled = !can;
 };
 
 /* ===================== Logs ===================== */
@@ -402,57 +381,31 @@ function pushLog(text) {
 
 /* ===================== Input Validation ===================== */
 
+window.handleAction = function () {
+  if (!gameState) return;
+  if (gameState.phase === 'spy') sendClue();
+  else endTurnServer();
+};
+
 function clueContainsBoardWord(clue) {
   return gameState.cards.some(c => c.word === clue);
 }
-
-/* ============================================================
-   🧠 CLIENT → SERVER ACTIONS (Authoritative)
-   ============================================================ */
-
-/* ===================== Handle Main Action ===================== */
-
-window.handleAction = async function handleAction() {
-  if (!canAct()) return;
-
-  if (gameState.phase === 'spy') {
-    sendClue();
-  } else {
-    endTurnServer();
-  }
-};
 
 /* ===================== Send Clue ===================== */
 
 async function sendClue() {
   const clue = $('clueInput').value.trim();
   const num = parseInt($('clueNumber').value);
-
-  if (!clue || !num || num < 1) return alert("أدخل تلميح ورقم صحيح");
-  if (clueContainsBoardWord(clue)) return alert("لا يمكن استخدام كلمة موجودة على اللوحة");
-
-  const payload = {
-    clue: clue,
-    number: num,
-    by: playerId,
-    team: myTeamColor(),
-    time: Date.now()
-  };
+  if (!clue || !num) return alert("أدخل تلميح ورقم");
+  if (clueContainsBoardWord(clue)) return alert("الكلمة موجودة على اللوحة");
 
   await runTransaction(gameStateRef, state => {
-    if (!state) return state;
-    if (state.phase !== 'spy') return state;
-    if (state.turn !== myTeamColor()) return state;
-
+    if (!state || state.phase !== 'spy') return state;
     state.phase = 'operative';
     state.guessesThisTurn = 0;
     state.targetClueNum = num;
     state.currentClue = clue;
     state.selectedCards = [];
-
-    state.logs = state.logs || [];
-    state.logs.push(`🔍 ${myTeamColor() === 'blue' ? 'الأزرق' : 'الأحمر'}: ${clue} (${num})`);
-
     state.lastActionTime = Date.now();
     return state;
   });
@@ -460,113 +413,64 @@ async function sendClue() {
   $('clueInput').value = '';
 }
 
-/* ===================== Select Card ===================== */
-
-window.handleCardSelection = async function handleCardSelection(index) {
-  if (!canAct()) return;
-  if (gameState.phase !== 'operative') return;
-
+window.handleCardSelection = async function (index) {
+  if (!gameState || gameState.phase !== 'operative') return;
   const card = gameState.cards[index];
   if (card.revealed) return;
 
   await runTransaction(gameStateRef, state => {
-    if (!state) return state;
-    if (state.phase !== 'operative') return state;
-    if (state.turn !== myTeamColor()) return state;
-
+    if (!state || state.phase !== 'operative') return state;
     state.selectedCards = state.selectedCards || [];
-
     const idx = state.selectedCards.indexOf(index);
     if (idx >= 0) state.selectedCards.splice(idx, 1);
     else state.selectedCards.push(index);
-
     return state;
   });
 };
 
-/* ===================== Confirm Card ===================== */
-
-window.confirmSelection = async function confirmSelection(index) {
-  if (!canAct()) return;
-  if (gameState.phase !== 'operative') return;
+window.confirmSelection = async function (index) {
+  if (!gameState || gameState.phase !== 'operative') return;
 
   await runTransaction(gameStateRef, state => {
-    if (!state) return state;
-    if (state.phase !== 'operative') return state;
-    if (state.turn !== myTeamColor()) return state;
-
+    if (!state || state.phase !== 'operative') return state;
     const card = state.cards[index];
     if (card.revealed) return state;
 
     card.revealed = true;
-    state.guessesThisTurn = (state.guessesThisTurn || 0) + 1;
-    state.selectedCards = (state.selectedCards || []).filter(i => i !== index);
+    state.guessesThisTurn++;
+    state.selectedCards = [];
 
-    const team = state.turn;
-    const opponent = team === 'blue' ? 'red' : 'blue';
-
-    state.logs = state.logs || [];
-    state.logs.push(`🂠 تم كشف: ${card.word}`);
-
-    // تحديث النقاط
     if (card.type === 'card-blue') state.scores.blue--;
     if (card.type === 'card-red') state.scores.red--;
 
-    // قاتل
+    const opponent = state.turn === 'blue' ? 'red' : 'blue';
+
     if (card.type === 'card-black') {
-      state.logs.push(`💀 لمس القاتل! فوز ${opponent === 'blue' ? 'الأزرق' : 'الأحمر'}`);
-      setTimeout(() => endGame(opponent), 100);
+      alert("💀 انتهت اللعبة!");
       return state;
     }
 
-    // فوز
     if (state.scores.blue === 0 || state.scores.red === 0) {
-      const winner = state.scores.blue === 0 ? 'blue' : 'red';
-      state.logs.push(`🏆 فوز ${winner === 'blue' ? 'الأزرق' : 'الأحمر'}!`);
-      setTimeout(() => endGame(winner), 100);
+      alert("🏆 انتهت اللعبة!");
       return state;
     }
 
-    // اختيار خاطئ → إنهاء الدور
-    if (card.type !== `card-${team}`) {
-      state.logs.push(`❌ خطأ — تبديل الدور`);
+    if (card.type !== `card-${state.turn}` || state.guessesThisTurn >= state.targetClueNum + 1) {
       state.turn = opponent;
       state.phase = 'spy';
       state.guessesThisTurn = 0;
       state.targetClueNum = 0;
       state.currentClue = '';
       state.selectedCards = [];
-      return state;
-    }
-
-    // تجاوز الحد
-    if (state.guessesThisTurn >= state.targetClueNum + 1) {
-      state.logs.push(`⏹ انتهت التخمينات`);
-      state.turn = opponent;
-      state.phase = 'spy';
-      state.guessesThisTurn = 0;
-      state.targetClueNum = 0;
-      state.currentClue = '';
-      state.selectedCards = [];
-      return state;
     }
 
     return state;
   });
 };
-
-/* ===================== End Turn (Manual) ===================== */
-
 async function endTurnServer() {
   await runTransaction(gameStateRef, state => {
-    if (!state) return state;
-    if (state.phase !== 'operative') return state;
-    if (state.turn !== myTeamColor()) return state;
-
+    if (!state || state.phase !== 'operative') return state;
     const opponent = state.turn === 'blue' ? 'red' : 'blue';
-    state.logs = state.logs || [];
-    state.logs.push(`➡️ تم إنهاء الدور`);
-
     state.turn = opponent;
     state.phase = 'spy';
     state.guessesThisTurn = 0;
