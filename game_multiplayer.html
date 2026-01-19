@@ -133,7 +133,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, update, get, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
@@ -149,102 +149,70 @@
     let roomId = urlParams.get('r');
     let playerId = sessionStorage.getItem('codenames_playerId');
 
-    if (!roomId || !playerId) {
-        location.href = 'index.html';
-    }
-
     const gameRef = ref(db, `rooms/${roomId}/gameState`);
     const playersRef = ref(db, `rooms/${roomId}/players`);
-    const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
-    let myRole = 'audience'; // الافتراضي جمهور
-    let myData = null;
+    let myRole = 'audience'; // الافتراضي هو جمهور
     let gameState = null;
     let allPlayers = {};
-    let timerInterval = null;
 
-    async function initMultiplayer() {
-        // 1. جلب بيانات اللاعبين وتحديد الأدوار
+    async function start() {
+        // 1. جلب اللاعبين وتحديد دوري
         const pSnap = await get(playersRef);
         allPlayers = pSnap.val() || {};
-        myData = allPlayers[playerId];
-        
-        if (myData) {
-            // تحويل team_id من index.html إلى كود مفهوم هنا
-            if (myData.team === 'blue-op') myRole = 'blue-op';
-            else if (myData.team === 'red-op') myRole = 'red-op';
-            else if (myData.team === 'blue-spy') myRole = 'blue-spy';
-            else if (myData.team === 'red-spy') myRole = 'red-spy';
-            else myRole = 'audience';
+        const me = allPlayers[playerId];
+        if (me) {
+            // تحويل اسم التيم إلى دور (blue-op-container -> blue-op)
+            myRole = me.team.replace('-container', '');
         }
 
-        // تحديث الواجهة بأسماء اللاعبين
+        // 2. تحديث واجهة أسماء اللاعبين (أحمد، عبده، صالح، ياسر)
         Object.values(allPlayers).forEach(p => {
-            const slot = document.getElementById(p.team.replace('-container', ''));
+            const slotId = p.team.replace('-container', '');
+            const slot = document.getElementById(slotId);
             if (slot) {
-                slot.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
+                slot.querySelector('.player-name').innerText = p.name;
                 slot.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
             }
         });
 
-        // 2. إذا كنت أول لاعب (أو الآدمن) واللعبة لم تبدأ، أنشئها
-        const gSnap = await get(gameRef);
-        if (!gSnap.exists()) {
-            // فقط أول لاعب يدخل (غالباً الآدمن ياسر) هو من ينشئ الحالة
-            setupInitialGameState();
-        }
-
-        // 3. الاستماع للتغييرات (هذا ما سيخفي شاشة التحميل للجميع)
+        // 3. الاستماع المستمر لحالة اللعبة (المزامنة اللحظية)
         onValue(gameRef, (snapshot) => {
             gameState = snapshot.val();
             if (gameState) {
+                // إخفاء شاشة التحميل فوراً لأن البيانات وصلت
+                document.getElementById('loading-screen').style.display = 'none';
                 renderGrid();
                 updateUI();
-                document.getElementById('loading-screen').style.display = 'none';
-                startTimer();
+            } else {
+                console.log("في انتظار بيانات الآدمن...");
             }
-        });
-    }
-
-    function setupInitialGameState() {
-        const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"].sort(() => Math.random() - 0.5);
-        let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
-        let types = [...Array(firstTurn==='blue'?9:8).fill('card-blue'), ...Array(firstTurn==='red'?9:8).fill('card-red'), 'card-black', ...Array(7).fill('card-brown')].sort(() => Math.random() - 0.5);
-
-        const initialCards = types.map((t, i) => {
-            const visualPool = cardVisuals[t];
-            const visual = visualPool[Math.floor(Math.random() * visualPool.length)];
-            return { type: t, word: wordsPool[i], revealed: false, visual: visual };
-        });
-
-        set(gameRef, {
-            turn: firstTurn,
-            phase: 'spy',
-            scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
-            cards: initialCards,
-            logs: [],
-            lastActionTime: Date.now()
         });
     }
 
     window.renderGrid = () => {
         const grid = document.getElementById('grid');
         grid.innerHTML = '';
-        // القاعدة: قادة المخابرات "والجمهور" يرون الألوان
-        const isWatcher = myRole.includes('spy') || myRole === 'audience';
+        
+        // الجمهور وقادة المخابرات يرون الألوان
+        const canSeeAll = (myRole.includes('spy') || myRole === 'audience' || myRole === 'spectators-list');
 
         gameState.cards.forEach((card, i) => {
             const div = document.createElement('div');
-            const shouldHide = !isWatcher && !card.revealed;
+            const isRevealed = card.revealed;
             
-            div.className = `card ${shouldHide ? 'card-hidden' : card.type} ${card.revealed ? 'card-revealed' : ''}`;
+            // تحديد متى نخفي اللون (فقط إذا كان اللاعب عميلاً والبطاقة لم تُكشف بعد)
+            const shouldHide = !canSeeAll && !isRevealed;
+            
+            div.className = `card ${shouldHide ? 'card-hidden' : card.type} ${isRevealed ? 'card-revealed' : ''}`;
+            div.id = `card-${i}`;
             div.innerHTML = `
                 <div class="confirm-btn" id="confirm-${i}" onclick="confirmSelection(${i})"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
                 <img src="${card.visual}" class="card-reveal-img">
                 <div class="card-main-body"><div class="bottom-box">${card.word}</div></div>`;
 
-            // التفاعل فقط للعميل في دوره (الجمهور وقائد المخابرات لا يمكنهم الضغط)
-            if (myRole.includes('op') && gameState.phase === 'operative' && !card.revealed && myRole.startsWith(gameState.turn)) {
+            // السماح بالضغط فقط إذا كان دوري "عميل" للفريق الذي عليه الدور الآن
+            if (myRole.includes('op') && !isRevealed && gameState.phase === 'operative' && myRole.startsWith(gameState.turn)) {
                 div.onclick = () => {
                     document.querySelectorAll('.confirm-btn').forEach(b => b.style.display = 'none');
                     document.getElementById(`confirm-${i}`).style.display = 'flex';
@@ -254,37 +222,9 @@
         });
     };
 
-    function startTimer() {
-        clearInterval(timerInterval);
-        // جلب وقت المؤقت من الإعدادات (مثلاً 30 ثانية)
-        get(settingsRef).then(snap => {
-            let duration = 30; // افتراضي
-            if(snap.val()?.timer?.val === 1) duration = 30;
-            
-            let timeLeft = duration;
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                if(timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    if(myRole.startsWith(gameState.turn)) { 
-                        // إذا انتهى وقتك، يتم إنهاء الدور تلقائياً
-                        handleAction(); 
-                    }
-                }
-            }, 1000);
-        });
-    }
+    // بقية الدوال (updateUI, handleAction, confirmSelection) تبقى كما هي 
+    // لكن تأكد من استخدام update(gameRef, ...) للمزامنة.
 
-    // ... بقية دوال handleAction و confirmSelection كما هي في الكود السابق
-    // مع إضافة شرط في نهاية اللعبة للعودة لـ index.html:
-    function checkGameOver() {
-        if (gameState.scores.blue === 0 || gameState.scores.red === 0) {
-            alert("انتهت اللعبة!");
-            remove(ref(db, `rooms/${roomId}/status`)); // مسح حالة اللعبة
-            location.href = 'index.html?r=' + roomId;
-        }
-    }
-
-    initMultiplayer();
+    start();
 </script></body>
 </html>

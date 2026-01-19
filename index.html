@@ -402,22 +402,55 @@
         }
     });
 
-// دالة بدء اللعبة المعدلة
+// أضف هذه الدوال والمصفوفات داخل ملف index.html في قسم السكريبت
+const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
+const cardVisuals = {
+    'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+    'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+    'card-black': ['img/card/Black.webp'],
+    'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+};
+
 window.startGame = async () => {
     if (!isAdmin) return;
-    const snapshot = await get(settingsRef);
-    const settings = snapshot.val();
-    const mode = settings?.mode || 'offline';
-    const targetPage = (mode === 'online') ? 'game_multiplayer.html' : 'game.html';
+    
+    // 1. إعداد حالة اللعبة مسبقاً
+    let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
+    let types = [
+        ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
+        ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
+        'card-black',
+        ...Array(7).fill('card-brown')
+    ].sort(() => Math.random() - 0.5);
 
-    // مسح أي حالة قديمة للعبة قبل البدء لضمان إعادة التهيئة
-    await remove(ref(db, `rooms/${roomId}/gameState`));
+    const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
 
-    await update(ref(db, `rooms/${roomId}/status`), { 
-        state: 'playing',
-        target: targetPage,
-        timestamp: Date.now()
+    const initialCards = types.map((t, i) => {
+        const visuals = cardVisuals[t];
+        const visual = visuals[Math.floor(Math.random() * visuals.length)];
+        return { type: t, word: shuffledWords[i], revealed: false, visual: visual };
     });
+
+    const initialGameState = {
+        turn: firstTurn,
+        phase: 'spy',
+        scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
+        cards: initialCards,
+        logs: [],
+        lastActionTime: Date.now()
+    };
+
+    // 2. رفع الحالة للقاعدة أولاً، ثم تفعيل الانتقال
+    try {
+        await set(ref(db, `rooms/${roomId}/gameState`), initialGameState);
+        await update(ref(db, `rooms/${roomId}/status`), { 
+            state: 'playing',
+            target: 'game_multiplayer.html',
+            timestamp: Date.now()
+        });
+    } catch (e) {
+        alert("حدث خطأ أثناء بدء اللعبة");
+    }
 };
 
 onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
