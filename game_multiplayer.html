@@ -216,14 +216,13 @@
     let currentPlayers = {};
     let gameState = {};
 
-// --- 1. جلب بيانات اللاعبين وتوزيعهم بشكل صارم ---
+// --- جلب بيانات اللاعبين وتحديد دورك فوراً عند الدخول ---
 onValue(playersRef, (snapshot) => {
     const players = snapshot.val() || {};
     currentPlayers = players;
     
-    // إعادة تعيين الواجهة قبل الرسم
-    const possibleRoles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
-    possibleRoles.forEach(id => {
+    // تفريغ البطاقات قبل إعادة الرسم
+    ['blue-op', 'blue-spy', 'red-op', 'red-spy'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.querySelector('.avatar-box').innerHTML = '';
@@ -232,17 +231,16 @@ onValue(playersRef, (snapshot) => {
     });
 
     Object.values(players).forEach(p => {
-        // التحقق من هويتي: هنا يكمن الحل
+        // التحقق من هويتك باستخدام playerId المخزن في sessionStorage
         if (p.id === playerId) {
-            // استخراج اللون والدور بدقة
-            if (p.team.includes('spy')) myRole = 'spy';
-            else if (p.team.includes('op')) myRole = 'op';
-            
-            myTeamColor = p.team.startsWith('red') ? 'red' : 'blue';
-            console.log("تم التعرف عليك:", myTeamColor, myRole); // للتأكد في الكونسول
+            // استخلاص الفريق والدور من النص (مثال: red-spy)
+            myTeamColor = p.team.split('-')[0]; // ستكون "red"
+            myRole = p.team.split('-')[1];      // ستكون "spy"
+            console.log("تم تأكيد دخولك كـ:", myTeamColor, myRole);
         }
 
-        // وضع اللاعب في بطاقته الصحيحة
+        // وضع اللاعب في مكانه الصحيح في الـ HTML
+        // ملاحظة: p.team هنا هي "red-spy" ويجب أن يكون id العنصر مطابقاً تماماً
         const container = document.getElementById(p.team);
         if (container) {
             container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
@@ -250,8 +248,8 @@ onValue(playersRef, (snapshot) => {
         }
     });
     
-    // تحديث الأزرار والأدوار بناءً على البيانات الجديدة
-    if(gameState.turn) updateUISync();
+    // تحديث الواجهة بناءً على حالتك الجديدة
+    if(gameState && gameState.turn) updateUISync();
 });
 
     // --- 2. مزامنة حالة اللعبة ورؤية الألوان ---
