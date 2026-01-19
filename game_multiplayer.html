@@ -132,23 +132,40 @@
         </div>
     </div>
 
-    <div class="dashboard">
-        <div class="team-side blue-team">
-            <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 1</div></div>
-            <div class="score" id="blue-score">0</div>
-            <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 2</div></div>
+<div class="dashboard">
+    <div class="team-side blue-team">
+        <div class="player-card" id="blue-op">
+            <span class="role-title">Operatives</span>
+            <div class="avatar-box"></div>
+            <div class="player-name">فارغ</div>
         </div>
-        <div class="game-log-container">
-            <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
-            <div id="log-content"></div>
-        </div>
-        <div class="team-side red-team">
-            <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 3</div></div>
-            <div class="score" id="red-score">0</div>
-            <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 4</div></div>
+        <div class="score" id="blue-score">0</div>
+        <div class="player-card" id="blue-spy">
+            <span class="role-title">Spymasters</span>
+            <div class="avatar-box"></div>
+            <div class="player-name">فارغ</div>
         </div>
     </div>
+    
+    <div class="game-log-container">
+        <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
+        <div id="log-content"></div>
+    </div>
 
+    <div class="team-side red-team">
+        <div class="player-card" id="red-op">
+            <span class="role-title">Operatives</span>
+            <div class="avatar-box"></div>
+            <div class="player-name">فارغ</div>
+        </div>
+        <div class="score" id="red-score">0</div>
+        <div class="player-card" id="red-spy">
+            <span class="role-title">Spymasters</span>
+            <div class="avatar-box"></div>
+            <div class="player-name">فارغ</div>
+        </div>
+    </div>
+</div>
     <div class="grid-container" id="grid"></div>
 
     <div class="control-area">
@@ -199,40 +216,43 @@
     let currentPlayers = {};
     let gameState = {};
 
-    // --- 1. جلب بيانات اللاعبين وتوزيعهم في أماكنهم الصحيحة ---
-    onValue(playersRef, (snapshot) => {
-        const players = snapshot.val() || {};
-        currentPlayers = players;
-        
-        // تفريغ الكروت الافتراضية أولاً
-        const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
-        roles.forEach(roleId => {
-            const container = document.getElementById(roleId);
-            if (container) {
-                container.querySelector('.avatar-box').innerHTML = '';
-                container.querySelector('.player-name').innerText = 'فارغ';
-            }
-        });
-
-        Object.values(players).forEach(p => {
-            // تحديد دوري أنا بناءً على البيانات القادمة من الردهة
-            if (p.id === playerId) {
-                if (p.team.includes('spy')) myRole = 'spy';
-                else if (p.team.includes('op')) myRole = 'op';
-                myTeamColor = p.team.split('-')[0]; // ستكون blue أو red
-            }
-
-            // وضع اللاعب في مكانه الصحيح باستخدام الـ ID الموجود في الـ HTML (مثلاً red-spy)
-            const container = document.getElementById(p.team);
-            if (container) {
-                container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
-                container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
-            }
-        });
-        
-        // تحديث الواجهة بعد تحميل اللاعبين
-        if(gameState.turn) updateUISync();
+// --- 1. جلب بيانات اللاعبين وتوزيعهم بشكل صارم ---
+onValue(playersRef, (snapshot) => {
+    const players = snapshot.val() || {};
+    currentPlayers = players;
+    
+    // إعادة تعيين الواجهة قبل الرسم
+    const possibleRoles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+    possibleRoles.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.querySelector('.avatar-box').innerHTML = '';
+            el.querySelector('.player-name').innerText = 'فارغ';
+        }
     });
+
+    Object.values(players).forEach(p => {
+        // التحقق من هويتي: هنا يكمن الحل
+        if (p.id === playerId) {
+            // استخراج اللون والدور بدقة
+            if (p.team.includes('spy')) myRole = 'spy';
+            else if (p.team.includes('op')) myRole = 'op';
+            
+            myTeamColor = p.team.startsWith('red') ? 'red' : 'blue';
+            console.log("تم التعرف عليك:", myTeamColor, myRole); // للتأكد في الكونسول
+        }
+
+        // وضع اللاعب في بطاقته الصحيحة
+        const container = document.getElementById(p.team);
+        if (container) {
+            container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
+            container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
+        }
+    });
+    
+    // تحديث الأزرار والأدوار بناءً على البيانات الجديدة
+    if(gameState.turn) updateUISync();
+});
 
     // --- 2. مزامنة حالة اللعبة ورؤية الألوان ---
     onValue(gameRef, (snapshot) => {
