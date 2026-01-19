@@ -401,38 +401,34 @@
             for(let i=0; i<4; i++) document.getElementById('label'+i).className = (i==s.timer.val ? 'active-label':'');
         }
     });
-// ... (الأكواد السابقة لـ Firebase والتعريفات تبقى كما هي)
 
-// 1. دالة بدء اللعبة (للآدمن فقط)
+// دالة بدء اللعبة المعدلة
 window.startGame = async () => {
     if (!isAdmin) return;
-    
-    try {
-        const snapshot = await get(settingsRef);
-        const settings = snapshot.val();
-        const mode = settings?.mode || 'offline';
-        
-        // تحديد الصفحة الهدف بناءً على المود
-        const targetPage = (mode === 'online') ? 'game_multiplayer.html' : 'game.html';
-        
-        // تحديث حالة الغرفة لجميع اللاعبين
-        await update(ref(db, `rooms/${roomId}/status`), { 
-            state: 'playing',
-            target: targetPage,
-            timestamp: Date.now() // لضمان حدوث تغيير يلاحظه المستمع
-        });
-    } catch (error) {
-        console.error("Error starting game:", error);
-    }
+    const snapshot = await get(settingsRef);
+    const settings = snapshot.val();
+    const mode = settings?.mode || 'offline';
+    const targetPage = (mode === 'online') ? 'game_multiplayer.html' : 'game.html';
+
+    // مسح أي حالة قديمة للعبة قبل البدء لضمان إعادة التهيئة
+    await remove(ref(db, `rooms/${roomId}/gameState`));
+
+    await update(ref(db, `rooms/${roomId}/status`), { 
+        state: 'playing',
+        target: targetPage,
+        timestamp: Date.now()
+    });
 };
 
-// 2. مستمع الحالة (لجميع اللاعبين)
-// هذا الجزء هو المسؤول عن نقل اللاعبين بمجرد ضغط الآدمن للزر
 onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
     const status = snapshot.val();
     if (status && status.state === 'playing') {
-        // الانتقال للصفحة المحددة مع تمرير رقم الغرفة
-        window.location.href = `${status.target}?r=${roomId}`;
+        // التأكد من أن التوجه دائماً لـ multiplayer إذا كان المود أونلاين
+        get(settingsRef).then(settingsSnap => {
+            const settings = settingsSnap.val();
+            const finalTarget = (settings?.mode === 'online') ? 'game_multiplayer.html' : 'game.html';
+            window.location.href = `${finalTarget}?r=${roomId}`;
+        });
     }
 });
 
