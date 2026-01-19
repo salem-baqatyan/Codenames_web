@@ -215,22 +215,22 @@
         <div class="teams-grid">
             <div class="team-box blue-box">
                 <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container" id="blue-op-container"></div>
+                <div class="player-slot-container" id="blue-op"></div>
                 <button class="join-btn" id="btn-blue-op" onclick="joinTeam('blue-op')">أنضمام</button>
             </div>
             <div class="team-box red-box">
                 <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container" id="red-op-container"></div>
+                <div class="player-slot-container" id="red-op"></div>
                 <button class="join-btn" id="btn-red-op" onclick="joinTeam('red-op')">أنضمام</button>
             </div>
             <div class="team-box blue-box">
                 <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container" id="blue-spy-container"></div>
+                <div class="player-slot-container" id="blue-spy"></div>
                 <button class="join-btn" id="btn-blue-spy" onclick="joinTeam('blue-spy')">أنضمام</button>
             </div>
             <div class="team-box red-box">
                 <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container" id="red-spy-container"></div>
+                <div class="player-slot-container" id="red-spy"></div>
                 <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
             </div>
         </div>
@@ -466,10 +466,10 @@
     function renderLobby(players, adminId) {
         const containers = {
             'spectators-list': document.getElementById('spectators-list'),
-            'blue-op': document.getElementById('blue-op-container'),
-            'red-op': document.getElementById('red-op-container'),
-            'blue-spy': document.getElementById('blue-spy-container'),
-            'red-spy': document.getElementById('red-spy-container')
+            'blue-op': document.getElementById('blue-op'),
+            'blue-spy': document.getElementById('blue-spy'),
+            'red-op': document.getElementById('red-op'),
+            'red-spy': document.getElementById('red-spy')
         };
         
         Object.values(containers).forEach(c => c.innerHTML = '');
