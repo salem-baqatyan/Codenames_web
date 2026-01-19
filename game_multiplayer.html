@@ -200,32 +200,49 @@
     let gameState = {};
 
     // --- 1. جلب بيانات اللاعبين وتوزيعهم في أماكنهم ---
+// --- 1. جلب بيانات اللاعبين وتوزيعهم بشكل صحيح ---
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val() || {};
         currentPlayers = players;
         
-        // تفريغ جميع الكروت أولاً
-        document.querySelectorAll('.player-card .avatar-box').forEach(b => b.innerHTML = '');
-        document.querySelectorAll('.player-card .player-name').forEach(n => n.innerText = 'فارغ');
+        // تفريغ الأماكن أولاً لإعادة الرسم
+        const roleMappings = {
+            'blue-op': 'blue-op',
+            'blue-spy': 'blue-spy',
+            'red-op': 'red-op',
+            'red-spy': 'red-spy'
+        };
+
+        // تعيين الجميع كـ "فارغ" في البداية
+        Object.values(roleMappings).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.querySelector('.avatar-box').innerHTML = '';
+                el.querySelector('.player-name').innerText = 'فارغ';
+            }
+        });
 
         Object.values(players).forEach(p => {
+            // حفظ دوري الحالي بدقة
             if (p.id === playerId) {
-                // تحديد دوري أنا
+                myTeamColor = p.team.split('-')[0]; // ستكون blue أو red
                 if (p.team.includes('spy')) myRole = 'spy';
                 else if (p.team.includes('op')) myRole = 'op';
-                myTeamColor = p.team.split('-')[0]; // blue or red
             }
 
-            // وضع اللاعب في مكانه الصحيح في التصميم
-            const cardId = p.team; // مثلاً blue-op
-            const container = document.getElementById(cardId);
+            // تحديد العنصر في الـ HTML (مثلاً: red-spy-container)
+            const htmlId = p.team.includes('container') ? p.team : p.team + '-container';
+            const container = document.getElementById(htmlId);
+            
             if (container) {
                 container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
                 container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
             }
         });
+        
+        // تحديث الواجهة بعد توزيع اللاعبين
+        if(gameState.turn) updateUISync();
     });
-
     // --- 2. مزامنة حالة اللعبة ورؤية الألوان ---
     onValue(gameRef, (snapshot) => {
         gameState = snapshot.val();
