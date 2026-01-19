@@ -192,11 +192,11 @@
         <div class="settings-panel">
             <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
             <div class="mode-options">
-                <div class="mode-card active" id="mode-offline" onclick="setGameMode('offline')">
+                <div class="mode-card" id="mode-offline" onclick="setGameMode('offline')">
                     <img src="img/local.webp" class="mode-img">
                     <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
                 </div>
-                <div class="mode-card" id="mode-online" onclick="setGameMode('online')">
+                <div class="mode-card active" id="mode-online" onclick="setGameMode('online')">
                     <img src="img/online.webp" class="mode-img">
                     <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
                 </div>
@@ -234,15 +234,16 @@
                 <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
             </div>
         </div>
-<div class="footer">
-    <button class="start-btn" id="startBtn" onclick="window.startGame()">بدء اللعبة</button>
-</div>
+        <div class="footer">
+            <button class="start-btn" id="startBtn" onclick="window.startGame()">بدء اللعبة</button>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
     import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
         authDomain: "codenames-5fd71.firebaseapp.com",
@@ -253,6 +254,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // --- المعرفات والغرفة ---
     let urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
     if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
@@ -274,7 +276,7 @@
     let isAdmin = false;
     let hasJoined = false;
 
-    // --- وظائف الواجهة ---
+    // --- وظائف الملف الشخصي ---
     window.selectAvatar = (el) => {
         document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
         el.classList.add('selected');
@@ -287,49 +289,50 @@
         myData.name = name;
         hasJoined = true;
         document.getElementById('profileModal').style.display = 'none';
+        
+        // عند أول انضمام، نضبط المود أونلاين تلقائياً إذا كنت الآدمن
         updateServer();
+        get(playersRef).then(snap => {
+            if (Object.keys(snap.val() || {}).length === 1) {
+                update(settingsRef, { mode: 'online' }); 
+            }
+        });
     };
 
     window.openProfileSettings = () => {
         document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
         document.getElementById('nicknameInput').value = myData.name;
-        document.getElementById('leaveRoomBtn').style.display = 'block'; // إظهار زر المغادرة
+        document.getElementById('leaveRoomBtn').style.display = 'block';
         document.getElementById('profileModal').style.display = 'flex';
     };
 
     window.leaveLobby = () => {
         if(confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
             remove(myPlayerRef).then(() => {
-                location.href = 'index.html'; // أو الصفحة الرئيسية
+                location.href = 'index.html';
             });
         }
     };
 
-    // --- الحل الجذري لمشكلة الانضمام المتزامن ---
+    // --- إدارة الفرق (Synchronization Logic) ---
     window.joinTeam = (teamId) => {
         if (!hasJoined) return;
         
-        // إذا كان الانضمام للجمهور، لا نحتاج لمعاملة معقدة (لأنه يتسع للكل)
         if (teamId === 'spectators-list') {
             myData.team = teamId;
             updateServer();
             return;
         }
 
-        // استخدام Transaction للتأكد من أن الدور فارغ
         runTransaction(playersRef, (players) => {
             if (players) {
-                // التأكد هل يوجد شخص آخر في هذا الفريق غيري؟
                 const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
-                if (isTaken) {
-                    return; // إلغاء العملية
-                }
+                if (isTaken) return; 
             }
-            // إذا كان شاغراً، قم بتحديث بياناتي داخل القائمة
             if (!players) players = {};
             if (!players[playerId]) players[playerId] = myData;
             players[playerId].team = teamId;
-            myData.team = teamId; // تحديث الحالة المحلية أيضاً
+            myData.team = teamId;
             return players;
         });
     };
@@ -342,7 +345,7 @@
         });
     }
 
-    // --- إعدادات اللعبة ---
+    // --- إعدادات اللعبة والمؤقت ---
     window.setGameMode = (mode) => {
         if (!isAdmin) return;
         update(settingsRef, { mode: mode });
@@ -363,7 +366,7 @@
         update(settingsRef, { timer: configs[val] });
     };
 
-    // --- مراقبة التغييرات ---
+    // --- مراقبة البيانات وتحديث الواجهة ---
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val();
         if (!players) return;
@@ -371,14 +374,11 @@
         const playerList = Object.values(players);
         document.getElementById('playerCount').innerText = playerList.length;
 
-        // توريث الإشراف: ترتيب اللاعبين حسب وقت الانضمام
         const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
         const adminId = sorted[0].id;
         isAdmin = (playerId === adminId);
         
         document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
-        
-        // إخفاء إعدادات التحكم عن غير الآدمن
         const adminElements = document.querySelectorAll('.settings-panel');
         adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
 
@@ -402,70 +402,67 @@
         }
     });
 
-// أضف هذه الدوال والمصفوفات داخل ملف index.html في قسم السكريبت
-const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
-const cardVisuals = {
-    'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-    'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
-    'card-black': ['img/card/Black.webp'],
-    'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
-};
-
-window.startGame = async () => {
-    if (!isAdmin) return;
-    
-    // 1. إعداد حالة اللعبة مسبقاً
-    let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
-    let types = [
-        ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
-        ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
-        'card-black',
-        ...Array(7).fill('card-brown')
-    ].sort(() => Math.random() - 0.5);
-
-    const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
-
-    const initialCards = types.map((t, i) => {
-        const visuals = cardVisuals[t];
-        const visual = visuals[Math.floor(Math.random() * visuals.length)];
-        return { type: t, word: shuffledWords[i], revealed: false, visual: visual };
-    });
-
-    const initialGameState = {
-        turn: firstTurn,
-        phase: 'spy',
-        scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
-        cards: initialCards,
-        logs: [],
-        lastActionTime: Date.now()
+    // --- منطق بدء اللعبة ---
+    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
+    const cardVisuals = {
+        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+        'card-black': ['img/card/Black.webp'],
+        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
     };
 
-    // 2. رفع الحالة للقاعدة أولاً، ثم تفعيل الانتقال
-    try {
-        await set(ref(db, `rooms/${roomId}/gameState`), initialGameState);
-        await update(ref(db, `rooms/${roomId}/status`), { 
-            state: 'playing',
-            target: 'game_multiplayer.html',
-            timestamp: Date.now()
+    window.startGame = async () => {
+        if (!isAdmin) return;
+        
+        let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
+        let types = [
+            ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
+            ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
+            'card-black',
+            ...Array(7).fill('card-brown')
+        ].sort(() => Math.random() - 0.5);
+
+        const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
+
+        const initialCards = types.map((t, i) => {
+            const visuals = cardVisuals[t];
+            const visual = visuals[Math.floor(Math.random() * visuals.length)];
+            return { type: t, word: shuffledWords[i], revealed: false, visual: visual };
         });
-    } catch (e) {
-        alert("حدث خطأ أثناء بدء اللعبة");
-    }
-};
 
-onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
-    const status = snapshot.val();
-    if (status && status.state === 'playing') {
-        // التأكد من أن التوجه دائماً لـ multiplayer إذا كان المود أونلاين
-        get(settingsRef).then(settingsSnap => {
-            const settings = settingsSnap.val();
-            const finalTarget = (settings?.mode === 'online') ? 'game_multiplayer.html' : 'game.html';
-            window.location.href = `${finalTarget}?r=${roomId}`;
-        });
-    }
-});
+        const initialGameState = {
+            turn: firstTurn,
+            phase: 'spy',
+            scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
+            cards: initialCards,
+            logs: [],
+            lastActionTime: Date.now()
+        };
 
+        try {
+            await set(ref(db, `rooms/${roomId}/gameState`), initialGameState);
+            await update(ref(db, `rooms/${roomId}/status`), { 
+                state: 'playing',
+                timestamp: Date.now()
+            });
+        } catch (e) {
+            alert("حدث خطأ أثناء بدء اللعبة");
+        }
+    };
 
+    onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
+        const status = snapshot.val();
+        if (status && status.state === 'playing') {
+            get(settingsRef).then(settingsSnap => {
+                const settings = settingsSnap.val();
+                // التوجه الافتراضي هو game_multiplayer.html
+                const finalTarget = (settings?.mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
+                window.location.href = `${finalTarget}?r=${roomId}`;
+            });
+        }
+    });
+
+    // --- وظائف الرسم ---
     function renderLobby(players, adminId) {
         const containers = {
             'spectators-list': document.getElementById('spectators-list'),
@@ -476,8 +473,6 @@ onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
         };
         
         Object.values(containers).forEach(c => c.innerHTML = '');
-        
-        // إعادة تهيئة الأزرار
         document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
             b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
         });
@@ -502,11 +497,6 @@ onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
                 }
             }
         });
-            const startBtn = document.getElementById('startBtn');
-    if (startBtn) {
-        startBtn.style.display = (playerId === adminId) ? 'block' : 'none';
-    }
-
     }
 
     onDisconnect(myPlayerRef).remove();
