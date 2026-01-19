@@ -132,40 +132,23 @@
         </div>
     </div>
 
-<div class="dashboard">
-    <div class="team-side blue-team">
-        <div class="player-card" id="blue-op">
-            <span class="role-title">Operatives</span>
-            <div class="avatar-box"></div>
-            <div class="player-name">فارغ</div>
+    <div class="dashboard">
+        <div class="team-side blue-team">
+            <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 1</div></div>
+            <div class="score" id="blue-score">0</div>
+            <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 2</div></div>
         </div>
-        <div class="score" id="blue-score">0</div>
-        <div class="player-card" id="blue-spy">
-            <span class="role-title">Spymasters</span>
-            <div class="avatar-box"></div>
-            <div class="player-name">فارغ</div>
+        <div class="game-log-container">
+            <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
+            <div id="log-content"></div>
         </div>
-    </div>
-    
-    <div class="game-log-container">
-        <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
-        <div id="log-content"></div>
+        <div class="team-side red-team">
+            <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 3</div></div>
+            <div class="score" id="red-score">0</div>
+            <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 4</div></div>
+        </div>
     </div>
 
-    <div class="team-side red-team">
-        <div class="player-card" id="red-op">
-            <span class="role-title">Operatives</span>
-            <div class="avatar-box"></div>
-            <div class="player-name">فارغ</div>
-        </div>
-        <div class="score" id="red-score">0</div>
-        <div class="player-card" id="red-spy">
-            <span class="role-title">Spymasters</span>
-            <div class="avatar-box"></div>
-            <div class="player-name">فارغ</div>
-        </div>
-    </div>
-</div>
     <div class="grid-container" id="grid"></div>
 
     <div class="control-area">
@@ -211,69 +194,58 @@
     const gameRef = ref(db, `rooms/${roomId}/gameState`);
     const playersRef = ref(db, `rooms/${roomId}/players`);
 
-    let myRole = 'spectator'; // الدور الافتراضي
-    let myTeamColor = '';     // أزرق أو أحمر
+    let myRole = 'spectator'; 
+    let myTeamColor = '';     
     let currentPlayers = {};
     let gameState = {};
 
+    // --- 1. جلب بيانات اللاعبين وتوزيعهم في أماكنهم (مع تصحيح الـ ID) ---
+    onValue(playersRef, (snapshot) => {
+        const players = snapshot.val() || {};
+        currentPlayers = players;
+        
+        // قائمة المظاهر الافتراضية للتنظيف
+        const allRoles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+        allRoles.forEach(role => {
+            const container = document.getElementById(role) || document.getElementById(role + '-container');
+            if (container) {
+                container.querySelector('.avatar-box').innerHTML = '';
+                container.querySelector('.player-name').innerText = 'فارغ';
+            }
+        });
 
-// محاولة استعادة الفريق من الذاكرة المحلية فوراً
-const savedTeam = sessionStorage.getItem('codenames_myTeam');
-if (savedTeam) {
-    if (savedTeam.includes('spy')) myRole = 'spy';
-    else if (savedTeam.includes('op')) myRole = 'op';
-    myTeamColor = savedTeam.split('-')[0];
-}
+        Object.values(players).forEach(p => {
+            if (p.id === playerId) {
+                // تحديد هويتي في اللعبة
+                myTeamColor = p.team.split('-')[0]; 
+                if (p.team.includes('spy')) myRole = 'spy';
+                else if (p.team.includes('op')) myRole = 'op';
+            }
 
-// ثم في onValue(playersRef...) تأكد من تحديث هذه القيم إذا تغيرت
-onValue(playersRef, (snapshot) => {
-    const players = snapshot.val() || {};
-    currentPlayers = players;
-    
-    // تفريغ البطاقات قبل إعادة الرسم
-    ['blue-op', 'blue-spy', 'red-op', 'red-spy'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.querySelector('.avatar-box').innerHTML = '';
-            el.querySelector('.player-name').innerText = 'فارغ';
-        }
+            // محاولة العثور على العنصر سواء بـ ID الدور مباشرة أو بزيادة -container
+            const container = document.getElementById(p.team) || document.getElementById(p.team + '-container');
+            
+            if (container) {
+                container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
+                container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
+            }
+        });
+        
+        // إعادة تحديث الواجهة للتأكد من تفعيل الأزرار الصحيحة بعد التعرف على دوري
+        if (gameState.turn) updateUISync();
     });
-
-Object.values(players).forEach(p => {
-        if (p.id === playerId) {
-            // تحديث القيم من السيرفر للتأكيد
-            if (p.team.includes('spy')) myRole = 'spy';
-            else if (p.team.includes('op')) myRole = 'op';
-            myTeamColor = p.team.split('-')[0];
-            // حفظها للزيارات القادمة
-            sessionStorage.setItem('codenames_myTeam', p.team);
-        }
-
-        // وضع اللاعب في مكانه الصحيح في الـ HTML
-        // ملاحظة: p.team هنا هي "red-spy" ويجب أن يكون id العنصر مطابقاً تماماً
-        const container = document.getElementById(p.team);
-        if (container) {
-            container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
-            container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
-        }
-    });
-    
-    // تحديث الواجهة بناءً على حالتك الجديدة
-    if(gameState && gameState.turn) updateUISync();
-});
 
     // --- 2. مزامنة حالة اللعبة ورؤية الألوان ---
     onValue(gameRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        gameState = data;
+        gameState = snapshot.val();
+        if (!gameState) return;
 
         renderGridSync();
         updateUISync();
         
-        // إخفاء شاشة التحميل بمجرد استلام بيانات اللعبة
-        const loading = document.getElementById('loading-screen');
-        if(loading) loading.style.display = 'none';
+        // إخفاء شاشة التحميل عند اكتمال جلب البيانات
+        const loader = document.getElementById('loading-screen');
+        if (loader) loader.style.display = 'none';
     });
 
     function renderGridSync() {
@@ -284,32 +256,29 @@ Object.values(players).forEach(p => {
         gameState.cards.forEach((card, i) => {
             const div = document.createElement('div');
             
-            // --- منطق الرؤية المعتمد على الدور ---
-            // القائد (spy) أو الجمهور (spectator) يرون ألوان البطاقات الحقيقية
-            // العميل (op) لا يرى إلا البطاقات التي تم كشفها (revealed)
-            const isRevealed = card.revealed;
-            const canSeeAll = (myRole === 'spy' || myRole === 'spectator');
+            // القائد والجمهور يرون الألوان. العميل يرى فقط ما تم كشفه.
+            const shouldShowColor = (myRole === 'spy' || myRole === 'spectator' || card.revealed);
+            const cardClass = shouldShowColor ? card.type : 'card-hidden';
             
-            const cardClass = (canSeeAll || isRevealed) ? card.type : 'card-hidden';
             const isSelected = (gameState.selectedCards || {})[i];
 
-            div.className = `card ${cardClass} ${isRevealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+            div.className = `card ${cardClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
             div.id = `card-${i}`;
 
             div.innerHTML = `
                 <div class="confirm-btn" id="confirm-${i}" 
-                     style="display: ${isSelected && myRole === 'op' && gameState.turn === myTeamColor ? 'flex' : 'none'}" 
+                     style="display: ${isSelected && myRole === 'op' ? 'flex' : 'none'}" 
                      onclick="event.stopPropagation(); window.confirmSelection(${i});">
                     <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                 </div>
-                <img src="${card.visual}" class="card-reveal-img" style="opacity: ${isRevealed ? 1 : 0}">
+                <img src="${card.visual}" class="card-reveal-img">
                 <div class="card-main-body">
                     <div class="bottom-box">${card.word}</div>
                 </div>`;
 
-            // العميل يختار البطاقات فقط في دوره
+            // العميل فقط يتفاعل مع الكروت في دوره
             div.onclick = () => {
-                if (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative' && !isRevealed) {
+                if (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative' && !card.revealed) {
                     handleCardSelectionSync(i);
                 }
             };
@@ -321,39 +290,42 @@ Object.values(players).forEach(p => {
         document.getElementById('blue-score').innerText = gameState.scores.blue;
         document.getElementById('red-score').innerText = gameState.scores.red;
         
-        // تمييز الكرت النشط (الوميض)
+        // تحديث إضاءة اللاعب النشط
         document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-        const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
-        const activeElement = document.getElementById(activeId);
+        const activeBaseId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
+        const activeElement = document.getElementById(activeBaseId) || document.getElementById(activeBaseId + '-container');
+        
         if (activeElement) {
             activeElement.classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
         }
 
-        // إعدادات منطقة التحكم
-        const clueUI = document.getElementById('clue-ui');
+        // واجهة إدخال التلميح (للقائد فقط)
+        const canISendClue = (myRole === 'spy' && gameState.turn === myTeamColor && gameState.phase === 'spy');
+        const controlArea = document.querySelector('.control-area');
+        const clueUi = document.getElementById('clue-ui');
+        
+        if (canISendClue) {
+            controlArea.classList.remove('disabled-area');
+            if (clueUi) clueUi.style.opacity = "1";
+        } else {
+            controlArea.classList.add('disabled-area');
+        }
+        
+        // زر الأكشن (إرسال تلميح أو إنهاء دور)
+        const canIEndTurn = (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative');
         const actionBtn = document.getElementById('action-btn');
-        const btnIcon = document.getElementById('btn-icon');
+        const icon = document.getElementById('btn-icon');
 
-        // هل أنا القائد والدور علي؟ (لكتابة التلميح)
-        const isMySpyTurn = (myRole === 'spy' && gameState.turn === myTeamColor && gameState.phase === 'spy');
-        // هل أنا العميل والدور علي؟ (لإنهاء الدور)
-        const isMyOpTurn = (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative');
-
-        if (isMySpyTurn) {
-            clueUI.classList.remove('disabled-area');
-            actionBtn.style.pointerEvents = "auto";
-            actionBtn.classList.remove('end-turn-btn');
-            btnIcon.className = 'arrow-icon'; btnIcon.innerHTML = '';
-        } else if (isMyOpTurn) {
-            clueUI.classList.add('disabled-area');
+        if (canIEndTurn) {
             actionBtn.style.pointerEvents = "auto";
             actionBtn.classList.add('end-turn-btn');
-            btnIcon.className = 'x-icon'; btnIcon.innerHTML = '✕';
+            if (icon) { icon.className = 'x-icon'; icon.innerHTML = '✕'; }
+        } else if (canISendClue) {
+            actionBtn.style.pointerEvents = "auto";
+            actionBtn.classList.remove('end-turn-btn');
+            if (icon) { icon.className = 'arrow-icon'; icon.innerHTML = ''; }
         } else {
-            // ليس دوري أو أنا جمهور
-            clueUI.classList.add('disabled-area');
             actionBtn.style.pointerEvents = "none";
-            btnIcon.innerHTML = '';
         }
     }
 
@@ -372,26 +344,26 @@ Object.values(players).forEach(p => {
 
         if (!word || num === '-') return;
 
-        const clueData = { 
+        const newLog = { 
+            type: 'clue', 
+            team: gameState.turn, 
             word: word, 
-            num: num, 
-            team: gameState.turn 
+            num: num 
         };
 
         await update(gameRef, {
             phase: 'operative',
             targetClueNum: num === '∞' ? 99 : parseInt(num),
             guessesThisTurn: 0,
-            currentClue: clueData,
-            // سيتم تفعيل سجل اللعبة (Logs) في الخطوة القادمة
+            logs: [...(gameState.logs || []), newLog]
         });
         input.value = '';
+        select.value = '-';
     }
 
     async function handleCardSelectionSync(i) {
         const currentSelections = {};
-        // منطق اختيار بطاقة واحدة فقط في كل مرة للتأكيد
-        currentSelections[i] = true;
+        currentSelections[i] = true; // نكتفي باختيار واحد فقط للتأكيد
         await update(gameRef, { selectedCards: currentSelections });
     }
 
@@ -406,7 +378,7 @@ Object.values(players).forEach(p => {
         let newPhase = gameState.phase;
         let newTurn = gameState.turn;
 
-        // إذا أصاب العميل بطاقة الفريق الآخر أو بطاقة محايدة، ينتهي الدور فوراً
+        // إذا أخطأ الفريق في اللون أو لمس القاتل
         if (card.type !== `card-${gameState.turn}`) {
             newTurn = (gameState.turn === 'blue' ? 'red' : 'blue');
             newPhase = 'spy';
@@ -417,7 +389,8 @@ Object.values(players).forEach(p => {
             scores: newScores,
             phase: newPhase,
             turn: newTurn,
-            selectedCards: {}
+            selectedCards: {},
+            guessesThisTurn: (gameState.guessesThisTurn || 0) + 1
         });
     };
 
@@ -429,5 +402,6 @@ Object.values(players).forEach(p => {
             guessesThisTurn: 0
         });
     }
-</script></body>
+</script>
+</body>
 </html>

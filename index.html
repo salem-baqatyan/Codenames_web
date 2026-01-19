@@ -450,21 +450,17 @@
         }
     };
 
-onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
-    const status = snapshot.val();
-    if (status && status.state === 'playing') {
-        // --- إضافة هذا السطر لحفظ الفريق محلياً ---
-        if (myData && myData.team) {
-            sessionStorage.setItem('codenames_myTeam', myData.team);
+    onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
+        const status = snapshot.val();
+        if (status && status.state === 'playing') {
+            get(settingsRef).then(settingsSnap => {
+                const settings = settingsSnap.val();
+                // التوجه الافتراضي هو game_multiplayer.html
+                const finalTarget = (settings?.mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
+                window.location.href = `${finalTarget}?r=${roomId}`;
+            });
         }
-        
-        get(settingsRef).then(settingsSnap => {
-            const settings = settingsSnap.val();
-            const finalTarget = (settings?.mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
-            window.location.href = `${finalTarget}?r=${roomId}`;
-        });
-    }
-});
+    });
 
     // --- وظائف الرسم ---
     function renderLobby(players, adminId) {
