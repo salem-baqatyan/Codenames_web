@@ -331,23 +331,23 @@
         <div class="teams-grid">
             <div class="team-box blue-box">
                 <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container" id="blue-op"></div>
-                <button class="join-btn" id="btn-blue-op" onclick="joinTeam('blue-op')">أنضمام</button>
+                <div class="player-slot-container" id="game-blue-op"></div>
+                <button class="join-btn" id="btn-game-blue-op" onclick="joinTeam('game-blue-op')">أنضمام</button>
             </div>
             <div class="team-box red-box">
                 <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container" id="red-op"></div>
-                <button class="join-btn" id="btn-red-op" onclick="joinTeam('red-op')">أنضمام</button>
+                <div class="player-slot-container" id="game-red-op"></div>
+                <button class="join-btn" id="btn-game-red-op" onclick="joinTeam('game-red-op')">أنضمام</button>
             </div>
             <div class="team-box blue-box">
                 <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container" id="blue-spy"></div>
-                <button class="join-btn" id="btn-blue-spy" onclick="joinTeam('blue-spy')">أنضمام</button>
+                <div class="player-slot-container" id="game-blue-spy"></div>
+                <button class="join-btn" id="btn-game-blue-spy" onclick="joinTeam('game-blue-spy')">أنضمام</button>
             </div>
             <div class="team-box red-box">
                 <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container" id="red-spy"></div>
-                <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
+                <div class="player-slot-container" id="game-red-spy"></div>
+                <button class="join-btn" id="btn-game-red-spy" onclick="joinTeam('game-red-spy')">أنضمام</button>
             </div>
         </div>
         <div class="footer">
@@ -375,18 +375,18 @@
 
         <div class="dashboard">
             <div class="team-side blue-team">
-                <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 1</div></div>
+                <div class="player-card" id="game-blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 1</div></div>
                 <div class="score" id="blue-score">0</div>
-                <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 2</div></div>
+                <div class="player-card" id="game-blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 2</div></div>
             </div>
             <div class="game-log-container">
                 <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
                 <div id="log-content"></div>
             </div>
             <div class="team-side red-team">
-                <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 3</div></div>
+                <div class="player-card" id="game-red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 3</div></div>
                 <div class="score" id="red-score">0</div>
-                <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 4</div></div>
+                <div class="player-card" id="game-red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 4</div></div>
             </div>
         </div>
 
@@ -609,45 +609,55 @@ const cardVisuals = {
 };
 
 window.startGame = async () => {
-  if (!isAdmin) return;
+    if (!isAdmin) return;
 
-  let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
-  let types = [
-    ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
-    ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
-    'card-black',
-    ...Array(7).fill('card-brown')
-  ].sort(() => Math.random() - 0.5);
+    // 1. تجهيز البيانات محلياً أولاً لضمان السرعة
+    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
+    const cardVisuals = { 
+        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'], 
+        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'], 
+        'card-black': ['img/card/Black.webp'], 
+        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp'] 
+    };
+    
+    let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
+    let types = [
+        ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'), 
+        ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'), 
+        'card-black', 
+        ...Array(7).fill('card-brown')
+    ].sort(() => Math.random() - 0.5);
 
-  const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
+    const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
+    const initialCards = types.map((t, i) => ({ 
+        type: t, 
+        word: shuffledWords[i], 
+        revealed: false, 
+        visual: cardVisuals[t][Math.floor(Math.random() * cardVisuals[t].length)] 
+    }));
 
-  const initialCards = types.map((t, i) => {
-    const visuals = cardVisuals[t];
-    const visual = visuals[Math.floor(Math.random() * visuals.length)];
-    return { type: t, word: shuffledWords[i], revealed: false, visual };
-  });
+    // 2. تحديث الحالة "محلياً" قبل الرفع لضمان استجابة فورية لواجهتك
+    gameState = { 
+        turn: firstTurn, 
+        phase: 'spy', 
+        scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 }, 
+        cards: initialCards, 
+        lastActionTime: Date.now(),
+        selectedCards: {} 
+    };
 
-  const initialGameState = {
-    turn: firstTurn,
-    phase: 'spy',
-    scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
-    cards: initialCards,
-    logs: [],
-    selectedCards: {},
-    lastActionTime: Date.now()
-  };
-
-  try {
-    await set(gameRef, initialGameState);
-    await update(statusRef, {
-      state: 'playing',
-      timestamp: Date.now()
-    });
-  } catch (e) {
-    alert("حدث خطأ أثناء بدء اللعبة");
-  }
+    // 3. الرفع المتزامن (هنا نضمن أن الجميع سينتقلون معك)
+    try {
+        await set(gameRef, gameState);
+        await update(statusRef, { state: 'playing', timestamp: Date.now() });
+        
+        // تفعيل الواجهة فوراً للادمن دون انتظار الـ Firebase Callback
+        renderGridSync();
+        updateUISync();
+    } catch (e) {
+        console.error("خطأ في بدء اللعبة:", e);
+    }
 };
-
 /* ===================== مراقبة حالة الغرفة (بدل الانتقال لصفحة) ===================== */
 onValue(statusRef, (snapshot) => {
   const status = snapshot.val();
@@ -671,10 +681,10 @@ function showLobbyScreen() {
 function renderLobby(players, adminId) {
   const containers = {
     'spectators-list': document.getElementById('spectators-list'),
-    'blue-op': document.getElementById('blue-op'),
-    'blue-spy': document.getElementById('blue-spy'),
-    'red-op': document.getElementById('red-op'),
-    'red-spy': document.getElementById('red-spy')
+    'game-blue-op': document.getElementById('game-blue-op'),
+    'game-blue-spy': document.getElementById('game-blue-spy'),
+    'game-red-op': document.getElementById('game-red-op'),
+    'game-red-spy': document.getElementById('game-red-spy')
   };
 
   Object.values(containers).forEach(c => c.innerHTML = '');
@@ -723,7 +733,7 @@ onValue(gameRef, (snapshot) => {
 
 /* ===== رسم اللاعبين في شاشة اللعب ===== */
 function renderGamePlayers(players) {
-  const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+  const roles = ['game-blue-op', 'game-blue-spy', 'game-red-op', 'game-red-spy'];
   roles.forEach(roleId => {
     const container = document.getElementById(roleId);
     if (container) {
@@ -790,6 +800,11 @@ function renderGridSync() {
 
 /* ===== تحديث واجهة اللعب ===== */
 function updateUISync() {
+    const myCurrentData = Object.values(currentPlayers).find(p => p.id === playerId);
+    if (myCurrentData) {
+        myTeamColor = myCurrentData.team.split('-')[0];
+        myRole = myCurrentData.team.includes('spy') ? 'spy' : 'op';
+    }
   document.getElementById('blue-score').innerText = gameState.scores.blue;
   document.getElementById('red-score').innerText = gameState.scores.red;
 
