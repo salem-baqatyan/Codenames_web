@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Codenames Pro - Lobby</title>
+
+    <!-- ====== CSS الملف الأول (كما هو) ====== -->
     <style>
         :root {
             --bg-dark: #000000;
@@ -135,10 +137,124 @@
         .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.6rem; color: #888; }
         .active-label { color: #7ed321; font-weight: bold; }
     </style>
+
+    <!-- ====== CSS الملف الثاني (كما هو بدون أي تعديل) ====== -->
+    <style>
+        :root { 
+            --bg-color: #0d1117; 
+            --blue-glow: 0 0 20px #3498db; 
+            --red-glow: 0 0 20px #e74c3c;
+        }
+
+        /* --- شاشة التحميل --- */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+        }
+        .loader {
+            border: 4px solid #333; border-top: 4px solid #3498db;
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Tahoma', sans-serif; }
+
+        .mobile-wrapper {
+            width: 100%; max-width: 450px; height: 100%; margin: 0 auto;
+            background-color: var(--bg-color); display: flex; flex-direction: column;
+            border-left: 1px solid #333; border-right: 1px solid #333; position: relative;
+        }
+        /* --- الجزء الأول: اللاعبين --- */
+        .dashboard { height: 30%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 10px; flex-shrink: 0; }
+        .team-side { display: flex; flex-direction: column; gap: 4px; }
+        .player-card { flex: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); background: #222; transition: 0.3s; position: relative; }
+        .blue-team .player-card { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
+        .red-team .player-card { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
+        .role-title { position: absolute; top: 3px; font-size: 0.5rem; color: rgba(255,255,255,0.6); font-weight: bold; }
+        .active-blue { box-shadow: var(--blue-glow); border: 2px solid white !important; }
+        .active-red { box-shadow: var(--red-glow); border: 2px solid white !important; }
+        .score { font-size: 1.5rem; font-weight: 900; text-align: center; color: white; display: flex; align-items: center; justify-content: center;}
+        .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; object-fit: cover; background: rgba(0,0,0,0.3); }
+        .player-name { font-size: 0.55rem; color: white; margin-top: 0px; font-weight: bold; }
+
+        /* --- سجل اللعبة --- */
+        .game-log-container { background: #333; border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
+        #log-content { flex: 1; background: #2a2a2a; border-radius: 4px; font-size: 0.6rem; overflow-y: auto; color: white; padding: 5px; display: flex; flex-direction: column-reverse; gap: 8px; scrollbar-width: none; }
+        #log-content::-webkit-scrollbar { display: none; }
+
+        .log-row { display: flex; width: 100%; align-items: center; gap: 5px; }
+        .row-blue { justify-content: flex-start; flex-direction: row-reverse; } 
+        .row-red { justify-content: flex-start; flex-direction: row; } 
+
+        .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
+        .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
+        .log-clue-red { background: #e74c3c; flex-direction: row; }
+        
+        .log-avatar { width: 18px; height: 18px; border-radius: 50%; border: 2px solid; }
+        .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 0.55rem;}
+        .log-num-circle { width: 16px; height: 16px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.55rem; flex-shrink: 0;}
+
+        .log-guess-item { display: flex; align-items: center; gap: 4px; }
+        .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
+        .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }
+
+        /* --- الشبكة --- */
+        .grid-container { height: 57%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; }
+        .card { border-radius: 5px; padding: 2px; display: flex; cursor: pointer; position: relative; overflow: visible; perspective: 1000px; }
+        
+        .card-main-body { flex: 1; border-radius: 3px; display: flex; flex-direction: column; border: 1px solid; overflow: hidden; pointer-events: none; position: relative; }
+        .bottom-box { margin-top: auto; height: 45%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; font-weight: bold; border-top: 1px solid; color: white; }
+
+        .card-reveal-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 5; border-radius: 3px;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            opacity: 0; pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transform-origin: top; 
+            will-change: transform;
+        }
+        
+        .card-revealed .card-reveal-img { opacity: 1; pointer-events: auto; }
+        .card-peeking .card-reveal-img { transform: rotateX(-55deg) translateY(-5px); z-index: 6; }
+
+        .card-blue { background: #3ec1f3; } .card-blue .card-main-body { background: #19a8ff; border-color: #0b4d9b; } .card-blue .bottom-box { background: #0b4d9b; border-color: #3ec1f3; }
+        .card-red { background: #ff8e7a; } .card-red .card-main-body { background: #ff6a4c; border-color: #8c2b1e; } .card-red .bottom-box { background: #8c2b1e; border-color: #ff8e7a; }
+        .card-black { background: #7a7a7a; } .card-black .card-main-body { background: #444; border-color: #222; } .card-black .bottom-box { background: #1a1a1a; border-color: #7a7a7a; }
+        .card-brown { background: #fbe0c3; } .card-brown .card-main-body { background: #f7cda3; border-color: #9a7452; } .card-brown .bottom-box { background: #9a7452; border-color: #fbe0c3; }
+        .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
+        
+        .card-revealed { cursor: default; }
+
+        .confirm-btn { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: #7ed321; border: 2px solid white; border-radius: 50%; display: none; justify-content: center; align-items: center; z-index: 10; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .confirm-btn svg { width: 14px; height: 14px; fill: white; }
+        .card-selected { transform: scale(0.95); box-shadow: 0 0 10px #7ed321; }
+
+        .custom-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; border: 2px solid #555; border-radius: 15px; padding: 20px; text-align: center; z-index: 1000; color: white; display: none; width: 80%; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .alert-btns { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .alert-btn { padding: 8px 15px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; }
+        .btn-ok { background: #7ed321; color: white; }
+        .btn-cancel { background: #d0021b; color: white; }
+
+        .control-area { height: 13%; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
+        .clue-bar-layout { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0 10px;}
+        .clue-input-wrapper { flex: 1; background: white; border-radius: 20px; height: 35px; display: flex; align-items: center; padding: 0 12px; }
+        .clue-input { width: 100%; border: none; outline: none; font-weight: bold; color: #333; text-align: center; font-size: 0.8rem; background: transparent; }
+        .clue-select { width: 45px; height: 35px; border-radius: 50%; border: 2px solid #555; background: white; color: #19a8ff; font-weight: bold; text-align: center; appearance: none; outline: none; font-size: 0.9rem; transition: 0.3s; }
+        .send-btn { width: 75px; height: 35px; background: linear-gradient(to bottom, #7ed321, #417505); border: 1.5px solid #b8e986; border-radius: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 2px 0 #2e5a03;}
+        .end-turn-btn { background: linear-gradient(to bottom, #d0021b, #8b0000) !important; }
+        .arrow-icon { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid white; }
+        .x-icon { color: white; font-weight: 900; font-size: 1.2rem; }
+        .disabled-area { opacity: 0.7; pointer-events: none; filter: grayscale(0.5); }
+        .error-border { border-color: #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
+    </style>
 </head>
 <body>
 
-<div class="mobile-wrapper">
+<!-- ================= الملف الأول (ظاهر) ================= -->
+<div class="mobile-wrapper" id="lobby-screen">
     <div class="modal-overlay" id="profileModal" style="display: flex;">
         <div class="settings-modal">
             <div class="modal-header" id="profileHeader" style="font-weight: bold; margin-bottom: 10px;">أهلاً بك! جهز ملفك</div>
@@ -240,266 +356,540 @@
     </div>
 </div>
 
+<!-- ================= الملف الثاني (مخفي بالكامل) ================= -->
+<div id="game-screen" style="display:none;">
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <div>جاري التحميل...</div>
+    </div>
+
+    <div class="mobile-wrapper">
+        <div id="customAlert" class="custom-alert">
+            <p id="alertMsg"></p>
+            <div class="alert-btns">
+                <button class="alert-btn btn-ok" id="alertOk">موافق</button>
+                <button class="alert-btn btn-cancel" id="alertCancel">إلغاء</button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="team-side blue-team">
+                <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 1</div></div>
+                <div class="score" id="blue-score">0</div>
+                <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 2</div></div>
+            </div>
+            <div class="game-log-container">
+                <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
+                <div id="log-content"></div>
+            </div>
+            <div class="team-side red-team">
+                <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player 3</div></div>
+                <div class="score" id="red-score">0</div>
+                <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player 4</div></div>
+            </div>
+        </div>
+
+        <div class="grid-container" id="grid"></div>
+
+        <div class="control-area">
+            <div id="clue-ui" class="clue-bar-layout">
+                <div class="clue-input-wrapper">
+                    <input type="text" id="clueInput" class="clue-input" placeholder="اكتب تلميح">
+                </div>
+                <select id="clueNum" class="clue-select">
+                    <option value="-">-</option>
+                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                    <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                    <option value="∞">∞</option>
+                </select>
+            </div>
+            <div id="action-btn" class="send-btn" onclick="handleAction()">
+                <div id="btn-icon" class="arrow-icon"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
+
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-    
-    const firebaseConfig = {
-        apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
-        authDomain: "codenames-5fd71.firebaseapp.com",
-        projectId: "codenames-5fd71",
-        databaseURL: "https://codenames-5fd71-default-rtdb.firebaseio.com",
-    };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import {
+  getDatabase, ref, set, onValue, onDisconnect,
+  update, runTransaction, remove, get
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+/* ===================== Firebase ===================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
+  authDomain: "codenames-5fd71.firebaseapp.com",
+  projectId: "codenames-5fd71",
+  databaseURL: "https://codenames-5fd71-default-rtdb.firebaseio.com",
+};
 
-    // --- المعرفات والغرفة ---
-    let urlParams = new URLSearchParams(window.location.search);
-    let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
-    if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    let playerId = sessionStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
-    sessionStorage.setItem('codenames_playerId', playerId);
+/* ===================== معرفات الغرفة ===================== */
+let urlParams = new URLSearchParams(window.location.search);
+let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
+if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
 
-    const playersRef = ref(db, `rooms/${roomId}/players`);
-    const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
-    const settingsRef = ref(db, `rooms/${roomId}/settings`);
+let playerId = sessionStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
+sessionStorage.setItem('codenames_playerId', playerId);
 
-    let myData = {
-        id: playerId,
-        name: "",
-        avatar: "img/avatar_snow_man.webp",
-        team: "spectators-list",
-        joinedAt: Date.now()
-    };
-    let isAdmin = false;
-    let hasJoined = false;
+/* ===================== مراجع قاعدة البيانات ===================== */
+const playersRef = ref(db, `rooms/${roomId}/players`);
+const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+const settingsRef = ref(db, `rooms/${roomId}/settings`);
+const gameRef = ref(db, `rooms/${roomId}/gameState`);
+const statusRef = ref(db, `rooms/${roomId}/status`);
 
-    // --- وظائف الملف الشخصي ---
-    window.selectAvatar = (el) => {
-        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
-        el.classList.add('selected');
-        myData.avatar = "img/" + el.src.split('/').pop();
-    };
+/* ===================== بياناتي ===================== */
+let myData = {
+  id: playerId,
+  name: "",
+  avatar: "img/avatar_snow_man.webp",
+  team: "spectators-list",
+  joinedAt: Date.now()
+};
 
-    window.saveProfile = () => {
-        const name = document.getElementById('nicknameInput').value.trim();
-        if (!name) return alert("الرجاء إدخال اسمك");
-        myData.name = name;
-        hasJoined = true;
-        document.getElementById('profileModal').style.display = 'none';
-        
-        // عند أول انضمام، نضبط المود أونلاين تلقائياً إذا كنت الآدمن
-        updateServer();
-        get(playersRef).then(snap => {
-            if (Object.keys(snap.val() || {}).length === 1) {
-                update(settingsRef, { mode: 'online' }); 
-            }
-        });
-    };
+let isAdmin = false;
+let hasJoined = false;
 
-    window.openProfileSettings = () => {
-        document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
-        document.getElementById('nicknameInput').value = myData.name;
-        document.getElementById('leaveRoomBtn').style.display = 'block';
-        document.getElementById('profileModal').style.display = 'flex';
-    };
+/* ===================== حالة اللعبة ===================== */
+let myRole = 'spectator';
+let myTeamColor = '';
+let currentPlayers = {};
+let gameState = {};
 
-    window.leaveLobby = () => {
-        if(confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
-            remove(myPlayerRef).then(() => {
-                location.href = 'index.html';
-            });
-        }
-    };
+/* ===================== شاشات الواجهة ===================== */
+const lobbyScreen = document.getElementById('lobby-screen');
+const gameScreen = document.getElementById('game-screen');
 
-    // --- إدارة الفرق (Synchronization Logic) ---
-    window.joinTeam = (teamId) => {
-        if (!hasJoined) return;
-        
-        if (teamId === 'spectators-list') {
-            myData.team = teamId;
-            updateServer();
-            return;
-        }
+/* ===================== وظائف الملف الشخصي ===================== */
+window.selectAvatar = (el) => {
+  document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+  el.classList.add('selected');
+  myData.avatar = "img/" + el.src.split('/').pop();
+};
 
-        runTransaction(playersRef, (players) => {
-            if (players) {
-                const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
-                if (isTaken) return; 
-            }
-            if (!players) players = {};
-            if (!players[playerId]) players[playerId] = myData;
-            players[playerId].team = teamId;
-            myData.team = teamId;
-            return players;
-        });
-    };
+window.saveProfile = () => {
+  const name = document.getElementById('nicknameInput').value.trim();
+  if (!name) return alert("الرجاء إدخال اسمك");
+  myData.name = name;
+  hasJoined = true;
+  document.getElementById('profileModal').style.display = 'none';
 
-    function updateServer() {
-        if (!hasJoined) return;
-        set(myPlayerRef, {
-            ...myData,
-            lastActive: Date.now()
-        });
+  updateServer();
+  get(playersRef).then(snap => {
+    if (Object.keys(snap.val() || {}).length === 1) {
+      update(settingsRef, { mode: 'online' });
+    }
+  });
+};
+
+window.openProfileSettings = () => {
+  document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
+  document.getElementById('nicknameInput').value = myData.name;
+  document.getElementById('leaveRoomBtn').style.display = 'block';
+  document.getElementById('profileModal').style.display = 'flex';
+};
+
+window.leaveLobby = () => {
+  if (confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
+    remove(myPlayerRef).then(() => {
+      location.href = 'index.html';
+    });
+  }
+};
+
+/* ===================== إدارة الفرق ===================== */
+window.joinTeam = (teamId) => {
+  if (!hasJoined) return;
+
+  if (teamId === 'spectators-list') {
+    myData.team = teamId;
+    updateServer();
+    return;
+  }
+
+  runTransaction(playersRef, (players) => {
+    if (players) {
+      const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
+      if (isTaken) return;
+    }
+    if (!players) players = {};
+    if (!players[playerId]) players[playerId] = myData;
+    players[playerId].team = teamId;
+    myData.team = teamId;
+    return players;
+  });
+};
+
+function updateServer() {
+  if (!hasJoined) return;
+  set(myPlayerRef, {
+    ...myData,
+    lastActive: Date.now()
+  });
+}
+
+/* ===================== إعدادات اللعبة ===================== */
+window.setGameMode = (mode) => {
+  if (!isAdmin) return;
+  update(settingsRef, { mode });
+};
+
+window.openTimerModal = () => {
+  if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
+};
+
+window.changeTimer = (val) => {
+  if (!isAdmin) return;
+  const configs = [
+    { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
+    { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
+    { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
+    { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
+  ];
+  update(settingsRef, { timer: configs[val] });
+};
+
+/* ===================== مراقبة اللاعبين (Lobby + Game) ===================== */
+onValue(playersRef, (snapshot) => {
+  const players = snapshot.val();
+  if (!players) return;
+
+  currentPlayers = players;
+  const playerList = Object.values(players);
+  document.getElementById('playerCount').innerText = playerList.length;
+
+  const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
+  const adminId = sorted[0].id;
+  isAdmin = (playerId === adminId);
+
+  document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
+  const adminElements = document.querySelectorAll('.settings-panel');
+  adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
+
+  renderLobby(players, adminId);
+  renderGamePlayers(players);
+});
+
+/* ===================== مراقبة الإعدادات ===================== */
+onValue(settingsRef, (snapshot) => {
+  const s = snapshot.val();
+  if (!s) return;
+
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+  if (s.mode) document.getElementById('mode-' + s.mode)?.classList.add('active');
+
+  if (s.timer) {
+    document.getElementById('mainTimerText').innerText = s.timer.main;
+    document.getElementById('mainTimerIcon').innerText = s.timer.icon;
+    document.getElementById('modalTimerText').innerText = s.timer.label;
+    document.getElementById('modalTimerIcon').innerText = s.timer.icon;
+    document.getElementById('timerSlider').value = s.timer.val;
+    for (let i = 0; i < 4; i++)
+      document.getElementById('label' + i).className = (i == s.timer.val ? 'active-label' : '');
+  }
+});
+
+/* ===================== منطق بدء اللعبة ===================== */
+const wordsPool = ["أسد","موز","برلين","طائرة","مستشفى","تفاحة","بحر","كتاب","نار","حديد","قمر","شمس","كرة","حاسوب","ساعة","مفتاح","جبل","نهر","سيارة","ثلج","ذهب","خشب","ورقة","ملح","قهوة"];
+const cardVisuals = {
+  'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+  'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+  'card-black': ['img/card/Black.webp'],
+  'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+};
+
+window.startGame = async () => {
+  if (!isAdmin) return;
+
+  let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
+  let types = [
+    ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
+    ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
+    'card-black',
+    ...Array(7).fill('card-brown')
+  ].sort(() => Math.random() - 0.5);
+
+  const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
+
+  const initialCards = types.map((t, i) => {
+    const visuals = cardVisuals[t];
+    const visual = visuals[Math.floor(Math.random() * visuals.length)];
+    return { type: t, word: shuffledWords[i], revealed: false, visual };
+  });
+
+  const initialGameState = {
+    turn: firstTurn,
+    phase: 'spy',
+    scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
+    cards: initialCards,
+    logs: [],
+    selectedCards: {},
+    lastActionTime: Date.now()
+  };
+
+  try {
+    await set(gameRef, initialGameState);
+    await update(statusRef, {
+      state: 'playing',
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    alert("حدث خطأ أثناء بدء اللعبة");
+  }
+};
+
+/* ===================== مراقبة حالة الغرفة (بدل الانتقال لصفحة) ===================== */
+onValue(statusRef, (snapshot) => {
+  const status = snapshot.val();
+  if (status && status.state === 'playing') {
+    showGameScreen();
+  }
+});
+
+/* ===================== التبديل بين الشاشتين ===================== */
+function showGameScreen() {
+  lobbyScreen.style.display = 'none';
+  gameScreen.style.display = 'block';
+}
+
+function showLobbyScreen() {
+  gameScreen.style.display = 'none';
+  lobbyScreen.style.display = 'block';
+}
+
+/* ===================== رسم الردهة ===================== */
+function renderLobby(players, adminId) {
+  const containers = {
+    'spectators-list': document.getElementById('spectators-list'),
+    'blue-op': document.getElementById('blue-op'),
+    'blue-spy': document.getElementById('blue-spy'),
+    'red-op': document.getElementById('red-op'),
+    'red-spy': document.getElementById('red-spy')
+  };
+
+  Object.values(containers).forEach(c => c.innerHTML = '');
+  document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
+    b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
+  });
+
+  Object.values(players).forEach(p => {
+    const isMe = p.id === playerId;
+    const isPlayerAdmin = p.id === adminId;
+    const html = `
+      <div class="player-slot">
+        <div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}">
+          <img src="${p.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321' : ''}">
+        </div>
+        <div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div>
+      </div>`;
+
+    const target = containers[p.team];
+    if (target) {
+      target.insertAdjacentHTML('beforeend', html);
+      if (p.team !== 'spectators-list') {
+        const btn = document.getElementById('btn-' + p.team);
+        if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
+      }
+    }
+  });
+}
+
+/* ===================================================== */
+/* ======================= GAME ========================= */
+/* ===================================================== */
+
+/* ===== مزامنة حالة اللعبة ===== */
+onValue(gameRef, (snapshot) => {
+  const data = snapshot.val();
+  if (!data) return;
+  gameState = data;
+
+  renderGridSync();
+  updateUISync();
+
+  const loading = document.getElementById('loading-screen');
+  if (loading) loading.style.display = 'none';
+});
+
+/* ===== رسم اللاعبين في شاشة اللعب ===== */
+function renderGamePlayers(players) {
+  const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+  roles.forEach(roleId => {
+    const container = document.getElementById(roleId);
+    if (container) {
+      container.querySelector('.avatar-box').innerHTML = '';
+      container.querySelector('.player-name').innerText = 'فارغ';
+    }
+  });
+
+  Object.values(players).forEach(p => {
+    if (p.id === playerId) {
+      if (p.team.includes('spy')) myRole = 'spy';
+      else if (p.team.includes('op')) myRole = 'op';
+      else myRole = 'spectator';
+      myTeamColor = p.team.split('-')[0];
     }
 
-    // --- إعدادات اللعبة والمؤقت ---
-    window.setGameMode = (mode) => {
-        if (!isAdmin) return;
-        update(settingsRef, { mode: mode });
-    };
-
-    window.openTimerModal = () => {
-        if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
-    };
-
-    window.changeTimer = (val) => {
-        if (!isAdmin) return;
-        const configs = [
-            { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
-            { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
-            { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
-            { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
-        ];
-        update(settingsRef, { timer: configs[val] });
-    };
-
-    // --- مراقبة البيانات وتحديث الواجهة ---
-    onValue(playersRef, (snapshot) => {
-        const players = snapshot.val();
-        if (!players) return;
-
-        const playerList = Object.values(players);
-        document.getElementById('playerCount').innerText = playerList.length;
-
-        const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
-        const adminId = sorted[0].id;
-        isAdmin = (playerId === adminId);
-        
-        document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
-        const adminElements = document.querySelectorAll('.settings-panel');
-        adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
-
-        renderLobby(players, adminId);
-    });
-
-    onValue(settingsRef, (snapshot) => {
-        const s = snapshot.val();
-        if (!s) return;
-        
-        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-        if (s.mode) document.getElementById('mode-' + s.mode).classList.add('active');
-
-        if (s.timer) {
-            document.getElementById('mainTimerText').innerText = s.timer.main;
-            document.getElementById('mainTimerIcon').innerText = s.timer.icon;
-            document.getElementById('modalTimerText').innerText = s.timer.label;
-            document.getElementById('modalTimerIcon').innerText = s.timer.icon;
-            document.getElementById('timerSlider').value = s.timer.val;
-            for(let i=0; i<4; i++) document.getElementById('label'+i).className = (i==s.timer.val ? 'active-label':'');
-        }
-    });
-
-    // --- منطق بدء اللعبة ---
-    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
-    const cardVisuals = {
-        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
-        'card-black': ['img/card/Black.webp'],
-        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
-    };
-
-    window.startGame = async () => {
-        if (!isAdmin) return;
-        
-        let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
-        let types = [
-            ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
-            ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
-            'card-black',
-            ...Array(7).fill('card-brown')
-        ].sort(() => Math.random() - 0.5);
-
-        const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
-
-        const initialCards = types.map((t, i) => {
-            const visuals = cardVisuals[t];
-            const visual = visuals[Math.floor(Math.random() * visuals.length)];
-            return { type: t, word: shuffledWords[i], revealed: false, visual: visual };
-        });
-
-        const initialGameState = {
-            turn: firstTurn,
-            phase: 'spy',
-            scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
-            cards: initialCards,
-            logs: [],
-            lastActionTime: Date.now()
-        };
-
-        try {
-            await set(ref(db, `rooms/${roomId}/gameState`), initialGameState);
-            await update(ref(db, `rooms/${roomId}/status`), { 
-                state: 'playing',
-                timestamp: Date.now()
-            });
-        } catch (e) {
-            alert("حدث خطأ أثناء بدء اللعبة");
-        }
-    };
-
-    onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
-        const status = snapshot.val();
-        if (status && status.state === 'playing') {
-            get(settingsRef).then(settingsSnap => {
-                const settings = settingsSnap.val();
-                // التوجه الافتراضي هو game_multiplayer.html
-                const finalTarget = (settings?.mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
-                window.location.href = `${finalTarget}?r=${roomId}`;
-            });
-        }
-    });
-
-    // --- وظائف الرسم ---
-    function renderLobby(players, adminId) {
-        const containers = {
-            'spectators-list': document.getElementById('spectators-list'),
-            'blue-op': document.getElementById('blue-op'),
-            'blue-spy': document.getElementById('blue-spy'),
-            'red-op': document.getElementById('red-op'),
-            'red-spy': document.getElementById('red-spy')
-        };
-        
-        Object.values(containers).forEach(c => c.innerHTML = '');
-        document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
-            b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
-        });
-
-        Object.values(players).forEach(p => {
-            const isMe = p.id === playerId;
-            const isPlayerAdmin = p.id === adminId;
-            const html = `
-                <div class="player-slot">
-                    <div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}">
-                        <img src="${p.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321' : ''}">
-                    </div>
-                    <div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div>
-                </div>`;
-            
-            const target = containers[p.team];
-            if (target) {
-                target.insertAdjacentHTML('beforeend', html);
-                if (p.team !== 'spectators-list') {
-                    const btn = document.getElementById('btn-' + p.team);
-                    if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
-                }
-            }
-        });
+    const container = document.getElementById(p.team);
+    if (container) {
+      container.querySelector('.avatar-box').innerHTML = `<img src="${p.avatar}" class="avatar-img">`;
+      container.querySelector('.player-name').innerText = p.name + (p.id === playerId ? ' (أنت)' : '');
     }
+  });
 
-    onDisconnect(myPlayerRef).remove();
+  if (gameState.turn) updateUISync();
+}
+
+/* ===== رسم الشبكة ===== */
+function renderGridSync() {
+  const grid = document.getElementById('grid');
+  if (!grid || !gameState.cards) return;
+  grid.innerHTML = '';
+
+  gameState.cards.forEach((card, i) => {
+    const div = document.createElement('div');
+
+    const isRevealed = card.revealed;
+    const canSeeAll = (myRole === 'spy' || myRole === 'spectator');
+    const cardClass = (canSeeAll || isRevealed) ? card.type : 'card-hidden';
+    const isSelected = (gameState.selectedCards || {})[i];
+
+    div.className = `card ${cardClass} ${isRevealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+    div.id = `card-${i}`;
+
+    div.innerHTML = `
+      <div class="confirm-btn" id="confirm-${i}"
+           style="display: ${isSelected && myRole === 'op' && gameState.turn === myTeamColor ? 'flex' : 'none'}"
+           onclick="event.stopPropagation(); window.confirmSelection(${i});">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      </div>
+      <img src="${card.visual}" class="card-reveal-img" style="opacity: ${isRevealed ? 1 : 0}">
+      <div class="card-main-body">
+        <div class="bottom-box">${card.word}</div>
+      </div>`;
+
+    div.onclick = () => {
+      if (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative' && !isRevealed) {
+        handleCardSelectionSync(i);
+      }
+    };
+
+    grid.appendChild(div);
+  });
+}
+
+/* ===== تحديث واجهة اللعب ===== */
+function updateUISync() {
+  document.getElementById('blue-score').innerText = gameState.scores.blue;
+  document.getElementById('red-score').innerText = gameState.scores.red;
+
+  document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
+  const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
+  const activeElement = document.getElementById(activeId);
+  if (activeElement) {
+    activeElement.classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
+  }
+
+  const clueUI = document.getElementById('clue-ui');
+  const actionBtn = document.getElementById('action-btn');
+  const btnIcon = document.getElementById('btn-icon');
+
+  const isMySpyTurn = (myRole === 'spy' && gameState.turn === myTeamColor && gameState.phase === 'spy');
+  const isMyOpTurn = (myRole === 'op' && gameState.turn === myTeamColor && gameState.phase === 'operative');
+
+  if (isMySpyTurn) {
+    clueUI.classList.remove('disabled-area');
+    actionBtn.style.pointerEvents = "auto";
+    actionBtn.classList.remove('end-turn-btn');
+    btnIcon.className = 'arrow-icon'; btnIcon.innerHTML = '';
+  } else if (isMyOpTurn) {
+    clueUI.classList.add('disabled-area');
+    actionBtn.style.pointerEvents = "auto";
+    actionBtn.classList.add('end-turn-btn');
+    btnIcon.className = 'x-icon'; btnIcon.innerHTML = '✕';
+  } else {
+    clueUI.classList.add('disabled-area');
+    actionBtn.style.pointerEvents = "none";
+    btnIcon.innerHTML = '';
+  }
+}
+
+/* ===================== الأفعال ===================== */
+window.handleAction = () => {
+  if (gameState.phase === 'spy') sendClueSync();
+  else endTurnSync();
+};
+
+async function sendClueSync() {
+  const input = document.getElementById('clueInput');
+  const select = document.getElementById('clueNum');
+  const word = input.value.trim();
+  const num = select.value;
+  if (!word || num === '-') return;
+
+  const clueData = { word, num, team: gameState.turn };
+
+  await update(gameRef, {
+    phase: 'operative',
+    targetClueNum: num === '∞' ? 99 : parseInt(num),
+    guessesThisTurn: 0,
+    currentClue: clueData
+  });
+  input.value = '';
+}
+
+async function handleCardSelectionSync(i) {
+  const currentSelections = {};
+  currentSelections[i] = true;
+  await update(gameRef, { selectedCards: currentSelections });
+}
+
+window.confirmSelection = async (i) => {
+  const card = gameState.cards[i];
+  card.revealed = true;
+
+  let newScores = { ...gameState.scores };
+  if (card.type === 'card-blue') newScores.blue--;
+  else if (card.type === 'card-red') newScores.red--;
+
+  let newPhase = gameState.phase;
+  let newTurn = gameState.turn;
+
+  if (card.type !== `card-${gameState.turn}`) {
+    newTurn = (gameState.turn === 'blue' ? 'red' : 'blue');
+    newPhase = 'spy';
+  }
+
+  await update(gameRef, {
+    cards: gameState.cards,
+    scores: newScores,
+    phase: newPhase,
+    turn: newTurn,
+    selectedCards: {}
+  });
+};
+
+async function endTurnSync() {
+  await update(gameRef, {
+    turn: gameState.turn === 'blue' ? 'red' : 'blue',
+    phase: 'spy',
+    selectedCards: {},
+    guessesThisTurn: 0
+  });
+}
+
+/* ===================== تنظيف الاتصال ===================== */
+onDisconnect(myPlayerRef).remove();
 </script>
 </body>
 </html>
