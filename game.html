@@ -291,7 +291,7 @@ function initGame() {
         shuffle(shuffledPools[type]);
     });
 
-    const shuffledAvatars = [...avatarImages].sort(() => Math.random() - 0.5);
+    const shuffledAvatars = [...avatarImages];
     const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
     document.querySelectorAll('.avatar-box').forEach((box, i) => {
         const avatarPath = shuffledAvatars[i];
