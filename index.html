@@ -256,22 +256,37 @@
 
     // --- المعرفات والغرفة ---
     
-    let urlParams = new URLSearchParams(window.location.search);
-    let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
-    if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
+// --- المعرفات والغرفة المحدثة ---
+let urlParams = new URLSearchParams(window.location.search);
+let roomId = urlParams.get('r');
 
-// استبدل الأسطر القديمة بهذا:
-let playerId = localStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
-localStorage.setItem('codenames_playerId', playerId);
+// إذا لم يوجد roomId في الرابط، قم بإنشاء واحد وإعادة توجيه الصفحة فوراً
+if (!roomId) {
+    roomId = Math.random().toString(36).substring(2, 8);
+    window.location.href = window.location.pathname + '?r=' + roomId;
+}
+
+// استخدام localStorage لضمان ثبات المعرف حتى لو أغلق المتصفح
+let playerId = localStorage.getItem('codenames_playerId');
+if (!playerId) {
+    playerId = Math.random().toString(36).substring(2, 6);
+    localStorage.setItem('codenames_playerId', playerId);
+}
+
+// حفظ المعرف في sessionStorage ليتمكن ملف game_multiplayer من قراءته
+sessionStorage.setItem('playerId', playerId);
+
+const roomRef = ref(db, `rooms/${roomId}`);
+const playersRef = ref(db, `rooms/${roomId}/players`);
+const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
 window.copyRoomLink = () => {
     navigator.clipboard.writeText(window.location.href);
     alert("✅ تم نسخ رابط الغرفة، أرسله لأصدقائك!");
 };    sessionStorage.setItem('codenames_playerId', playerId);
 
-    const playersRef = ref(db, `rooms/${roomId}/players`);
-    const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
-    const settingsRef = ref(db, `rooms/${roomId}/settings`);
+
 
     let myData = {
         id: playerId,
@@ -446,15 +461,20 @@ window.copyRoomLink = () => {
             lastActionTime: Date.now()
         };
 
-        try {
-            await set(ref(db, `rooms/${roomId}/gameState`), initialGameState);
-            await update(ref(db, `rooms/${roomId}/status`), { 
-                state: 'playing',
-                timestamp: Date.now()
-            });
-        } catch (e) {
-            alert("حدث خطأ أثناء بدء اللعبة");
-        }
+try {
+        // تحديث كل شيء في عملية واحدة (Multi-path Update)
+        const updates = {};
+        updates[`rooms/${roomId}/gameState`] = initialGameState;
+        updates[`rooms/${roomId}/status`] = { 
+            state: 'playing',
+            timestamp: Date.now()
+        };
+
+        await update(ref(db), updates);
+    } catch (e) {
+        console.error(e);
+        alert("فشل بدء اللعبة: تأكد من إعدادات القواعد (Rules) في Firebase");
+    }
     };
 
     onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {

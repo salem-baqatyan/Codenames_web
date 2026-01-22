@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Codenames Pro - Lobby</title>
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --panel-bg: #1a1a1a;
+            --blue-team: #3498db;
+            --red-team: #e74c3c;
+            --green-action: #4caf50;
+            --text-gray: #aaaaaa;
+            --modal-bg: #2a2a2a;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { 
+            margin: 0; 
+            background-color: var(--bg-dark); 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        .mobile-wrapper {
+            width: 100%; 
+            max-width: 450px; 
+            height: 100vh; 
+            background: #000;
+            display: flex; 
+            flex-direction: column; 
+            border-left: 1px solid #333; 
+            border-right: 1px solid #333;
+            position: relative;
+        }
+        .top-section { height: 50vh; display: flex; flex-direction: column; padding-bottom: 5px; }
+        .bottom-section { height: 50vh; display: flex; flex-direction: column; border-top: 1px solid #222; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; }
+        .top-left { display: flex; align-items: center; }
+        .top-right { display: flex; gap: 8px; align-items: center; }
+        
+        .icon-circle {
+            width: 40px; height: 40px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 0.5px solid white; cursor: pointer;
+        }
+        .btn-pill {
+            background: rgba(255,255,255,0.1); border: 1px solid #444;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 5px; cursor: pointer;
+        }
+
+        .spectators-section { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 0 15px; flex-shrink: 0; }
+        .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; flex-wrap: wrap;}
+
+        .settings-panel {
+            background: #1a1a1a; margin: 5px 15px; border-radius: 15px;
+            padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .panel-label { text-align: center; color: #888; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; }
+
+        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .mode-card {
+            background: #252525; border-radius: 10px; padding: 6px;
+            display: flex; align-items: center; gap: 8px; border: 2px solid transparent; cursor: pointer;
+            transition: 0.3s;
+        }
+        .mode-card.active { border-color: #3498db; background: #1e3a5f; }
+        .mode-img { width: 30px; height: 40px; border-radius: 4px; pointer-events: none; }
+        .mode-info { pointer-events: none; }
+        .mode-info b { font-size: 0.65rem; display: block; }
+        .mode-info span { font-size: 0.55rem; color: #aaa; }
+
+        .setting-row {
+            background: rgba(255,255,255,0.05); border-radius: 10px;
+            margin-top: 8px; display: flex; align-items: center;
+            padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+
+        .teams-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 10px 15px; }
+        .team-box { border-radius: 15px; display: flex; flex-direction: column; justify-content: space-around; align-items: center; padding: 8px; border: 1.5px solid rgba(255, 255, 255, 0.3); }
+        .blue-box { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
+        .red-box { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
+        .box-title { font-size: 0.6rem; font-weight: 800; color: white; letter-spacing: 1px; }
+
+        .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
+        .join-btn {
+            width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold;
+            color: white; background: linear-gradient(to bottom, #7ed321, #417505);
+            border: 1.5px solid #b8e986; border-radius: 15px; cursor: pointer;
+            box-shadow: 0 2px 0 #2e5a03;
+        }
+        .join-btn.locked {
+            background: transparent !important; border: 1.5px solid #fff !important;
+            box-shadow: none !important; cursor: not-allowed; opacity: 0.7;
+        }
+
+        .player-slot { display: flex; flex-direction: column; align-items: center; position: relative; }
+        .player-avatar-wrap { width: 40px; height: 40px; position: relative; }
+        .player-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; background: #333; }
+        .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; white-space: nowrap;}
+        
+        .player-avatar-wrap.is-admin::after {
+            content: "👑"; position: absolute; top: -12px; left: -5px; font-size: 1.1rem; transform: rotate(-20deg);
+        }
+
+        .footer { padding: 10px 15px; background: #000; height: 80px;}
+        .start-btn {
+            width: 100%; height: 45px; font-size: 1.1rem; font-weight: 900;
+            color: white; background: linear-gradient(to bottom, #7ed321, #417505);
+            border: 2px solid #b8e986; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 4px 0 #2e5a03; display: none;
+        }
+
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .settings-modal {
+            width: 90%; max-height: 85%; background: var(--modal-bg); border-radius: 20px; padding: 20px;
+            border: 1px solid #444; position: relative;
+        }
+        .avatar-selector { display: flex; gap: 10px; overflow-x: auto; padding: 10px 5px; }
+        .avatar-option { width: 60px; height: 60px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
+        .avatar-option.selected { border-color: #7ed321; transform: scale(1.1); }
+        .nickname-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; font-size: 1rem; outline: none; margin-top: 10px;}
+        .save-btn { width: 100%; background: var(--green-action); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1rem; }
+        .leave-btn { width: 100%; background: #c0392b; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
+
+        .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.6rem; color: #888; }
+        .active-label { color: #7ed321; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="mobile-wrapper">
+    <div class="modal-overlay" id="profileModal" style="display: flex;">
+        <div class="settings-modal">
+            <div class="modal-header" id="profileHeader" style="font-weight: bold; margin-bottom: 10px;">أهلاً بك! جهز ملفك</div>
+            <div class="avatar-selector">
+                <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
+                <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
+                <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
+                <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
+            </div>
+            <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
+            <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
+            <button id="leaveRoomBtn" class="leave-btn" style="display: none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="timerModal">
+        <div class="settings-modal">
+            <div class="modal-header">إعدادات المؤقت</div>
+            <div style="text-align:center; font-size: 3rem; margin: 10px 0;" id="modalTimerIcon">🚫</div>
+            <div style="text-align:center; font-weight:bold;" id="modalTimerText">بدون مؤقت</div>
+            <input type="range" min="0" max="3" value="0" style="width:100%; margin-top:20px;" id="timerSlider" oninput="changeTimer(this.value)">
+            <div class="slider-labels">
+                <span id="label0" class="active-label">بدون</span>
+                <span id="label1">30ث</span>
+                <span id="label2">1د</span>
+                <span id="label3">2د</span>
+            </div>
+            <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
+        </div>
+    </div>
+
+    <div class="top-section">
+        <div class="top-bar">
+            <div class="top-left">
+                <div class="icon-circle" onclick="copyRoomLink()">
+                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 🔗
+                </div>
+            </div>
+            <div class="top-right">
+                <div class="btn-pill">📝 القواعد</div>
+                <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
+            </div>
+        </div>
+
+        <div class="spectators-section">
+            <div class="box-title">الجمهور</div>
+            <div class="spectators-list" id="spectators-list"></div>
+            <button class="join-btn" style="width:100px; margin-top:5px; background:none; border:1px solid #fff;" onclick="joinTeam('spectators-list')">انضمام</button>
+        </div>
+
+        <div class="settings-panel">
+            <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
+            <div class="mode-options">
+                <div class="mode-card" id="mode-offline" onclick="setGameMode('offline')">
+                    <img src="img/local.webp" class="mode-img">
+                    <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
+                </div>
+                <div class="mode-card active" id="mode-online" onclick="setGameMode('online')">
+                    <img src="img/online.webp" class="mode-img">
+                    <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
+                </div>
+            </div>
+            <div class="setting-row" onclick="openTimerModal()">
+                <span style="font-size: 1.2rem;" id="mainTimerIcon">🚫</span>
+                <div style="margin-right: 10px;">
+                    <b style="font-size: 0.7rem; display: block;">المؤقت</b>
+                    <span style="font-size: 0.55rem; color: #888;" id="mainTimerText">بدون</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="teams-grid">
+            <div class="team-box blue-box">
+                <div class="box-title">OPERATIVES</div>
+                <div class="player-slot-container" id="blue-op"></div>
+                <button class="join-btn" id="btn-blue-op" onclick="joinTeam('blue-op')">أنضمام</button>
+            </div>
+            <div class="team-box red-box">
+                <div class="box-title">OPERATIVES</div>
+                <div class="player-slot-container" id="red-op"></div>
+                <button class="join-btn" id="btn-red-op" onclick="joinTeam('red-op')">أنضمام</button>
+            </div>
+            <div class="team-box blue-box">
+                <div class="box-title">SPYMASTERS</div>
+                <div class="player-slot-container" id="blue-spy"></div>
+                <button class="join-btn" id="btn-blue-spy" onclick="joinTeam('blue-spy')">أنضمام</button>
+            </div>
+            <div class="team-box red-box">
+                <div class="box-title">SPYMASTERS</div>
+                <div class="player-slot-container" id="red-spy"></div>
+                <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
+            </div>
+        </div>
+        <div class="footer">
+            <button class="start-btn" id="startBtn" onclick="window.startGame()">بدء اللعبة</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
+        authDomain: "codenames-5fd71.firebaseapp.com",
+        projectId: "codenames-5fd71",
+        databaseURL: "https://codenames-5fd71-default-rtdb.firebaseio.com",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- المعرفات والغرفة ---
+    
+    let urlParams = new URLSearchParams(window.location.search);
+    let roomId = urlParams.get('r') || Math.random().toString(36).substring(2, 8);
+    if (!urlParams.get('r')) window.history.pushState({}, '', '?r=' + roomId);
+
+// استبدل الأسطر القديمة بهذا:
+let playerId = localStorage.getItem('codenames_playerId') || Math.random().toString(36).substring(2, 6);
+localStorage.setItem('codenames_playerId', playerId);
+
+window.copyRoomLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("✅ تم نسخ رابط الغرفة، أرسله لأصدقائك!");
+};    sessionStorage.setItem('codenames_playerId', playerId);
+
+    const playersRef = ref(db, `rooms/${roomId}/players`);
+    const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+    const settingsRef = ref(db, `rooms/${roomId}/settings`);
+
+    let myData = {
+        id: playerId,
+        name: "",
+        avatar: "img/avatar_snow_man.webp",
+        team: "spectators-list",
+        joinedAt: Date.now()
+    };
+    let isAdmin = false;
+    let hasJoined = false;
+
+    // --- وظائف الملف الشخصي ---
+    window.selectAvatar = (el) => {
+        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+        el.classList.add('selected');
+        myData.avatar = "img/" + el.src.split('/').pop();
+    };
+
+    window.saveProfile = () => {
+        const name = document.getElementById('nicknameInput').value.trim();
+        if (!name) return alert("الرجاء إدخال اسمك");
+        myData.name = name;
+        hasJoined = true;
+        document.getElementById('profileModal').style.display = 'none';
+        
+        // عند أول انضمام، نضبط المود أونلاين تلقائياً إذا كنت الآدمن
+        updateServer();
+        get(playersRef).then(snap => {
+            if (Object.keys(snap.val() || {}).length === 1) {
+                update(settingsRef, { mode: 'online' }); 
+            }
+        });
+    };
+
+    window.openProfileSettings = () => {
+        document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
+        document.getElementById('nicknameInput').value = myData.name;
+        document.getElementById('leaveRoomBtn').style.display = 'block';
+        document.getElementById('profileModal').style.display = 'flex';
+    };
+
+    window.leaveLobby = () => {
+        if(confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
+            remove(myPlayerRef).then(() => {
+                location.href = 'index.html';
+            });
+        }
+    };
+
+    // --- إدارة الفرق (Synchronization Logic) ---
+    window.joinTeam = (teamId) => {
+        if (!hasJoined) return;
+        
+        if (teamId === 'spectators-list') {
+            myData.team = teamId;
+            updateServer();
+            return;
+        }
+
+        runTransaction(playersRef, (players) => {
+            if (players) {
+                const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
+                if (isTaken) return; 
+            }
+            if (!players) players = {};
+            if (!players[playerId]) players[playerId] = myData;
+            players[playerId].team = teamId;
+            myData.team = teamId;
+            return players;
+        });
+    };
+
+    function updateServer() {
+        if (!hasJoined) return;
+        set(myPlayerRef, {
+            ...myData,
+            lastActive: Date.now()
+        });
+    }
+
+    // --- إعدادات اللعبة والمؤقت ---
+    window.setGameMode = (mode) => {
+        if (!isAdmin) return;
+        update(settingsRef, { mode: mode });
+    };
+
+    window.openTimerModal = () => {
+        if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
+    };
+
+    window.changeTimer = (val) => {
+        if (!isAdmin) return;
+        const configs = [
+            { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
+            { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
+            { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
+            { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
+        ];
+        update(settingsRef, { timer: configs[val] });
+    };
+
+    // --- مراقبة البيانات وتحديث الواجهة ---
+    onValue(playersRef, (snapshot) => {
+        const players = snapshot.val();
+        if (!players) return;
+
+        const playerList = Object.values(players);
+        document.getElementById('playerCount').innerText = playerList.length;
+
+        const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
+        const adminId = sorted[0].id;
+        isAdmin = (playerId === adminId);
+        
+        document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
+        const adminElements = document.querySelectorAll('.settings-panel');
+        adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
+
+        renderLobby(players, adminId);
+    });
+
+    onValue(settingsRef, (snapshot) => {
+        const s = snapshot.val();
+        if (!s) return;
+        
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+        if (s.mode) document.getElementById('mode-' + s.mode).classList.add('active');
+
+        if (s.timer) {
+            document.getElementById('mainTimerText').innerText = s.timer.main;
+            document.getElementById('mainTimerIcon').innerText = s.timer.icon;
+            document.getElementById('modalTimerText').innerText = s.timer.label;
+            document.getElementById('modalTimerIcon').innerText = s.timer.icon;
+            document.getElementById('timerSlider').value = s.timer.val;
+            for(let i=0; i<4; i++) document.getElementById('label'+i).className = (i==s.timer.val ? 'active-label':'');
+        }
+    });
+
+    // --- منطق بدء اللعبة ---
+    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
+    const cardVisuals = {
+        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+        'card-black': ['img/card/Black.webp'],
+        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+    };
+
+    window.startGame = async () => {
+        if (!isAdmin) return;
+        
+        let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
+        let types = [
+            ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
+            ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
+            'card-black',
+            ...Array(7).fill('card-brown')
+        ].sort(() => Math.random() - 0.5);
+
+        const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
+
+        const initialCards = types.map((t, i) => {
+            const visuals = cardVisuals[t];
+            const visual = visuals[Math.floor(Math.random() * visuals.length)];
+            return { type: t, word: shuffledWords[i], revealed: false, visual: visual };
+        });
+
+        const initialGameState = {
+            turn: firstTurn,
+            phase: 'spy',
+            scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
+            cards: initialCards,
+            logs: [],
+            lastActionTime: Date.now()
+        };
+
+        try {
+            await set(ref(db, `rooms/${roomId}/gameState`), initialGameState);
+            await update(ref(db, `rooms/${roomId}/status`), { 
+                state: 'playing',
+                timestamp: Date.now()
+            });
+        } catch (e) {
+            alert("حدث خطأ أثناء بدء اللعبة");
+        }
+    };
+
+    onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
+        const status = snapshot.val();
+        if (status && status.state === 'playing') {
+            get(settingsRef).then(settingsSnap => {
+                const settings = settingsSnap.val();
+                // التوجه الافتراضي هو game_multiplayer.html
+                const finalTarget = (settings?.mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
+                window.location.href = `${finalTarget}?r=${roomId}`;
+            });
+        }
+    });
+
+    // --- وظائف الرسم ---
+    function renderLobby(players, adminId) {
+        const containers = {
+            'spectators-list': document.getElementById('spectators-list'),
+            'blue-op': document.getElementById('blue-op'),
+            'blue-spy': document.getElementById('blue-spy'),
+            'red-op': document.getElementById('red-op'),
+            'red-spy': document.getElementById('red-spy')
+        };
+        
+        Object.values(containers).forEach(c => c.innerHTML = '');
+        document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
+            b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
+        });
+
+        Object.values(players).forEach(p => {
+            const isMe = p.id === playerId;
+            const isPlayerAdmin = p.id === adminId;
+            const html = `
+                <div class="player-slot">
+                    <div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}">
+                        <img src="${p.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321' : ''}">
+                    </div>
+                    <div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div>
+                </div>`;
+            
+            const target = containers[p.team];
+            if (target) {
+                target.insertAdjacentHTML('beforeend', html);
+                if (p.team !== 'spectators-list') {
+                    const btn = document.getElementById('btn-' + p.team);
+                    if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
+                }
+            }
+        });
+    }
+
+    onDisconnect(myPlayerRef).remove();
+    onValue(playersRef, (snapshot) => {
+    if (!snapshot.exists()) {
+        // إذا لم يعد هناك لاعبين، امسح بيانات الغرفة والـ status
+        remove(ref(db, `rooms/${roomId}`));
+    }
+});
+</script>
+</body>
+</html>
