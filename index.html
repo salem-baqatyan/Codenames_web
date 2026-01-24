@@ -364,33 +364,29 @@
     };
 
     // --- وظيفة بدء اللعبة المحدثة ---
-    window.handleStartGame = () => {
-        get(settingsRef).then((snapshot) => {
-            const settings = snapshot.val();
-            const currentMode = (settings && settings.mode) ? settings.mode : 'online';
-            
-            if (currentMode === 'online') {
-                location.href = 'game_multiplayer.html' + window.location.search;
-            } else {
-                location.href = 'game.html' + window.location.search;
-            }
+window.handleStartGame = async () => {
+    if (!isAdmin) return;
+
+    // 1. إنشاء game state مرة واحدة
+    const gameRef = ref(db, `rooms/${roomId}/game`);
+
+    const snapshot = await get(gameRef);
+    if (!snapshot.exists()) {
+        await set(gameRef, {
+            turn: Math.random() > 0.5 ? "blue" : "red",
+            phase: "spy",
+            board: generateBoard(), // دالة توليد البطاقات
+            scores: { blue: 0, red: 0 }
         });
-    };
+    }
 
-    window.openTimerModal = () => {
-        if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
-    };
+    // 2. حالة اللعبة
+    await set(ref(db, `rooms/${roomId}/status`), "started");
 
-    window.changeTimer = (val) => {
-        if (!isAdmin) return;
-        const configs = [
-            { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
-            { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
-            { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
-            { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
-        ];
-        update(settingsRef, { timer: configs[val] });
-    };
+    // 3. انتقال الأدمن نفسه
+    window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
+};
+
 
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val();
@@ -459,6 +455,14 @@
             }
         });
     }
+const statusRef = ref(db, `rooms/${roomId}/status`);
+
+onValue(statusRef, snap => {
+    if (snap.val() === "started") {
+        window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
+    }
+});
+
 
     onDisconnect(myPlayerRef).remove();
 </script>
