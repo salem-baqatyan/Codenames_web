@@ -235,15 +235,15 @@
             </div>
         </div>
         <div class="footer">
-            <button class="start-btn" id="startBtn" onclick="window.startGame()">بدء اللعبة</button>
+            <button class="start-btn" id="startBtn" onclick="location.href='game.html'">بدء اللعبة</button>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-    
+    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
         authDomain: "codenames-5fd71.firebaseapp.com",
@@ -349,7 +349,10 @@ window.copyRoomLink = () => {
         runTransaction(playersRef, (players) => {
             if (players) {
                 const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
-                if (isTaken) return; 
+                if (isTaken) {
+                    alert("عذراً! هذا الدور تم أخذه للتو.");
+                    return; // إلغاء العملية
+                }
             }
             if (!players) players = {};
             if (!players[playerId]) players[playerId] = myData;
@@ -424,72 +427,6 @@ window.copyRoomLink = () => {
         }
     });
 
-    // --- منطق بدء اللعبة ---
-    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
-    const cardVisuals = {
-        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
-        'card-black': ['img/card/Black.webp'],
-        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
-    };
-
-    window.startGame = async () => {
-        if (!isAdmin) return;
-        
-        let firstTurn = Math.random() > 0.5 ? 'blue' : 'red';
-        let types = [
-            ...Array(firstTurn === 'blue' ? 9 : 8).fill('card-blue'),
-            ...Array(firstTurn === 'red' ? 9 : 8).fill('card-red'),
-            'card-black',
-            ...Array(7).fill('card-brown')
-        ].sort(() => Math.random() - 0.5);
-
-        const shuffledWords = [...wordsPool].sort(() => Math.random() - 0.5);
-
-        const initialCards = types.map((t, i) => {
-            const visuals = cardVisuals[t];
-            const visual = visuals[Math.floor(Math.random() * visuals.length)];
-            return { type: t, word: shuffledWords[i], revealed: false, visual: visual };
-        });
-
-        const initialGameState = {
-            turn: firstTurn,
-            phase: 'spy',
-            scores: { blue: firstTurn === 'blue' ? 9 : 8, red: firstTurn === 'red' ? 9 : 8 },
-            cards: initialCards,
-            logs: [],
-            lastActionTime: Date.now()
-        };
-
-try {
-        // تحديث كل شيء في عملية واحدة (Multi-path Update)
-        const updates = {};
-        updates[`rooms/${roomId}/gameState`] = initialGameState;
-        updates[`rooms/${roomId}/status`] = { 
-            state: 'playing',
-            timestamp: Date.now()
-        };
-
-        await update(ref(db), updates);
-    } catch (e) {
-        console.error(e);
-        alert("فشل بدء اللعبة: تأكد من إعدادات القواعد (Rules) في Firebase");
-    }
-    };
-
-    onValue(ref(db, `rooms/${roomId}/status`), (snapshot) => {
-        const status = snapshot.val();
-        if (status && status.state === 'playing') {
-            get(settingsRef).then(settingsSnap => {
-                const settings = settingsSnap.val();
-                // التوجه الافتراضي هو game_multiplayer.html
-                const finalTarget = (settings?.mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
-                window.location.href = `${finalTarget}?r=${roomId}`;
-            });
-        }
-    });
-
-    // --- وظائف الرسم ---
     function renderLobby(players, adminId) {
         const containers = {
             'spectators-list': document.getElementById('spectators-list'),
