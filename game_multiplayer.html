@@ -223,13 +223,10 @@ from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 /* ⚠️ ضع إعدادات Firebase الخاصة بك هنا */
 const firebaseConfig = {
-    apiKey: "YOUR_KEY",
-    authDomain: "YOUR_DOMAIN",
-    databaseURL: "YOUR_DB_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_BUCKET",
-    messagingSenderId: "YOUR_SENDER",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ", // نفس مفتاحك
+    authDomain: "codenames-5fd71.firebaseapp.com",
+    databaseURL: "https://codenames-5fd71-default-rtdb.firebaseio.com",
+    projectId: "codenames-5fd71",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -237,13 +234,15 @@ const db = getDatabase(app);
 
 /* ---------- قراءة roomId و playerId ---------- */
 const params = new URLSearchParams(window.location.search);
-const roomId = params.get("roomId");
-const playerId = params.get("playerId");
+const roomId = params.get("r"); // تم التغيير من roomId إلى r
+const playerId = params.get("p"); // تم التغيير من playerId إلى p
 
 if (!roomId || !playerId) {
-    alert("بيانات الغرفة غير موجودة");
-    throw new Error("Missing roomId/playerId");
+    alert("بيانات الغرفة أو اللاعب ناقصة! سيتم إرجاعك للرئيسية.");
+    window.location.href = "index.html";
+    throw new Error("Missing params");
 }
+
 
 const roomRef = ref(db, `rooms/${roomId}`);
 const gameRef = ref(db, `rooms/${roomId}/game`);

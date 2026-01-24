@@ -506,7 +506,8 @@ const statusRef = ref(db, `rooms/${roomId}/status`);
 onValue(statusRef, (snap) => {
     const status = snap.val();
     if (status === "playing") {
-        location.href = 'game_multiplayer.html' + window.location.search;
+        // نرسل الـ r والـ p لكي تعرف الصفحة التالية من دخل
+        location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
     }
 });
 
