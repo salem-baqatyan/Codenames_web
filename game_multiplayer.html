@@ -237,11 +237,11 @@ const params = new URLSearchParams(window.location.search);
 const roomId = params.get("r"); // تم التغيير من roomId إلى r
 const playerId = params.get("p"); // تم التغيير من playerId إلى p
 
-if (!roomId || !playerId) {
-    alert("بيانات الغرفة أو اللاعب ناقصة! سيتم إرجاعك للرئيسية.");
-    window.location.href = "index.html";
-    throw new Error("Missing params");
-}
+// if (!roomId || !playerId) {
+//     alert("بيانات الغرفة أو اللاعب ناقصة! سيتم إرجاعك للرئيسية.");
+//     window.location.href = "index.html";
+//     throw new Error("Missing params");
+// }
 
 
 const roomRef = ref(db, `rooms/${roomId}`);
