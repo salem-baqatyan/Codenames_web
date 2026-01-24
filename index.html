@@ -235,14 +235,14 @@
             </div>
         </div>
         <div class="footer">
-            <button class="start-btn" id="startBtn" onclick="location.href='game.html'">بدء اللعبة</button>
+            <button class="start-btn" id="startBtn" onclick="handleStartGame()">بدء اللعبة</button>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
@@ -254,39 +254,31 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- المعرفات والغرفة ---
-    
-// --- المعرفات والغرفة المحدثة ---
-let urlParams = new URLSearchParams(window.location.search);
-let roomId = urlParams.get('r');
+    let urlParams = new URLSearchParams(window.location.search);
+    let roomId = urlParams.get('r');
 
-// إذا لم يوجد roomId في الرابط، قم بإنشاء واحد وإعادة توجيه الصفحة فوراً
-if (!roomId) {
-    roomId = Math.random().toString(36).substring(2, 8);
-    window.location.href = window.location.pathname + '?r=' + roomId;
-}
+    if (!roomId) {
+        roomId = Math.random().toString(36).substring(2, 8);
+        window.location.href = window.location.pathname + '?r=' + roomId;
+    }
 
-// استخدام localStorage لضمان ثبات المعرف حتى لو أغلق المتصفح
-let playerId = localStorage.getItem('codenames_playerId');
-if (!playerId) {
-    playerId = Math.random().toString(36).substring(2, 6);
-    localStorage.setItem('codenames_playerId', playerId);
-}
+    let playerId = localStorage.getItem('codenames_playerId');
+    if (!playerId) {
+        playerId = Math.random().toString(36).substring(2, 6);
+        localStorage.setItem('codenames_playerId', playerId);
+    }
 
-// حفظ المعرف في sessionStorage ليتمكن ملف game_multiplayer من قراءته
-sessionStorage.setItem('playerId', playerId);
+    sessionStorage.setItem('playerId', playerId);
 
-const roomRef = ref(db, `rooms/${roomId}`);
-const playersRef = ref(db, `rooms/${roomId}/players`);
-const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
-const settingsRef = ref(db, `rooms/${roomId}/settings`);
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const playersRef = ref(db, `rooms/${roomId}/players`);
+    const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+    const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
-window.copyRoomLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    alert("✅ تم نسخ رابط الغرفة، أرسله لأصدقائك!");
-};    sessionStorage.setItem('codenames_playerId', playerId);
-
-
+    window.copyRoomLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        alert("✅ تم نسخ رابط الغرفة، أرسله لأصدقائك!");
+    };
 
     let myData = {
         id: playerId,
@@ -298,7 +290,6 @@ window.copyRoomLink = () => {
     let isAdmin = false;
     let hasJoined = false;
 
-    // --- وظائف الملف الشخصي ---
     window.selectAvatar = (el) => {
         document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
         el.classList.add('selected');
@@ -312,8 +303,8 @@ window.copyRoomLink = () => {
         hasJoined = true;
         document.getElementById('profileModal').style.display = 'none';
         
-        // عند أول انضمام، نضبط المود أونلاين تلقائياً إذا كنت الآدمن
         updateServer();
+        // جعل الأونلاين هو الافتراضي عند إنشاء الغرفة
         get(playersRef).then(snap => {
             if (Object.keys(snap.val() || {}).length === 1) {
                 update(settingsRef, { mode: 'online' }); 
@@ -336,22 +327,19 @@ window.copyRoomLink = () => {
         }
     };
 
-    // --- إدارة الفرق (Synchronization Logic) ---
     window.joinTeam = (teamId) => {
         if (!hasJoined) return;
-        
         if (teamId === 'spectators-list') {
             myData.team = teamId;
             updateServer();
             return;
         }
-
         runTransaction(playersRef, (players) => {
             if (players) {
                 const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
                 if (isTaken) {
                     alert("عذراً! هذا الدور تم أخذه للتو.");
-                    return; // إلغاء العملية
+                    return;
                 }
             }
             if (!players) players = {};
@@ -370,10 +358,23 @@ window.copyRoomLink = () => {
         });
     }
 
-    // --- إعدادات اللعبة والمؤقت ---
     window.setGameMode = (mode) => {
         if (!isAdmin) return;
         update(settingsRef, { mode: mode });
+    };
+
+    // --- وظيفة بدء اللعبة المحدثة ---
+    window.handleStartGame = () => {
+        get(settingsRef).then((snapshot) => {
+            const settings = snapshot.val();
+            const currentMode = (settings && settings.mode) ? settings.mode : 'online';
+            
+            if (currentMode === 'online') {
+                location.href = 'game_multiplayer.html' + window.location.search;
+            } else {
+                location.href = 'game.html' + window.location.search;
+            }
+        });
     };
 
     window.openTimerModal = () => {
@@ -391,39 +392,38 @@ window.copyRoomLink = () => {
         update(settingsRef, { timer: configs[val] });
     };
 
-    // --- مراقبة البيانات وتحديث الواجهة ---
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val();
         if (!players) return;
-
         const playerList = Object.values(players);
         document.getElementById('playerCount').innerText = playerList.length;
-
         const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
         const adminId = sorted[0].id;
         isAdmin = (playerId === adminId);
-        
         document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
         const adminElements = document.querySelectorAll('.settings-panel');
         adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
-
         renderLobby(players, adminId);
     });
 
     onValue(settingsRef, (snapshot) => {
         const s = snapshot.val();
         if (!s) return;
-        
         document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-        if (s.mode) document.getElementById('mode-' + s.mode).classList.add('active');
-
+        if (s.mode) {
+            const activeCard = document.getElementById('mode-' + s.mode);
+            if(activeCard) activeCard.classList.add('active');
+        }
         if (s.timer) {
             document.getElementById('mainTimerText').innerText = s.timer.main;
             document.getElementById('mainTimerIcon').innerText = s.timer.icon;
             document.getElementById('modalTimerText').innerText = s.timer.label;
             document.getElementById('modalTimerIcon').innerText = s.timer.icon;
             document.getElementById('timerSlider').value = s.timer.val;
-            for(let i=0; i<4; i++) document.getElementById('label'+i).className = (i==s.timer.val ? 'active-label':'');
+            for(let i=0; i<4; i++) {
+                const label = document.getElementById('label'+i);
+                if(label) label.className = (i==s.timer.val ? 'active-label':'');
+            }
         }
     });
 
@@ -435,12 +435,10 @@ window.copyRoomLink = () => {
             'red-op': document.getElementById('red-op'),
             'red-spy': document.getElementById('red-spy')
         };
-        
-        Object.values(containers).forEach(c => c.innerHTML = '');
+        Object.values(containers).forEach(c => { if(c) c.innerHTML = ''; });
         document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
             b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
         });
-
         Object.values(players).forEach(p => {
             const isMe = p.id === playerId;
             const isPlayerAdmin = p.id === adminId;
@@ -451,7 +449,6 @@ window.copyRoomLink = () => {
                     </div>
                     <div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div>
                 </div>`;
-            
             const target = containers[p.team];
             if (target) {
                 target.insertAdjacentHTML('beforeend', html);
@@ -464,12 +461,6 @@ window.copyRoomLink = () => {
     }
 
     onDisconnect(myPlayerRef).remove();
-    onValue(playersRef, (snapshot) => {
-    if (!snapshot.exists()) {
-        // إذا لم يعد هناك لاعبين، امسح بيانات الغرفة والـ status
-        remove(ref(db, `rooms/${roomId}`));
-    }
-});
 </script>
 </body>
 </html>
