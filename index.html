@@ -362,7 +362,28 @@
         if (!isAdmin) return;
         update(settingsRef, { mode: mode });
     };
+    
+function generateBoard() {
+    const words = ["أسد", "شمس", "كتاب", "طائرة", "قلم", "بحر", "تفاحة", "ساعة", "نجم", "جبل", "نهر", "سيارة", "هاتف", "قمر", "شجرة", "ورقة", "مفتاح", "باب", "نافذة", "كرة", "حاسوب", "قهوة", "خبز", "ملك", "عطش"];
+    // خلط الكلمات
+    const shuffledWords = words.sort(() => 0.5 - Math.random());
+    
+    const board = [];
+    const types = ["killer", ...Array(8).fill("red"), ...Array(8).fill("blue"), ...Array(7).fill("neutral")];
+    // إضافة لون إضافي للفريق الذي يبدأ
+    types.push("blue"); // سنفترض أن الأزرق يبدأ دائماً أو اجعله عشوائياً
 
+    const shuffledTypes = types.sort(() => 0.5 - Math.random());
+
+    for (let i = 0; i < 25; i++) {
+        board.push({
+            word: shuffledWords[i],
+            type: shuffledTypes[i],
+            revealed: false
+        });
+    }
+    return board;
+}
     // --- وظيفة بدء اللعبة المحدثة ---
 window.handleStartGame = async () => {
     if (!isAdmin) return;
