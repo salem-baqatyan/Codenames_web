@@ -211,24 +211,67 @@
     </div>
 </div>
 
-<script>
-    const avatarImages = ['img/avatar_little_girl.webp','img/avatar_old_man.webp','img/avatar_snow_man.webp','img/avatar_women.webp'];
-    const cardVisuals = {
-        'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-        'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
-        'card-black': ['img/card/Black.webp'],
-        'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
-    };
-    
-    let playerAvatars = {};
-    const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
-    
-    let gameState = {
-        turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: [],
-        selectedCards: new Set(), guessesThisTurn: 0, targetClueNum: 0
-    };
+<script type="module">
+/* =====================================================
+   🔥 MULTIPLAYER FIREBASE VERSION — BY DESIGN NO UI CHANGE
+   ===================================================== */
 
-// 1. تجميع كل المسارات في مصفوفة واحدة
+/* ---------- Firebase Setup ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, get, update, runTransaction, push } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+/* ⚠️ ضع إعدادات Firebase الخاصة بك هنا */
+const firebaseConfig = {
+    apiKey: "YOUR_KEY",
+    authDomain: "YOUR_DOMAIN",
+    databaseURL: "YOUR_DB_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_BUCKET",
+    messagingSenderId: "YOUR_SENDER",
+    appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* ---------- قراءة roomId و playerId ---------- */
+const params = new URLSearchParams(window.location.search);
+const roomId = params.get("roomId");
+const playerId = params.get("playerId");
+
+if (!roomId || !playerId) {
+    alert("بيانات الغرفة غير موجودة");
+    throw new Error("Missing roomId/playerId");
+}
+
+const roomRef = ref(db, `rooms/${roomId}`);
+const gameRef = ref(db, `rooms/${roomId}/game`);
+const playersRef = ref(db, `rooms/${roomId}/players`);
+const statusRef = ref(db, `rooms/${roomId}/status`);
+
+/* ---------- متغيرات محلية ---------- */
+const avatarImages = ['img/avatar_little_girl.webp','img/avatar_old_man.webp','img/avatar_snow_man.webp','img/avatar_women.webp'];
+const cardVisuals = {
+    'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+    'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+    'card-black': ['img/card/Black.webp'],
+    'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+};
+
+let myRole = null;      // blue-spy | blue-op | red-spy | red-op | spectators-list
+let myTeam = null;      // blue | red | null
+let isSpy = false;
+let isOperative = false;
+let isSpectator = false;
+
+let playersCache = {};
+let gameState = null;   // سيتم ملؤه من Firebase
+
+let selectedCards = new Set();   // محلي فقط للعميل
+let guessesThisTurn = 0;
+
+/* ---------- تحميل الصور (كما في كودك الأصلي) ---------- */
 const allImagesToPreload = [
     ...avatarImages,
     ...cardVisuals['card-blue'],
@@ -237,7 +280,6 @@ const allImagesToPreload = [
     ...cardVisuals['card-brown']
 ];
 
-// 2. دالة التحقق من الـ Cache
 function areImagesCached() {
     for (let src of allImagesToPreload) {
         let img = new Image();
@@ -247,7 +289,6 @@ function areImagesCached() {
     return true;
 }
 
-// 3. دالة التحميل المسبق (تستخدم فقط عند الحاجة)
 function preloadImages() {
     const promises = allImagesToPreload.map(src => {
         return new Promise((resolve) => {
@@ -260,111 +301,127 @@ function preloadImages() {
     return Promise.all(promises);
 }
 
-// أضف هذا المتغير في بداية السكريبت مع متغيرات الحالة
-let shuffledPools = {
-    'card-blue': [],
-    'card-red': [],
-    'card-black': [],
-    'card-brown': []
-};
-// تعريف متغير خارج الدالة لحفظ الحالة
-let lastUsedImages = { 'card-blue': null, 'card-red': null, 'card-black': null, 'card-brown': null };
-
-function getNextImageFromPool(type) {
-    if (shuffledPools[type].length === 0) {
-        let newPool = [...cardVisuals[type]];
-        shuffle(newPool);
-        
-        // إذا كانت الصورة الجديدة التي ستسحب (آخر عنصر في المصفوفة) 
-        // هي نفسها آخر صورة تم استخدامها، قم بتبديلها مع العنصر الأول
-        if (newPool.length > 1 && newPool[newPool.length - 1] === lastUsedImages[type]) {
-            [newPool[newPool.length - 1], newPool[0]] = [newPool[0], newPool[newPool.length - 1]];
-        }
-        shuffledPools[type] = newPool;
-    }
-    
-    let img = shuffledPools[type].pop();
-    lastUsedImages[type] = img; // حفظ الصورة الحالية لتجنب تكرارها فوراً في الدورة القادمة
-    return img;
+/* ---------- أدوات UI ---------- */
+function showCustomAlert(msg, showCancel = false, onOk = null) {
+    const modal = document.getElementById('customAlert');
+    document.getElementById('alertMsg').innerText = msg;
+    modal.style.display = 'block';
+    document.getElementById('alertCancel').style.display = showCancel ? 'block' : 'none';
+    document.getElementById('alertOk').onclick = () => { modal.style.display = 'none'; if(onOk) onOk(); };
+    document.getElementById('alertCancel').onclick = () => { modal.style.display = 'none'; };
 }
 
-// 4. المحرك الرئيسي لتشغيل اللعبة (Logic Controller)
+/* =====================================================
+   🧠 المرحلة 1 — قراءة اللاعبين وتحديد دوري الحقيقي
+   ===================================================== */
+
+onValue(playersRef, (snap) => {
+    playersCache = snap.val() || {};
+    const me = playersCache[playerId];
+    if (!me) return;
+
+    myRole = me.team;
+    myTeam = myRole?.startsWith("blue") ? "blue" : myRole?.startsWith("red") ? "red" : null;
+    isSpy = myRole?.endsWith("spy");
+    isOperative = myRole?.endsWith("op");
+    isSpectator = myRole === "spectators-list";
+
+    renderPlayersPanel();
+});
+
+/* =====================================================
+   🎮 المرحلة 2 — الاستماع لحالة اللعبة الحقيقية
+   ===================================================== */
+
+onValue(gameRef, (snap) => {
+    const data = snap.val();
+    if (!data) return;
+    gameState = data;
+    applyGameStateToUI();
+});
+
+/* =====================================================
+   🔄 إذا انتهت اللعبة → رجوع تلقائي
+   ===================================================== */
+
+onValue(statusRef, (snap) => {
+    const status = snap.val();
+    if (status === "ended") {
+        showCustomAlert("انتهت اللعبة!", false, () => {
+            window.location.href = "index.html";
+        });
+    }
+});
+
+/* =====================================================
+   🚀 تحميل أولي
+   ===================================================== */
+
 function startGameManager() {
     const loader = document.getElementById('loading-screen');
 
     if (areImagesCached()) {
-        // إذا الصور محملة مسبقاً، ادخل للعبة فوراً
         loader.style.display = 'none';
-        initGame();
     } else {
-        // إذا أول مرة أو الصور غير جاهزة، انتظر التحميل
         preloadImages().then(() => {
             loader.style.opacity = '0';
             setTimeout(() => {
                 loader.style.display = 'none';
-                initGame();
             }, 300);
         });
     }
 }
-
-// 5. استدعاء المحرك فوراً عند تشغيل السكريبت
 startGameManager();
-    function showCustomAlert(msg, showCancel = false, onOk = null) {
-        const modal = document.getElementById('customAlert');
-        document.getElementById('alertMsg').innerText = msg;
-        modal.style.display = 'block';
-        document.getElementById('alertCancel').style.display = showCancel ? 'block' : 'none';
-        document.getElementById('alertOk').onclick = () => { modal.style.display = 'none'; if(onOk) onOk(); };
-        document.getElementById('alertCancel').onclick = () => { modal.style.display = 'none'; };
-    }
 
-function initGame() {
-    // إعادة تهيئة المخازن عند بداية كل لعبة جديدة (اختياري)
-    Object.keys(cardVisuals).forEach(type => {
-        shuffledPools[type] = [...cardVisuals[type]];
-        shuffle(shuffledPools[type]);
+/* =====================================================
+   🧩 المرحلة 3 — رسم لوحة اللاعبين من Firebase
+   ===================================================== */
+
+function renderPlayersPanel() {
+    const roleIds = ["blue-op","blue-spy","red-op","red-spy"];
+    roleIds.forEach(r => {
+        const card = document.getElementById(r);
+        const box = card.querySelector(".avatar-box");
+        const nameBox = card.querySelector(".player-name");
+
+        const player = Object.values(playersCache).find(p => p.team === r);
+        if (player) {
+            box.innerHTML = `<img src="${player.avatar}" class="avatar-img">`;
+            nameBox.textContent = player.name || "Player";
+        } else {
+            box.innerHTML = "";
+            nameBox.textContent = "—";
+        }
     });
 
-    const shuffledAvatars = [...avatarImages];
-    const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
-    document.querySelectorAll('.avatar-box').forEach((box, i) => {
-        const avatarPath = shuffledAvatars[i];
-        box.innerHTML = `<img src="${avatarPath}" class="avatar-img">`;
-        playerAvatars[roles[i]] = avatarPath;
-    });
-
-    gameState.turn = Math.random() > 0.5 ? 'blue' : 'red';
-    gameState.scores.blue = gameState.turn === 'blue' ? 9 : 8;
-    gameState.scores.red = gameState.turn === 'red' ? 9 : 8;
-    
-    let types = [...Array(gameState.scores.blue).fill('card-blue'), ...Array(gameState.scores.red).fill('card-red'), 'card-black', ...Array(7).fill('card-brown')];
-    shuffle(types); 
-    shuffle(wordsPool);
-    
-    gameState.cards = types.map((t, i) => {
-        // --- التعديل الجوهري هنا ---
-        const randomImg = getNextImageFromPool(t);
-        return { type: t, word: wordsPool[i], revealed: false, visual: randomImg };
-    });
-    
-    renderGrid();
-    updateUI();
+    document.getElementById("playerCount").textContent = Object.keys(playersCache).length;
 }
 
-    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
+/* =====================================================
+   🎲 المرحلة 4 — رسم الشبكة من gameState
+   ===================================================== */
 
 function renderGrid() {
+    if (!gameState) return;
     const grid = document.getElementById('grid'); 
     grid.innerHTML = '';
-    gameState.cards.forEach((card, i) => {
+
+    Object.entries(gameState.board).forEach(([i, card]) => {
+        i = Number(i);
         const div = document.createElement('div');
-        const isHidden = gameState.phase === 'operative' && !card.revealed;
-        const isSelected = gameState.selectedCards.has(i);
-        
-        div.className = `card ${isHidden ? 'card-hidden' : card.type} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+
+        const isHidden = !card.revealed && !isSpy && !isSpectator;
+        const isSelected = selectedCards.has(i);
+
+        const visualClass =
+            card.color === "blue" ? "card-blue" :
+            card.color === "red" ? "card-red" :
+            card.color === "black" ? "card-black" :
+            "card-brown";
+
+        div.className = `card ${isHidden ? 'card-hidden' : visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
         div.id = `card-${i}`;
-        
+
         div.innerHTML = `
             <div class="confirm-btn" id="confirm-${i}" 
                  style="display: ${isSelected ? 'flex' : 'none'}" 
@@ -375,170 +432,335 @@ function renderGrid() {
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;
-        
-        // عند الضغط على جسم البطاقة يتم التحديد أو إلغاء التحديد
+
         div.onclick = () => handleCardSelection(i);
         grid.appendChild(div);
     });
 }
 
-    function togglePeek(i, event) {
-        event.stopPropagation();
-        const cardEl = document.getElementById(`card-${i}`);
-        if (gameState.cards[i].revealed) {
-            cardEl.classList.toggle('card-peeking');
-        }
+/* =====================================================
+   🖼️ Peek (قادة فقط)
+   ===================================================== */
+
+window.togglePeek = function(i, event) {
+    event.stopPropagation();
+    if (!isSpy && !isSpectator) return;
+    const cardEl = document.getElementById(`card-${i}`);
+    if (gameState.board[i].revealed) {
+        cardEl.classList.toggle('card-peeking');
     }
+};
 
-    function updateUI() {
-        document.getElementById('blue-score').innerText = gameState.scores.blue;
-        document.getElementById('red-score').innerText = gameState.scores.red;
-        document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-        const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
-        document.getElementById(activeId).classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
+/* =====================================================
+   🎛️ المرحلة 5 — تحديث UI العام
+   ===================================================== */
 
-        const uiArea = document.getElementById('clue-ui');
-        const btn = document.getElementById('action-btn');
-        const icon = document.getElementById('btn-icon');
-        const select = document.getElementById('clueNum');
+function updateUI() {
+    if (!gameState) return;
 
-        if (gameState.phase === 'spy') {
-            uiArea.classList.remove('disabled-area');
-            btn.classList.remove('end-turn-btn');
-            icon.className = 'arrow-icon'; icon.innerHTML = '';
-            select.value = '-';
-        } else {
-            uiArea.classList.add('disabled-area'); uiArea.style.pointerEvents = 'auto';
-            btn.classList.add('end-turn-btn'); btn.style.pointerEvents = 'auto';
-            icon.className = 'x-icon'; icon.innerHTML = '✕';
-        }
-    }
+    document.getElementById('blue-score').innerText = gameState.remaining.blue;
+    document.getElementById('red-score').innerText = gameState.remaining.red;
 
-    function handleAction() {
-        if (gameState.phase === 'spy') sendClue();
-        else {
-            if (gameState.guessesThisTurn === 0) {
-                showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
-            } else if (gameState.guessesThisTurn < gameState.targetClueNum) {
-                showCustomAlert(`لم تنهِ محاولاتك بعد (${gameState.guessesThisTurn}/${gameState.targetClueNum}). هل أنت متأكد؟`, true, endTurn);
-            } else {
-                endTurn();
-            }
-        }
-    }
+    document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
+    const activeId = `${gameState.turn.team}-${gameState.turn.phase === 'leader' ? 'spy' : 'op'}`;
+    document.getElementById(activeId)?.classList.add(gameState.turn.team === 'blue' ? 'active-blue' : 'active-red');
 
-    function sendClue() {
-        const input = document.getElementById('clueInput');
-        const clueValue = input.value.trim();
-        const select = document.getElementById('clueNum');
-        const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
+    const uiArea = document.getElementById('clue-ui');
+    const btn = document.getElementById('action-btn');
+    const icon = document.getElementById('btn-icon');
+    const select = document.getElementById('clueNum');
 
-        if (!input.value.trim()) {
-            input_wrapper.classList.add('error-border');
-            setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
-            return;
-        }
+    const isMyTurn = myTeam === gameState.turn.team;
 
-        const onTableWords = gameState.cards.filter(c => !c.revealed).map(c => c.word.trim().toLowerCase());
-        const clueWords = clueValue.trim().toLowerCase().split(/\s+/);
-        const hasForbiddenWord = clueWords.some(w => onTableWords.includes(w));
-
-        if (hasForbiddenWord) {
-            showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات.");
-            return;
-        }
-
-        if (select.value === '-') {
-            select.classList.add('error-border');
-            setTimeout(() => select.classList.remove('error-border'), 1000);
-            return;
-        }
-
-        gameState.targetClueNum = parseInt(select.value);
-        gameState.guessesThisTurn = 0;
-
-        const log = document.getElementById('log-content');
-        const avatar = playerAvatars[`${gameState.turn}-spy`];
-        const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
-        const clueClass = gameState.turn === 'blue' ? 'log-clue-blue' : 'log-clue-red';
-        
-        const html = `
-            <div class="log-row ${rowClass}">
-                <div class="log-clue-item ${clueClass}">
-                    <img src="${avatar}" class="log-avatar" style="border-color:#fff">
-                    <div class="log-text-clue">${clueValue}</div>
-                    <div class="log-num-circle">${select.value}</div>
-                </div>
-            </div>`;
-        log.insertAdjacentHTML('afterbegin', html);
-        
-        gameState.phase = 'operative';
-        renderGrid(); updateUI();
-    }
-
-function handleCardSelection(i) {
-    if (gameState.phase !== 'operative' || gameState.cards[i].revealed) return;
-
-    if (gameState.selectedCards.has(i)) {
-        gameState.selectedCards.delete(i);
+    if (gameState.turn.phase === 'leader') {
+        uiArea.classList.toggle('disabled-area', !(isSpy && isMyTurn));
+        btn.classList.remove('end-turn-btn');
+        icon.className = 'arrow-icon'; icon.innerHTML = '';
+        select.value = '-';
     } else {
-        gameState.selectedCards.add(i);
-    }
-    renderGrid(); // إعادة الرسم لإظهار الأزرار والتنسيقات الجديدة
-}
-
-function confirmSelection(i) {
-    const card = gameState.cards[i];
-    card.revealed = true;
-    gameState.guessesThisTurn++;
-    gameState.selectedCards.delete(i);
-
-    const log = document.getElementById('log-content');
-    const avatar = playerAvatars[`${gameState.turn}-op`];
-    const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
-    const colorClass = card.type === 'card-blue' ? 'bg-blue' : (card.type === 'card-red' ? 'bg-red' : (card.type === 'card-brown' ? 'bg-brown' : 'bg-black'));
-
-    const html = `
-        <div class="log-row ${rowClass}">
-            <div class="log-guess-item" style="flex-direction:${gameState.turn==='blue'?'row-reverse':'row'}">
-                <img src="${avatar}" class="log-avatar" style="border-color:${gameState.turn==='blue'?'#3498db':'#e74c3c'}">
-                <div class="log-guess-text ${colorClass}">${card.word}</div>
-            </div>
-        </div>`;
-    log.insertAdjacentHTML('afterbegin', html);
-
-    renderGrid(); updateUI();
-    
-    if (card.type === 'card-blue') gameState.scores.blue = Math.max(0, gameState.scores.blue - 1);
-    else if (card.type === 'card-red') gameState.scores.red = Math.max(0, gameState.scores.red - 1);
-
-    // الحالة الأولى: لمس الكارت الأسود (الخسارة)
-    if (card.type === 'card-black') { 
-        showCustomAlert("انتهت اللعبة! لمست القاتل.", false, () => {
-            window.location.href = 'index.html'; // العودة للرئيسية
-        }); 
-        return; 
-    }
-    
-    if (card.type !== `card-${gameState.turn}`) {
-        setTimeout(endTurn, 800);
-    } 
-    // الحالة الثانية: انتهاء الكلمات (الفوز)
-    else if (gameState.scores.blue === 0 || gameState.scores.red === 0) {
-        showCustomAlert("فوز رائع! انتهت اللعبة.", false, () => {
-            window.location.href = 'index.html'; // العودة للرئيسية
-        });
+        uiArea.classList.add('disabled-area');
+        btn.classList.toggle('disabled-area', !(isOperative && isMyTurn));
+        btn.classList.add('end-turn-btn');
+        icon.className = 'x-icon'; icon.innerHTML = '✕';
     }
 }
-function endTurn() {
-    gameState.turn = gameState.turn === 'blue' ? 'red' : 'blue';
-    gameState.phase = 'spy';
-    gameState.guessesThisTurn = 0;
-    gameState.selectedCards.clear(); // مسح التحديدات تماماً عند انتهاء الدور
-    document.getElementById('clueInput').value = '';
-    renderGrid(); 
+
+/* =====================================================
+   🧠 المرحلة 6 — تطبيق الحالة القادمة من Firebase
+   ===================================================== */
+
+function applyGameStateToUI() {
+    if (!gameState) return;
+
+    // إعادة تعيين التحديدات المحلية عند تغيير الدور
+    if (gameState.turn.phase === "leader") {
+        selectedCards.clear();
+        guessesThisTurn = 0;
+        document.getElementById('clueInput').value = '';
+    }
+
+    renderGrid();
+    renderLog();
     updateUI();
 }
+
+/* =====================================================
+   📜 المرحلة 7 — رسم سجل اللعبة من Firebase
+   ===================================================== */
+
+function renderLog() {
+    const log = document.getElementById('log-content');
+    log.innerHTML = '';
+    if (!gameState.log) return;
+
+    [...gameState.log].reverse().forEach(entry => {
+        if (entry.type === "clue") {
+            const rowClass = entry.team === 'blue' ? 'row-blue' : 'row-red';
+            const clueClass = entry.team === 'blue' ? 'log-clue-blue' : 'log-clue-red';
+            const html = `
+                <div class="log-row ${rowClass}">
+                    <div class="log-clue-item ${clueClass}">
+                        <img src="${entry.avatar}" class="log-avatar" style="border-color:#fff">
+                        <div class="log-text-clue">${entry.word}</div>
+                        <div class="log-num-circle">${entry.count}</div>
+                    </div>
+                </div>`;
+            log.insertAdjacentHTML('afterbegin', html);
+        }
+        else if (entry.type === "guess") {
+            const rowClass = entry.team === 'blue' ? 'row-blue' : 'row-red';
+            const colorClass =
+                entry.cardColor === 'blue' ? 'bg-blue' :
+                entry.cardColor === 'red' ? 'bg-red' :
+                entry.cardColor === 'black' ? 'bg-black' :
+                'bg-brown';
+
+            const html = `
+                <div class="log-row ${rowClass}">
+                    <div class="log-guess-item" style="flex-direction:${entry.team==='blue'?'row-reverse':'row'}">
+                        <img src="${entry.avatar}" class="log-avatar" style="border-color:${entry.team==='blue'?'#3498db':'#e74c3c'}">
+                        <div class="log-guess-text ${colorClass}">${entry.word}</div>
+                    </div>
+                </div>`;
+            log.insertAdjacentHTML('afterbegin', html);
+        }
+        else if (entry.type === "system") {
+            const html = `
+                <div class="log-row">
+                    <div style="width:100%;text-align:center;font-size:0.55rem;color:#ccc;">${entry.text}</div>
+                </div>`;
+            log.insertAdjacentHTML('afterbegin', html);
+        }
+    });
+}
+
+/* =====================================================
+   🎯 المرحلة 8 — التفاعل (حسب الدور فقط)
+   ===================================================== */
+
+window.handleAction = function() {
+    if (!gameState) return;
+    const isMyTurn = myTeam === gameState.turn.team;
+
+    if (gameState.turn.phase === 'leader') {
+        if (!(isSpy && isMyTurn)) return;
+        sendClue();
+    } else {
+        if (!(isOperative && isMyTurn)) return;
+
+        if (guessesThisTurn === 0) {
+            showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
+        } else if (guessesThisTurn < gameState.clue.count) {
+            showCustomAlert(`لم تنهِ محاولاتك بعد (${guessesThisTurn}/${gameState.clue.count}). هل أنت متأكد؟`, true, endTurn);
+        } else {
+            endTurn();
+        }
+    }
+};
+
+/* =====================================================
+   ✉️ إرسال التلميح (قائد فقط)
+   ===================================================== */
+
+async function sendClue() {
+    const input = document.getElementById('clueInput');
+    const clueValue = input.value.trim();
+    const select = document.getElementById('clueNum');
+    const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
+
+    if (!clueValue) {
+        input_wrapper.classList.add('error-border');
+        setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
+        return;
+    }
+
+    const onTableWords = Object.values(gameState.board)
+        .filter(c => !c.revealed)
+        .map(c => c.word.trim().toLowerCase());
+    const clueWords = clueValue.toLowerCase().split(/\s+/);
+    const hasForbiddenWord = clueWords.some(w => onTableWords.includes(w));
+
+    if (hasForbiddenWord) {
+        showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات.");
+        return;
+    }
+
+    if (select.value === '-') {
+        select.classList.add('error-border');
+        setTimeout(() => select.classList.remove('error-border'), 1000);
+        return;
+    }
+
+    const count = select.value === "∞" ? Infinity : parseInt(select.value);
+
+    const me = playersCache[playerId];
+
+    await update(gameRef, {
+        clue: { word: clueValue, count },
+        turn: { team: gameState.turn.team, phase: "agent" }
+    });
+
+    await push(ref(db, `rooms/${roomId}/game/log`), {
+        type: "clue",
+        team: gameState.turn.team,
+        word: clueValue,
+        count: select.value,
+        avatar: me.avatar,
+        at: Date.now()
+    });
+
+    input.value = '';
+}
+
+/* =====================================================
+   🖱️ تحديد بطاقة (عميل فقط)
+   ===================================================== */
+
+window.handleCardSelection = function(i) {
+    if (!gameState) return;
+    if (gameState.turn.phase !== 'agent') return;
+    if (!isOperative || myTeam !== gameState.turn.team) return;
+    if (gameState.board[i].revealed) return;
+
+    if (selectedCards.has(i)) {
+        selectedCards.delete(i);
+    } else {
+        selectedCards.add(i);
+    }
+    renderGrid();
+};
+
+/* =====================================================
+   ✅ تأكيد اختيار بطاقة (عميل فقط)
+   ===================================================== */
+
+window.confirmSelection = async function(i) {
+    if (!gameState) return;
+    if (gameState.turn.phase !== 'agent') return;
+    if (!isOperative || myTeam !== gameState.turn.team) return;
+
+    const card = gameState.board[i];
+    if (card.revealed) return;
+
+    const me = playersCache[playerId];
+    const enemy = myTeam === "blue" ? "red" : "blue";
+
+    const updates = {};
+    updates[`board/${i}/revealed`] = true;
+
+    let nextTurn = null;
+    let winner = null;
+
+    let remaining = { ...gameState.remaining };
+    let logType = "guess";
+
+    if (card.color === myTeam) {
+        remaining[myTeam] = Math.max(0, remaining[myTeam] - 1);
+    }
+    else if (card.color === enemy) {
+        remaining[enemy] = Math.max(0, remaining[enemy] - 1);
+        nextTurn = enemy;
+    }
+    else if (card.color === "neutral") {
+        nextTurn = enemy;
+    }
+    else if (card.color === "black") {
+        winner = enemy;
+    }
+
+    guessesThisTurn++;
+
+    updates["remaining"] = remaining;
+
+    if (winner) {
+        updates["winner"] = winner;
+    }
+
+    if (nextTurn) {
+        updates["turn"] = { team: nextTurn, phase: "leader" };
+        updates["clue"] = { word: null, count: null };
+    }
+
+    await update(gameRef, updates);
+
+    await push(ref(db, `rooms/${roomId}/game/log`), {
+        type: "guess",
+        team: myTeam,
+        word: card.word,
+        cardColor: card.color,
+        avatar: me.avatar,
+        at: Date.now()
+    });
+
+    selectedCards.delete(i);
+
+    // تحقق الفوز الطبيعي
+    if (remaining.blue === 0 || remaining.red === 0) {
+        const winTeam = remaining.blue === 0 ? "blue" : "red";
+        await update(gameRef, { winner: winTeam });
+    }
+
+    // إذا لمس الأسود
+    if (card.color === "black") {
+        await update(roomRef, { status: "ended" });
+        return;
+    }
+
+    if (nextTurn) {
+        guessesThisTurn = 0;
+    }
+};
+
+/* =====================================================
+   🔁 إنهاء الدور يدويًا
+   ===================================================== */
+
+async function endTurn() {
+    if (!gameState) return;
+    const enemy = myTeam === "blue" ? "red" : "blue";
+
+    await update(gameRef, {
+        turn: { team: enemy, phase: "leader" },
+        clue: { word: null, count: null }
+    });
+
+    guessesThisTurn = 0;
+    selectedCards.clear();
+}
+
+/* =====================================================
+   🔚 نهاية اللعبة (عرض فائز)
+   ===================================================== */
+
+onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
+    const winner = snap.val();
+    if (!winner) return;
+
+    showCustomAlert(`🎉 فاز الفريق ${winner === "blue" ? "الأزرق" : "الأحمر"}!`, false, async () => {
+        await update(roomRef, { status: "ended" });
+        window.location.href = "index.html";
+    });
+});
 </script>
 </body>
 </html>
