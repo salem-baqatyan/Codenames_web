@@ -368,60 +368,58 @@ get(roomRef).then(snap => {
 window.handleStartGame = async () => {
     if (!isAdmin) return;
 
-    const snap = await get(playersRef);
-    const players = snap.val();
-    if (!players) return alert("لا يوجد لاعبين");
+    try {
+        let words;
+        try {
+            // محاولة جلب الكلمات من الملف
+            words = await fetch("words_ar.json").then(r => r.json());
+        } catch (e) {
+            // كلمات احتياطية في حال فشل التحميل
+            words = ["أسد", "سيارة", "موز", "هاتف", "كمبيوتر", "بحر", "شمس", "قمر", "غابة", "طائرة", "مدرسة", "كتاب", "قلم", "ساعة", "نظارة", "قهوة", "شاي", "خبز", "جبن", "تفاحة", "برتقال", "بطيخ", "منزل", "حديقة", "كرسي"];
+            console.warn("تم استخدام الكلمات الاحتياطية لعدم العثور على ملف JSON");
+        }
 
-    const roles = Object.values(players).map(p => p.team);
-    const required = ["blue-op", "blue-spy", "red-op", "red-spy"];
-    const missing = required.filter(r => !roles.includes(r));
-    // if (missing.length) {
-    //     return alert("يجب وجود قائد وعميل لكل فريق قبل البدء");
-    // }
+        const snap = await get(playersRef);
+        const players = snap.val();
+        if (!players) return alert("لا يوجد لاعبين");
 
-    const startingTeam = Math.random() < 0.5 ? "red" : "blue";
-    const redCount = startingTeam === "red" ? 9 : 8;
-    const blueCount = startingTeam === "blue" ? 9 : 8;
+        const startingTeam = Math.random() < 0.5 ? "red" : "blue";
+        const redCount = startingTeam === "red" ? 9 : 8;
+        const blueCount = startingTeam === "blue" ? 9 : 8;
 
-    const words = await fetch("words_ar.json").then(r => r.json());
-    const shuffled = words.sort(() => Math.random() - 0.5).slice(0, 25);
+        const shuffled = words.sort(() => Math.random() - 0.5).slice(0, 25);
+        const colors = [
+            ...Array(redCount).fill("red"),
+            ...Array(blueCount).fill("blue"),
+            ...Array(7).fill("neutral"),
+            "black"
+        ].sort(() => Math.random() - 0.5);
 
-    const colors = [
-        ...Array(redCount).fill("red"),
-        ...Array(blueCount).fill("blue"),
-        ...Array(7).fill("neutral"),
-        "black"
-    ].sort(() => Math.random() - 0.5);
+        const board = {};
+        shuffled.forEach((w, i) => {
+            board[i] = { word: w, color: colors[i], revealed: false };
+        });
 
-    const board = {};
-    shuffled.forEach((w, i) => {
-        board[i] = { word: w, color: colors[i], revealed: false };
-    });
+        const gameState = {
+            startedAt: Date.now(),
+            startingTeam,
+            turn: { team: startingTeam, phase: "leader" },
+            remaining: { red: redCount, blue: blueCount },
+            clue: { word: null, count: null },
+            board,
+            log: [`بدأ الفريق ${startingTeam === "red" ? "الأحمر" : "الأزرق"}`],
+            winner: null
+        };
 
-    const gameState = {
-        startedAt: Date.now(),
-        startingTeam,
-        turn: {
-            team: startingTeam,
-            phase: "leader"
-        },
-        remaining: {
-            red: redCount,
-            blue: blueCount
-        },
-        clue: { word: null, count: null },
-        board,
-        log: [`بدأ الفريق ${startingTeam === "red" ? "الأحمر" : "الأزرق"}`],
-        winner: null
-    };
-
-    await update(roomRef, {
-        status: "playing",
-        game: gameState
-    });
-};
-
-    window.openTimerModal = () => {
+        await update(roomRef, {
+            status: "playing",
+            game: gameState
+        });
+    } catch (error) {
+        console.error("Error starting game:", error);
+        alert("حدث خطأ أثناء بدء اللعبة، افحص ملف الكلمات.");
+    }
+};    window.openTimerModal = () => {
         if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
     };
 
