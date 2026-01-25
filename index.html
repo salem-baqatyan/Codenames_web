@@ -388,34 +388,22 @@ function generateBoard() {
 window.handleStartGame = async () => {
     if (!isAdmin) return;
 
-    // 1. إنشاء game state مرة واحدة
     const gameRef = ref(db, `rooms/${roomId}/game`);
+    const snap = await get(gameRef);
 
-    const snapshot = await get(gameRef);
-    if (!snapshot.exists()) {
+    if (!snap.exists()) {
         await set(gameRef, {
-            turn: Math.random() > 0.5 ? "blue" : "red",
-            phase: "spy",
-            board: generateBoard(), // دالة توليد البطاقات
-            scores: { blue: 0, red: 0 }
+            board: generateBoard(),
+            turn: { team: "red", phase: "leader" },
+            scores: { red: 0, blue: 0 },
+            remaining: { red: 8, blue: 9 }
         });
     }
 
-    // 2. حالة اللعبة
-// 1️⃣ أنشئ اللعبة فقط في مسارها
-await set(ref(db, `rooms/${roomId}/game`), {
-    board: generateBoard(),
-    turn: { team: "red", phase: "leader" },
-    scores: { red: 0, blue: 0 },
-    remaining: { red: 8, blue: 9 }
-});
+    await update(ref(db, `rooms/${roomId}`), {
+        status: "started"
+    });
 
-// 2️⃣ حدّث حالة الغرفة فقط
-await update(ref(db, `rooms/${roomId}`), {
-    status: "started"
-});
-
-    // 3. انتقال الأدمن نفسه
     window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
 };
 
