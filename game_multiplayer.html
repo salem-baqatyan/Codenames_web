@@ -672,40 +672,45 @@ window.confirmSelection = async function(i) {
     const me = playersCache[playerId];
     const enemy = myTeam === "blue" ? "red" : "blue";
 
-    const updates = {};
-    updates[`board/${i}/revealed`] = true;
-
     let nextTurn = null;
     let winner = null;
 
-    let remaining = { ...gameState.remaining };
-    let logType = "guess";
+    const updates = {};
+    updates[`board/${i}/revealed`] = true;
 
-    if (card.color === myTeam) {
-        remaining[myTeam] = Math.max(0, remaining[myTeam] - 1);
+    let remaining = { ...gameState.remaining };
+
+    // 🔥 المنطق الصحيح حسب نوع البطاقة
+    if (card.type === myTeam) {
+        remaining[myTeam]--;
     }
-    else if (card.color === enemy) {
-        remaining[enemy] = Math.max(0, remaining[enemy] - 1);
+    else if (card.type === enemy) {
+        remaining[enemy]--;
         nextTurn = enemy;
     }
-    else if (card.color === "neutral") {
+    else if (card.type === "neutral") {
         nextTurn = enemy;
     }
-    else if (card.color === "killer") {
+    else if (card.type === "killer") {
         winner = enemy;
     }
 
-    guessesThisTurn++;
+    updates.remaining = remaining;
 
-    updates["remaining"] = remaining;
-
+    // فائز مباشر
     if (winner) {
-        updates["winner"] = winner;
+        updates.winner = winner;
+        await update(gameRef, updates);
+        await update(roomRef, { status: "ended" });
+        return;
     }
 
+    // تغيير الدور
     if (nextTurn) {
-        updates["turn"] = { team: nextTurn, phase: "leader" };
-        updates["clue"] = { word: null, count: null };
+        updates.turn = { team: nextTurn, phase: "leader" };
+        updates.clue = { word: null, count: null };
+        guessesThisTurn = 0;
+        selectedCards.clear();
     }
 
     await update(gameRef, updates);
@@ -714,28 +719,10 @@ window.confirmSelection = async function(i) {
         type: "guess",
         team: myTeam,
         word: card.word,
-        cardColor: card.color,
+        cardColor: card.type,
         avatar: me.avatar,
         at: Date.now()
     });
-
-    selectedCards.delete(i);
-
-    // تحقق الفوز الطبيعي
-    if (remaining.blue === 0 || remaining.red === 0) {
-        const winTeam = remaining.blue === 0 ? "blue" : "red";
-        await update(gameRef, { winner: winTeam });
-    }
-
-    // إذا لمس الأسود
-    if (card.color === "black") {
-        await update(roomRef, { status: "ended" });
-        return;
-    }
-
-    if (nextTurn) {
-        guessesThisTurn = 0;
-    }
 };
 
 /* =====================================================
@@ -744,6 +731,7 @@ window.confirmSelection = async function(i) {
 
 async function endTurn() {
     if (!gameState) return;
+
     const enemy = myTeam === "blue" ? "red" : "blue";
 
     await update(gameRef, {
