@@ -270,30 +270,6 @@ let gameState = null;   // سيتم ملؤه من Firebase
 let selectedCards = new Set();   // محلي فقط للعميل
 let guessesThisTurn = 0;
 
-onValue(playersRef, snap => {
-    playersCache = snap.val() || {};
-    renderPlayers();
-});
-function renderPlayers() {
-    clearPlayerBoxes();
-
-    Object.values(playersCache).forEach(player => {
-        if (!player.team) return;
-
-        if (player.team === "red-op") {
-            addToBox("red-operatives", player);
-        }
-        if (player.team === "blue-op") {
-            addToBox("blue-operatives", player);
-        }
-        if (player.team === "red-spy") {
-            addToBox("red-spymaster", player);
-        }
-        if (player.team === "blue-spy") {
-            addToBox("blue-spymaster", player);
-        }
-    });
-}
 
 
 /* ---------- تحميل الصور (كما في كودك الأصلي) ---------- */
