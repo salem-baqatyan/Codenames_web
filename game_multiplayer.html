@@ -411,16 +411,19 @@ function renderGrid() {
         i = Number(i);
         const div = document.createElement('div');
 
+        // الحالات الخاصة بالبطاقة
         const isHidden = !card.revealed && !isSpy && !isSpectator;
         const isSelected = selectedCards.has(i);
 
+        // ربط نوع البطاقة بالكلاسات البصرية المحددة في CSS الخاص بك
         const visualClass =
             card.type === "blue" ? "card-blue" :
             card.type === "red" ? "card-red" :
             card.type === "killer" ? "card-black" :
-            "card-brown";
+            "card-brown"; // للنوع neutral
 
-
+        // تعيين الكلاسات للـ div الرئيسي
+        // لاحظ إضافة visualClass دائماً للتحكم في الألوان الخلفية أو الحدود
         div.className = `card ${isHidden ? 'card-hidden' : visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
         div.id = `card-${i}`;
 
@@ -430,7 +433,9 @@ function renderGrid() {
                  onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
+            
             <img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">
+            
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;

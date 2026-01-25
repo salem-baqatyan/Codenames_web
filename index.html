@@ -142,12 +142,7 @@
     <div class="modal-overlay" id="profileModal" style="display: flex;">
         <div class="settings-modal">
             <div class="modal-header" id="profileHeader" style="font-weight: bold; margin-bottom: 10px;">أهلاً بك! جهز ملفك</div>
-            <div class="avatar-selector">
-                <img src="img/avatar_snow_man.webp" class="avatar-option selected" onclick="selectAvatar(this)">
-                <img src="img/avatar_women.webp" class="avatar-option" onclick="selectAvatar(this)">
-                <img src="img/avatar_old_man.webp" class="avatar-option" onclick="selectAvatar(this)">
-                <img src="img/avatar_little_girl.webp" class="avatar-option" onclick="selectAvatar(this)">
-            </div>
+            <div class="avatar-selector" id="avatarContainer"></div>
             <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
             <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
             <button id="leaveRoomBtn" class="leave-btn" style="display: none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
@@ -275,6 +270,96 @@
     const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
     const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
+const avatarImages = [
+    'img/avatar_little_girl.webp',
+    'img/avatar_old_man.webp',
+    'img/avatar_snow_man.webp',
+    'img/avatar_women.webp'
+];
+
+function renderAvatars() {
+    const container = document.getElementById('avatarContainer');
+    container.innerHTML = ''; // تنظيف الحاوية أولاً
+
+    avatarImages.forEach((src, index) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'avatar-option';
+        
+        // جعل أول صورة مختارة تلقائياً (كما في تصميمك الأصلي)
+        if (index === 0) {
+            img.classList.add('selected');
+        }
+
+        // إضافة وظيفة النقر
+        img.onclick = function() {
+            selectAvatar(this);
+        };
+
+        container.appendChild(img);
+    });
+}
+
+// تشغيل الدالة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', renderAvatars);
+function areImagesCached() {
+    for (let src of avatarImages) {
+        let img = new Image();
+        img.src = src;
+        if (!img.complete) return false;
+    }
+    return true;
+}
+
+// 3. دالة التحميل المسبق (تستخدم فقط عند الحاجة)
+function preloadImages() {
+    const promises = avatarImages.map(src => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = src;
+            img.onload = resolve;
+            img.onerror = resolve; 
+        });
+    });
+    return Promise.all(promises);
+}
+const cardVisuals = {
+    'blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
+    'red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+    'killer': ['img/card/Black.webp'],
+    'neutral': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+};
+
+// 2. خزانات الصور والحالة السابقة
+let shuffledPools = { 'blue': [], 'red': [], 'killer': [], 'neutral': [] };
+let lastUsedImages = { 'blue': null, 'red': null, 'killer': null, 'neutral': null };
+
+// 3. دالة الخلط (Helper Function)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// 4. دالة جلب الصورة الذكية
+function getNextImageFromPool(type) {
+    if (shuffledPools[type].length === 0) {
+        let newPool = [...cardVisuals[type]];
+        shuffleArray(newPool);
+        
+        // منع التكرار المتتالي عند إعادة التعبئة
+        if (newPool.length > 1 && newPool[newPool.length - 1] === lastUsedImages[type]) {
+            [newPool[newPool.length - 1], newPool[0]] = [newPool[0], newPool[newPool.length - 1]];
+        }
+        shuffledPools[type] = newPool;
+    }
+    
+    let img = shuffledPools[type].pop();
+    lastUsedImages[type] = img;
+    return img;
+}
+
     window.copyRoomLink = () => {
         navigator.clipboard.writeText(window.location.href);
         alert("✅ تم نسخ رابط الغرفة، أرسله لأصدقائك!");
@@ -365,21 +450,26 @@
     
 function generateBoard() {
     const words = ["أسد", "شمس", "كتاب", "طائرة", "قلم", "بحر", "تفاحة", "ساعة", "نجم", "جبل", "نهر", "سيارة", "هاتف", "قمر", "شجرة", "ورقة", "مفتاح", "باب", "نافذة", "كرة", "حاسوب", "قهوة", "خبز", "ملك", "عطش"];
-    // خلط الكلمات
-    const shuffledWords = words.sort(() => 0.5 - Math.random());
     
-    const board = [];
+    // خلط الكلمات
+    const shuffledWords = [...words];
+    shuffleArray(shuffledWords);
+    
     const types = ["killer", ...Array(8).fill("red"), ...Array(8).fill("blue"), ...Array(7).fill("neutral")];
-    // إضافة لون إضافي للفريق الذي يبدأ
-    types.push("blue"); // سنفترض أن الأزرق يبدأ دائماً أو اجعله عشوائياً
+    types.push("blue"); // الفريق البادئ
 
-    const shuffledTypes = types.sort(() => 0.5 - Math.random());
+    // خلط الأنواع
+    shuffleArray(types);
 
+    const board = [];
     for (let i = 0; i < 25; i++) {
+        const currentType = types[i];
         board.push({
             word: shuffledWords[i],
-            type: shuffledTypes[i],
-            revealed: false
+            type: currentType,
+            revealed: false,
+            // هنا يتم استدعاء الصورة بناءً على النوع
+            visual: getNextImageFromPool(currentType) 
         });
     }
     return board;
