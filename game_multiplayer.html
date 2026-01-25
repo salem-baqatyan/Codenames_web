@@ -248,6 +248,7 @@ const roomRef = ref(db, `rooms/${roomId}`);
 const gameRef = ref(db, `rooms/${roomId}/game`);
 const playersRef = ref(db, `rooms/${roomId}/players`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
+const logRef = ref(db, `rooms/${roomId}/game/log`);
 
 /* ---------- متغيرات محلية ---------- */
 const avatarImages = ['img/avatar_little_girl.webp','img/avatar_old_man.webp','img/avatar_snow_man.webp','img/avatar_women.webp'];
@@ -339,6 +340,17 @@ onValue(gameRef, (snap) => {
     if (!data) return;
     gameState = data;
     applyGameStateToUI();
+});
+
+/* =====================================================
+    📜 مستمع خاص بسجل الأحداث (Log) لضمان التحديث الفوري
+   ===================================================== */
+onValue(logRef, (snap) => {
+    const logData = snap.val();
+    if (logData && gameState) {
+        gameState.log = logData; // تحديث السجل في الحالة المحلية
+        renderLog(); // إعادة رسم السجل في الواجهة
+    }
 });
 
 /* =====================================================
@@ -516,15 +528,21 @@ function applyGameStateToUI() {
    ===================================================== */
 
 function renderLog() {
-    const log = document.getElementById('log-content');
-    log.innerHTML = '';
-    if (!gameState.log) return;
+    const logContainer = document.getElementById('log-content');
+    if (!logContainer || !gameState || !gameState.log) return;
 
-    [...gameState.log].reverse().forEach(entry => {
+    // تحويل البيانات لمصفوفة وترتيبها زمنياً (الأقدم للأحدث)
+    const logEntries = Object.values(gameState.log).sort((a, b) => a.at - b.at);
+    
+    logContainer.innerHTML = ''; // مسح المحتوى القديم لمنع التكرار
+
+    logEntries.forEach(entry => {
+        let html = '';
+        const rowClass = entry.team === 'blue' ? 'row-blue' : 'row-red';
+
         if (entry.type === "clue") {
-            const rowClass = entry.team === 'blue' ? 'row-blue' : 'row-red';
             const clueClass = entry.team === 'blue' ? 'log-clue-blue' : 'log-clue-red';
-            const html = `
+            html = `
                 <div class="log-row ${rowClass}">
                     <div class="log-clue-item ${clueClass}">
                         <img src="${entry.avatar}" class="log-avatar" style="border-color:#fff">
@@ -532,33 +550,25 @@ function renderLog() {
                         <div class="log-num-circle">${entry.count}</div>
                     </div>
                 </div>`;
-            log.insertAdjacentHTML('afterbegin', html);
-        }
+        } 
         else if (entry.type === "guess") {
-            const rowClass = entry.team === 'blue' ? 'row-blue' : 'row-red';
-            const colorClass =
-                entry.cardColor === 'blue' ? 'bg-blue' :
-                entry.cardColor === 'red' ? 'bg-red' :
-                entry.cardColor === 'black' ? 'bg-black' :
-                'bg-brown';
-
-            const html = `
+            const colorClass = entry.cardColor === 'blue' ? 'bg-blue' : 
+                               entry.cardColor === 'red' ? 'bg-red' : 
+                               entry.cardColor === 'black' ? 'bg-black' : 'bg-brown';
+            html = `
                 <div class="log-row ${rowClass}">
                     <div class="log-guess-item" style="flex-direction:${entry.team==='blue'?'row-reverse':'row'}">
                         <img src="${entry.avatar}" class="log-avatar" style="border-color:${entry.team==='blue'?'#3498db':'#e74c3c'}">
                         <div class="log-guess-text ${colorClass}">${entry.word}</div>
                     </div>
                 </div>`;
-            log.insertAdjacentHTML('afterbegin', html);
         }
-        else if (entry.type === "system") {
-            const html = `
-                <div class="log-row">
-                    <div style="width:100%;text-align:center;font-size:0.55rem;color:#ccc;">${entry.text}</div>
-                </div>`;
-            log.insertAdjacentHTML('afterbegin', html);
-        }
+        
+        logContainer.insertAdjacentHTML('beforeend', html);
     });
+
+    // تمرير تلقائي لأسفل السجل لمشاهدة آخر حركة
+    logContainer.scrollTop = logContainer.scrollHeight;
 }
 
 /* =====================================================
