@@ -415,10 +415,11 @@ function renderGrid() {
         const isSelected = selectedCards.has(i);
 
         const visualClass =
-            card.color === "blue" ? "card-blue" :
-            card.color === "red" ? "card-red" :
-            card.color === "black" ? "card-black" :
+            card.type === "blue" ? "card-blue" :
+            card.type === "red" ? "card-red" :
+            card.type === "killer" ? "card-black" :
             "card-brown";
+
 
         div.className = `card ${isHidden ? 'card-hidden' : visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
         div.id = `card-${i}`;
@@ -685,7 +686,7 @@ window.confirmSelection = async function(i) {
     else if (card.color === "neutral") {
         nextTurn = enemy;
     }
-    else if (card.color === "black") {
+    else if (card.color === "killer") {
         winner = enemy;
     }
 
