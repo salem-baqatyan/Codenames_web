@@ -176,18 +176,18 @@
         </div>
         <div class="dashboard"> 
         <div class="team-side blue-team">
-            <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="blue-operative"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
             <div class="score" id="blue-score">0</div>
-            <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="blue-spymaster"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
         </div>
         <div class="game-log-container">
             <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
             <div id="log-content"></div>
         </div>
         <div class="team-side red-team">
-            <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="red-operative"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
             <div class="score" id="red-score">0</div>
-            <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="red-spymaster"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
         </div>
     </div>
 
@@ -224,7 +224,7 @@
     const wordsPool = ["أسد", "موز", "برلين", "طائرة", "مستشفى", "تفاحة", "بحر", "كتاب", "نار", "حديد", "قمر", "شمس", "كرة", "حاسوب", "ساعة", "مفتاح", "جبل", "نهر", "سيارة", "ثلج", "ذهب", "خشب", "ورقة", "ملح", "قهوة"];
     
     let gameState = {
-        turn: 'blue', phase: 'spy', scores: { blue: 0, red: 0 }, cards: [],
+        turn: 'blue', phase: 'spymaster', scores: { blue: 0, red: 0 }, cards: [],
         selectedCards: new Set(), guessesThisTurn: 0, targetClueNum: 0
     };
 
@@ -327,7 +327,7 @@ function initGame() {
     });
 
     const shuffledAvatars = [...avatarImages];
-    const roles = ['blue-op', 'blue-spy', 'red-op', 'red-spy'];
+    const roles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
     document.querySelectorAll('.avatar-box').forEach((box, i) => {
         const avatarPath = shuffledAvatars[i];
         box.innerHTML = `<img src="${avatarPath}" class="avatar-img">`;
@@ -394,7 +394,7 @@ function renderGrid() {
         document.getElementById('blue-score').innerText = gameState.scores.blue;
         document.getElementById('red-score').innerText = gameState.scores.red;
         document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-        const activeId = `${gameState.turn}-${gameState.phase === 'spy' ? 'spy' : 'op'}`;
+        const activeId = `${gameState.turn}-${gameState.phase === 'spymaster' ? 'spymaster' : 'operative'}`;
         document.getElementById(activeId).classList.add(gameState.turn === 'blue' ? 'active-blue' : 'active-red');
 
         const uiArea = document.getElementById('clue-ui');
@@ -402,7 +402,7 @@ function renderGrid() {
         const icon = document.getElementById('btn-icon');
         const select = document.getElementById('clueNum');
 
-        if (gameState.phase === 'spy') {
+        if (gameState.phase === 'spymaster') {
             uiArea.classList.remove('disabled-area');
             btn.classList.remove('end-turn-btn');
             icon.className = 'arrow-icon'; icon.innerHTML = '';
@@ -415,7 +415,7 @@ function renderGrid() {
     }
 
     function handleAction() {
-        if (gameState.phase === 'spy') sendClue();
+        if (gameState.phase === 'spymaster') sendClue();
         else {
             if (gameState.guessesThisTurn === 0) {
                 showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
@@ -458,7 +458,7 @@ function renderGrid() {
         gameState.guessesThisTurn = 0;
 
         const log = document.getElementById('log-content');
-        const avatar = playerAvatars[`${gameState.turn}-spy`];
+        const avatar = playerAvatars[`${gameState.turn}-spymaster`];
         const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
         const clueClass = gameState.turn === 'blue' ? 'log-clue-blue' : 'log-clue-red';
         
@@ -494,7 +494,7 @@ function confirmSelection(i) {
     gameState.selectedCards.delete(i);
 
     const log = document.getElementById('log-content');
-    const avatar = playerAvatars[`${gameState.turn}-op`];
+    const avatar = playerAvatars[`${gameState.turn}-operative`];
     const rowClass = gameState.turn === 'blue' ? 'row-blue' : 'row-red';
     const colorClass = card.type === 'card-blue' ? 'bg-blue' : (card.type === 'card-red' ? 'bg-red' : (card.type === 'card-brown' ? 'bg-brown' : 'bg-black'));
 
@@ -532,7 +532,7 @@ function confirmSelection(i) {
 }
 function endTurn() {
     gameState.turn = gameState.turn === 'blue' ? 'red' : 'blue';
-    gameState.phase = 'spy';
+    gameState.phase = 'spymaster';
     gameState.guessesThisTurn = 0;
     gameState.selectedCards.clear(); // مسح التحديدات تماماً عند انتهاء الدور
     document.getElementById('clueInput').value = '';

@@ -209,24 +209,24 @@
     <div class="bottom-section">
         <div class="teams-grid">
             <div class="team-box blue-box">
-                <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container" id="blue-op"></div>
-                <button class="join-btn" id="btn-blue-op" onclick="joinTeam('blue-op')">أنضمام</button>
+                <div class="box-title">OPERATIVE</div>
+                <div class="player-slot-container" id="blue-operative"></div>
+                <button class="join-btn" id="btn-blue-operative" onclick="joinTeam('blue-operative')">أنضمام</button>
             </div>
             <div class="team-box red-box">
-                <div class="box-title">OPERATIVES</div>
-                <div class="player-slot-container" id="red-op"></div>
-                <button class="join-btn" id="btn-red-op" onclick="joinTeam('red-op')">أنضمام</button>
+                <div class="box-title">OPERATIVE</div>
+                <div class="player-slot-container" id="red-operative"></div>
+                <button class="join-btn" id="btn-red-operative" onclick="joinTeam('red-operative')">أنضمام</button>
             </div>
             <div class="team-box blue-box">
-                <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container" id="blue-spy"></div>
-                <button class="join-btn" id="btn-blue-spy" onclick="joinTeam('blue-spy')">أنضمام</button>
+                <div class="box-title">SPYMASTER</div>
+                <div class="player-slot-container" id="blue-spymaster"></div>
+                <button class="join-btn" id="btn-blue-spymaster" onclick="joinTeam('blue-spymaster')">أنضمام</button>
             </div>
             <div class="team-box red-box">
-                <div class="box-title">SPYMASTERS</div>
-                <div class="player-slot-container" id="red-spy"></div>
-                <button class="join-btn" id="btn-red-spy" onclick="joinTeam('red-spy')">أنضمام</button>
+                <div class="box-title">SPYMASTER</div>
+                <div class="player-slot-container" id="red-spymaster"></div>
+                <button class="join-btn" id="btn-red-spymaster" onclick="joinTeam('red-spymaster')">أنضمام</button>
             </div>
         </div>
         <div class="footer">
@@ -484,7 +484,7 @@ window.handleStartGame = async () => {
     if (!snap.exists()) {
         await set(gameRef, {
             board: generateBoard(),
-            turn: { team: "red", phase: "leader" },
+            turn: { team: "red", phase: "spymaster" },
             scores: { red: 0, blue: 0 },
             remaining: { red: 8, blue: 9 }
         });
@@ -536,10 +536,10 @@ window.handleStartGame = async () => {
     function renderLobby(players, adminId) {
         const containers = {
             'spectators-list': document.getElementById('spectators-list'),
-            'blue-op': document.getElementById('blue-op'),
-            'blue-spy': document.getElementById('blue-spy'),
-            'red-op': document.getElementById('red-op'),
-            'red-spy': document.getElementById('red-spy')
+            'blue-operative': document.getElementById('blue-operative'),
+            'blue-spymaster': document.getElementById('blue-spymaster'),
+            'red-operative': document.getElementById('red-operative'),
+            'red-spymaster': document.getElementById('red-spymaster')
         };
         Object.values(containers).forEach(c => { if(c) c.innerHTML = ''; });
         document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {

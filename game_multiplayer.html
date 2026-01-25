@@ -176,18 +176,18 @@
         </div>
         <div class="dashboard"> 
         <div class="team-side blue-team">
-            <div class="player-card" id="blue-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="blue-operative"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
             <div class="score" id="blue-score">0</div>
-            <div class="player-card" id="blue-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="blue-spymaster"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
         </div>
         <div class="game-log-container">
             <div style="text-align:center; font-size:0.4rem; color:#aaa; margin-bottom:2px;">GAME LOG</div>
             <div id="log-content"></div>
         </div>
         <div class="team-side red-team">
-            <div class="player-card" id="red-op"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="red-operative"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
             <div class="score" id="red-score">0</div>
-            <div class="player-card" id="red-spy"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
+            <div class="player-card" id="red-spymaster"><span class="role-title">Spymasters</span><div class="avatar-box"></div><div class="player-name">Player</div></div>
         </div>
     </div>
 
@@ -258,7 +258,7 @@ const cardVisuals = {
     'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
 };
 
-let myRole = null;      // blue-spy | blue-op | red-spy | red-op | spectators-list
+let myRole = null;      
 let myTeam = null;      // blue | red | null
 let isSpy = false;
 let isOperative = false;
@@ -323,8 +323,8 @@ onValue(playersRef, (snap) => {
 
     myRole = me.team;
     myTeam = myRole?.startsWith("blue") ? "blue" : myRole?.startsWith("red") ? "red" : null;
-    isSpy = myRole?.endsWith("spy");
-    isOperative = myRole?.endsWith("op");
+    isSpy = myRole?.endsWith("spymaster");
+    isOperative = myRole?.endsWith("operative");
     isSpectator = myRole === "spectators-list";
 
     renderPlayersPanel();
@@ -379,7 +379,7 @@ startGameManager();
    ===================================================== */
 
 function renderPlayersPanel() {
-    const roleIds = ["blue-op","blue-spy","red-op","red-spy"];
+    const roleIds = ["blue-operative","blue-spymaster","red-operative","red-spymaster"];
     roleIds.forEach(r => {
         const card = document.getElementById(r);
         const box = card.querySelector(".avatar-box");
@@ -469,7 +469,7 @@ function updateUI() {
     document.getElementById('red-score').innerText = gameState.remaining.red;
 
     document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-    const activeId = `${gameState.turn.team}-${gameState.turn.phase === 'leader' ? 'spy' : 'op'}`;
+    const activeId = `${gameState.turn.team}-${gameState.turn.phase === 'spymaster' ? 'spymaster' : 'operative'}`;
     document.getElementById(activeId)?.classList.add(gameState.turn.team === 'blue' ? 'active-blue' : 'active-red');
 
     const uiArea = document.getElementById('clue-ui');
@@ -479,7 +479,7 @@ function updateUI() {
 
     const isMyTurn = myTeam === gameState.turn.team;
 
-    if (gameState.turn.phase === 'leader') {
+    if (gameState.turn.phase === 'spymaster') {
         uiArea.classList.toggle('disabled-area', !(isSpy && isMyTurn));
         btn.classList.remove('end-turn-btn');
         icon.className = 'arrow-icon'; icon.innerHTML = '';
@@ -500,7 +500,7 @@ function applyGameStateToUI() {
     if (!gameState) return;
 
     // إعادة تعيين التحديدات المحلية عند تغيير الدور
-    if (gameState.turn.phase === "leader") {
+    if (gameState.turn.phase === "spymaster") {
         selectedCards.clear();
         guessesThisTurn = 0;
         document.getElementById('clueInput').value = '';
@@ -569,7 +569,7 @@ window.handleAction = function() {
     if (!gameState) return;
     const isMyTurn = myTeam === gameState.turn.team;
 
-    if (gameState.turn.phase === 'leader') {
+    if (gameState.turn.phase === 'spymaster') {
         if (!(isSpy && isMyTurn)) return;
         sendClue();
     } else {
@@ -624,7 +624,7 @@ async function sendClue() {
 
     await update(gameRef, {
         clue: { word: clueValue, count },
-        turn: { team: gameState.turn.team, phase: "agent" }
+        turn: { team: gameState.turn.team, phase: "operative" }
     });
 
     await push(ref(db, `rooms/${roomId}/game/log`), {
@@ -645,7 +645,7 @@ async function sendClue() {
 
 window.handleCardSelection = function(i) {
     if (!gameState) return;
-    if (gameState.turn.phase !== 'agent') return;
+    if (gameState.turn.phase !== 'operative') return;
     if (!isOperative || myTeam !== gameState.turn.team) return;
     if (gameState.board[i].revealed) return;
 
@@ -663,7 +663,7 @@ window.handleCardSelection = function(i) {
 
 window.confirmSelection = async function(i) {
     if (!gameState) return;
-    if (gameState.turn.phase !== 'agent') return;
+    if (gameState.turn.phase !== 'operative') return;
     if (!isOperative || myTeam !== gameState.turn.team) return;
 
     const card = gameState.board[i];
@@ -707,7 +707,7 @@ window.confirmSelection = async function(i) {
 
     // تغيير الدور
     if (nextTurn) {
-        updates.turn = { team: nextTurn, phase: "leader" };
+        updates.turn = { team: nextTurn, phase: "spymaster" };
         updates.clue = { word: null, count: null };
         guessesThisTurn = 0;
         selectedCards.clear();
@@ -735,7 +735,7 @@ async function endTurn() {
     const enemy = myTeam === "blue" ? "red" : "blue";
 
     await update(gameRef, {
-        turn: { team: enemy, phase: "leader" },
+        turn: { team: enemy, phase: "spymaster" },
         clue: { word: null, count: null }
     });
 
