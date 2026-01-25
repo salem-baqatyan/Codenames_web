@@ -402,7 +402,18 @@ window.handleStartGame = async () => {
     }
 
     // 2. حالة اللعبة
-    await set(ref(db, `rooms/${roomId}/status`), "started");
+// 1️⃣ أنشئ اللعبة فقط في مسارها
+await set(ref(db, `rooms/${roomId}/game`), {
+    board: generateBoard(),
+    turn: { team: "red", phase: "leader" },
+    scores: { red: 0, blue: 0 },
+    remaining: { red: 8, blue: 9 }
+});
+
+// 2️⃣ حدّث حالة الغرفة فقط
+await update(ref(db, `rooms/${roomId}`), {
+    status: "started"
+});
 
     // 3. انتقال الأدمن نفسه
     window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
