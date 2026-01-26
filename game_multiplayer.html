@@ -480,29 +480,50 @@ function updateUI() {
     document.getElementById('blue-score').innerText = gameState.remaining.blue;
     document.getElementById('red-score').innerText = gameState.remaining.red;
 
-    document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
-    const activeId = `${gameState.turn.team}-${gameState.turn.phase === 'spymaster' ? 'spymaster' : 'operative'}`;
-    document.getElementById(activeId)?.classList.add(gameState.turn.team === 'blue' ? 'active-blue' : 'active-red');
+    document.querySelectorAll('.player-card')
+        .forEach(c => c.classList.remove('active-blue', 'active-red'));
 
-    const uiArea = document.getElementById('clue-ui');
+    const activeId = `${gameState.turn.team}-${gameState.turn.phase}`;
+    document.getElementById(activeId)
+        ?.classList.add(gameState.turn.team === 'blue' ? 'active-blue' : 'active-red');
+
+    const uiArea = document.querySelector('.control-area');
+    const clueUI = document.getElementById('clue-ui');
     const btn = document.getElementById('action-btn');
     const icon = document.getElementById('btn-icon');
-    const select = document.getElementById('clueNum');
 
     const isMyTurn = myTeam === gameState.turn.team;
 
-    if (gameState.turn.phase === 'spymaster') {
-        uiArea.classList.toggle('disabled-area', !(isSpy && isMyTurn));
+    // 🔹 إخفاء كل شيء افتراضيًا
+    clueUI.style.display = 'none';
+    btn.style.display = 'none';
+
+    // 🕵️‍♂️ سباي ماستر دوره
+    if (gameState.turn.phase === 'spymaster' && isSpy && isMyTurn) {
+        clueUI.style.display = 'flex';
+        btn.style.display = 'flex';
         btn.classList.remove('end-turn-btn');
-        icon.className = 'arrow-icon'; icon.innerHTML = '';
-        select.value = '-';
-    } else {
-        uiArea.classList.add('disabled-area');
-        btn.classList.toggle('disabled-area', !(isOperative && isMyTurn));
-        btn.classList.add('end-turn-btn');
-        icon.className = 'x-icon'; icon.innerHTML = '✕';
+        icon.className = 'arrow-icon';
+        return;
     }
+
+    // 🧠 عميل دوره
+    if (gameState.turn.phase === 'operative' && isOperative && isMyTurn) {
+        btn.style.display = 'flex';
+        btn.classList.add('end-turn-btn');
+        icon.className = 'x-icon';
+        icon.innerHTML = '✕';
+        return;
+    }
+
+    // 👀 باقي اللاعبين
+    uiArea.innerHTML = `
+        <div style="text-align:center;color:#aaa;font-size:.7rem">
+            دور فريق ${gameState.turn.team === 'blue' ? 'الأزرق' : 'الأحمر'}
+            (${gameState.turn.phase === 'spymaster' ? 'القائد' : 'العملاء'})
+        </div>`;
 }
+
 
 /* =====================================================
    🧠 المرحلة 6 — تطبيق الحالة القادمة من Firebase
@@ -690,41 +711,24 @@ window.confirmSelection = async function(i) {
 
     let remaining = { ...gameState.remaining };
 
-    // 🔥 المنطق الصحيح حسب نوع البطاقة
+    // 👇 منطق اللعبة الصحيح
     if (card.type === myTeam) {
         remaining[myTeam]--;
-    }
+    } 
     else if (card.type === enemy) {
         remaining[enemy]--;
         nextTurn = enemy;
-    }
+    } 
     else if (card.type === "neutral") {
         nextTurn = enemy;
-    }
+    } 
     else if (card.type === "killer") {
         winner = enemy;
     }
 
     updates.remaining = remaining;
 
-    // فائز مباشر
-    if (winner) {
-        updates.winner = winner;
-        await update(gameRef, updates);
-        await update(roomRef, { status: "ended" });
-        return;
-    }
-
-    // تغيير الدور
-    if (nextTurn) {
-        updates.turn = { team: nextTurn, phase: "spymaster" };
-        updates.clue = { word: null, count: null };
-        guessesThisTurn = 0;
-        selectedCards.clear();
-    }
-
-    await update(gameRef, updates);
-
+    // 📜 سجل الحركة فورًا
     await push(ref(db, `rooms/${roomId}/game/log`), {
         type: "guess",
         team: myTeam,
@@ -733,7 +737,28 @@ window.confirmSelection = async function(i) {
         avatar: me.avatar,
         at: Date.now()
     });
+
+    guessesThisTurn++;
+    selectedCards.clear(); // ⬅️ مهم جدًا (إخفاء زر التأكيد)
+
+    // ☠️ قاتل
+    if (winner) {
+        updates.winner = winner;
+        await update(gameRef, updates);
+        await update(roomRef, { status: "ended" });
+        return;
+    }
+
+    // 🔄 تغيير الدور عند الخطأ
+    if (nextTurn) {
+        updates.turn = { team: nextTurn, phase: "spymaster" };
+        updates.clue = { word: null, count: null };
+        guessesThisTurn = 0;
+    }
+
+    await update(gameRef, updates);
 };
+
 
 /* =====================================================
    🔁 إنهاء الدور يدويًا
