@@ -423,7 +423,6 @@ function getNextImageFromPool(type) {
             if (players) {
                 const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
                 if (isTaken) {
-                    alert("عذراً! هذا الدور تم أخذه للتو.");
                     return;
                 }
             }

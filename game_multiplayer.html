@@ -496,7 +496,6 @@ function updateUI() {
     const input = document.getElementById('clueInput');
     const select = document.getElementById('clueNum');
 
-
     const isMyTurn = myTeam === gameState.turn.team;
 
     // 🧹 تنظيف كامل
@@ -521,10 +520,13 @@ function updateUI() {
     // 🔵 عميل
     else {
         if (isOperative && isMyTurn) {
-        clueUI.classList.add('disabled-area');
-        btn.classList.toggle('disabled-area', !(isOperative && isMyTurn));
         btn.classList.add('end-turn-btn');
-        icon.className = 'x-icon'; icon.innerHTML = '✕';
+        clueUI.style.display = 'flex';
+        btn.style.display = 'flex';
+        input.disabled = false;
+        select.disabled = false;
+        icon.className = 'end-turn-btn x-icon'; 
+        icon.innerHTML = '✕';
         } else {
             showTurnInfo(controlArea, gameState.turn);
         }
