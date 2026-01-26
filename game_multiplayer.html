@@ -496,6 +496,7 @@ function updateUI() {
     const input = document.getElementById('clueInput');
     const select = document.getElementById('clueNum');
 
+
     const isMyTurn = myTeam === gameState.turn.team;
 
     // 🧹 تنظيف كامل
@@ -520,9 +521,10 @@ function updateUI() {
     // 🔵 عميل
     else {
         if (isOperative && isMyTurn) {
-            btn.style.display = 'flex';
-            icon.className = 'x-icon';
-            icon.innerHTML = '✕';
+        clueUI.classList.add('disabled-area');
+        btn.classList.toggle('disabled-area', !(isOperative && isMyTurn));
+        btn.classList.add('end-turn-btn');
+        icon.className = 'x-icon'; icon.innerHTML = '✕';
         } else {
             showTurnInfo(controlArea, gameState.turn);
         }
@@ -535,7 +537,7 @@ function showTurnInfo(container, turn) {
     div.style.width = '100%';
     div.style.opacity = '0.8';
     div.innerHTML = `
-        <div style="font-size:0.7rem">
+        <div style="font-size:0.7rem ; color:#fff; font-weight:bold;">
             الدور الآن عند
             <b>${turn.team === 'blue' ? 'الفريق الأزرق' : 'الفريق الأحمر'}</b>
             (${turn.phase === 'spymaster' ? 'القائد' : 'العملاء'})
