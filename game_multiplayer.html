@@ -490,6 +490,7 @@ function updateUI() {
     );
 
     const controlArea = document.querySelector('.control-area');
+    const uiArea = document.querySelector('.game-grid'); // افترضت أن هذا هو معرف منطقة اللعب
     const clueUI = document.getElementById('clue-ui');
     const btn = document.getElementById('action-btn');
     const icon = document.getElementById('btn-icon');
@@ -498,12 +499,13 @@ function updateUI() {
 
     const isMyTurn = myTeam === gameState.turn.team;
 
-    // 🧹 تنظيف كامل
+    // 🧹 تنظيف كامل الافتراضي
     clueUI.style.display = 'none';
     btn.style.display = 'none';
+    uiArea?.classList.remove('disabled-area'); // إزالة التعطيل كحالة افتراضية
     controlArea.querySelector('.turn-info')?.remove();
 
-    // 🟢 سباي ماستر
+    // 🟢 سباي ماستر (Spymaster)
     if (gameState.turn.phase === 'spymaster') {
         if (isSpy && isMyTurn) {
             clueUI.style.display = 'flex';
@@ -517,17 +519,18 @@ function updateUI() {
         }
     }
 
-    // 🔵 عميل
+    // 🔵 عميل (Operative)
     else {
         if (isOperative && isMyTurn) {
-        btn.classList.add('end-turn-btn');
-        clueUI.style.display = 'flex';
-        btn.style.display = 'flex';
-        input.disabled = false;
-        select.disabled = false;
-        icon.className = 'end-turn-btn x-icon'; 
-        icon.innerHTML = '✕';
+            // تنفيذ الأسطر المطلوبة هنا
+            btn.style.display = 'flex';
+            btn.classList.toggle('disabled-area', !(isOperative && isMyTurn));
+            btn.classList.add('end-turn-btn');
+            icon.className = 'x-icon'; 
+            icon.innerHTML = '✕';
         } else {
+            // إذا لم يكن دور العميل، نقوم بتعطيل منطقة الواجهة
+            uiArea?.classList.add('disabled-area');
             showTurnInfo(controlArea, gameState.turn);
         }
     }
