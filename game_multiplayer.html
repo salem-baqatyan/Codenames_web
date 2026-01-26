@@ -538,6 +538,23 @@ function updateUI() {
     }
 }
 
+function showTurnInfo(container, turn) {
+    const div = document.createElement('div');
+    div.className = 'turn-info';
+    div.style.textAlign = 'center';
+    div.style.width = '100%';
+    div.style.opacity = '0.8';
+    div.innerHTML = `
+        <div style="font-size:0.7rem">
+            الدور الآن عند
+            <b>${turn.team === 'blue' ? 'الفريق الأزرق' : 'الفريق الأحمر'}</b>
+            (${turn.phase === 'spymaster' ? 'القائد' : 'العملاء'})
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+
 /* =====================================================
    🧠 المرحلة 6 — تطبيق الحالة القادمة من Firebase
    ===================================================== */
@@ -662,7 +679,7 @@ async function sendClue() {
         return;
     }
 
-    const count = select.value === "∞" ? Infinity : parseInt(select.value);
+    const count = select.value === "∞" ? 25 : parseInt(select.value);
 
     const me = playersCache[playerId];
 
@@ -680,7 +697,6 @@ async function sendClue() {
         at: Date.now()
     });
 
-    input.value = '';
 }
 
 /* =====================================================
@@ -706,6 +722,7 @@ window.handleCardSelection = function(i) {
    ===================================================== */
 
 window.confirmSelection = async function(i) {
+    const input = document.getElementById('clueInput');
     if (!gameState) return;
     if (gameState.turn.phase !== 'operative') return;
     if (!isOperative || myTeam !== gameState.turn.team) return;
@@ -734,9 +751,12 @@ window.confirmSelection = async function(i) {
     else if (card.type === enemy) {
         remaining[enemy]--;
         nextTurn = enemy;
+        input.value = '';
+
     }
     else if (card.type === "neutral") {
         nextTurn = enemy;
+        input.value = '';
     }
     else if (card.type === "killer") {
         winner = enemy;
@@ -788,6 +808,7 @@ window.confirmSelection = async function(i) {
    ===================================================== */
 
 async function endTurn() {
+    const input = document.getElementById('clueInput');
     if (!gameState) return;
 
     const enemy = myTeam === "blue" ? "red" : "blue";
@@ -799,6 +820,7 @@ async function endTurn() {
 
     guessesThisTurn = 0;
     selectedCards.clear();
+    input.value = '';
 }
 
 /* =====================================================
