@@ -39,20 +39,33 @@
         .bottom-section { height: 50vh; display: flex; flex-direction: column; border-top: 1px solid #222; }
         
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; }
-        .top-left { display: flex; align-items: center; }
+        .top-left { display: flex; gap: 8px; align-items: center; }
         .top-right { display: flex; gap: 8px; align-items: center; }
-        
+        .top-timer {
+            color: #ff0000; /* لون أحمر */
+            font-size: 1.5rem;
+            font-weight: 900;
+            font-family: 'Courier New', Courier, monospace; /* خط رقمي */
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
         .icon-circle {
             width: 40px; height: 40px; background: rgba(255,255,255,0.1);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             border: 0.5px solid white; cursor: pointer;
         }
-        .btn-pill {
+        .btn-rules {
             background: rgba(255,255,255,0.1); border: 1px solid #444;
             padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
             display: flex; align-items: center; gap: 5px; cursor: pointer;
         }
-
+        .btn-room-code {
+            background: rgba(255,255,255,0.1); border: 1px solid #444;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
+            display: flex; align-items: center; gap: 5px; cursor: pointer;
+        }
         .spectators-section { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 0 15px; flex-shrink: 0; }
         .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; flex-wrap: wrap;}
 
@@ -168,12 +181,16 @@
     <div class="top-section">
         <div class="top-bar">
             <div class="top-left">
-                <div class="icon-circle" onclick="copyRoomLink()">
-                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 🔗
+                <div class="icon-circle">
+                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
                 </div>
+                <div class="btn-room-code" onclick="copyRoomLink()">🔗 الغرفة</div>
             </div>
+
+            <div class="top-timer" id="lobbyDisplayTimer"></div>
+
             <div class="top-right">
-                <div class="btn-pill">📝 القواعد</div>
+                <div class="btn-rules">📝 القواعد</div>
                 <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
             </div>
         </div>
@@ -397,13 +414,16 @@ function getNextImageFromPool(type) {
         });
     };
 
-    window.openProfileSettings = () => {
-        document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
-        document.getElementById('nicknameInput').value = myData.name;
-        document.getElementById('leaveRoomBtn').style.display = 'block';
-        document.getElementById('profileModal').style.display = 'flex';
-    };
-
+window.openProfileSettings = () => {
+    document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
+    const input = document.getElementById('nicknameInput');
+    input.value = myData.name;
+    document.getElementById('leaveRoomBtn').style.display = 'block';
+    document.getElementById('profileModal').style.display = 'flex';
+    
+    // سطر الفوكس المضاف
+    setTimeout(() => input.focus(), 50); 
+};
     window.leaveLobby = () => {
         if(confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
             remove(myPlayerRef).then(() => {
@@ -445,6 +465,20 @@ function getNextImageFromPool(type) {
     window.setGameMode = (mode) => {
         if (!isAdmin) return;
         update(settingsRef, { mode: mode });
+    };
+    window.openTimerModal = () => {
+        if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
+    };
+
+    window.changeTimer = (val) => {
+        if (!isAdmin) return;
+        const configs = [
+            { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
+            { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
+            { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
+            { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
+        ];
+        update(settingsRef, { timer: configs[val] });
     };
     
 function generateBoard() {
@@ -511,26 +545,50 @@ window.handleStartGame = async () => {
         renderLobby(players, adminId);
     });
 
-    onValue(settingsRef, (snapshot) => {
-        const s = snapshot.val();
-        if (!s) return;
-        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-        if (s.mode) {
-            const activeCard = document.getElementById('mode-' + s.mode);
-            if(activeCard) activeCard.classList.add('active');
+onValue(settingsRef, (snapshot) => {
+    const s = snapshot.val();
+    if (!s) return;
+
+    // تحديث وضع اللعبة (أونلاين/أوفلاين)
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+    if (s.mode) {
+        const activeCard = document.getElementById('mode-' + s.mode);
+        if(activeCard) activeCard.classList.add('active');
+    }
+
+    // --- تحديث المؤقت والتزامن والظهور ---
+    if (s.timer) {
+        // تحديث قيم لوحة الإعدادات
+        document.getElementById('mainTimerText').innerText = s.timer.main;
+        document.getElementById('mainTimerIcon').innerText = s.timer.icon;
+        document.getElementById('modalTimerText').innerText = s.timer.label;
+        document.getElementById('modalTimerIcon').innerText = s.timer.icon;
+        document.getElementById('timerSlider').value = s.timer.val;
+
+        const displayTimer = document.getElementById('lobbyDisplayTimer');
+        
+        // منطق الظهور والاختفاء: إذا كانت القيمة 0 (بدون مؤقت) يتم إخفاؤه
+        if (parseInt(s.timer.val) === 0) {
+            displayTimer.style.display = 'none';
+        } else {
+            displayTimer.style.display = 'block';
+            
+            // تعيين الوقت بناءً على القيمة
+            const timeMap = {
+                1: "00:30",
+                2: "01:00",
+                3: "02:00"
+            };
+            displayTimer.innerText = timeMap[s.timer.val];
         }
-        if (s.timer) {
-            document.getElementById('mainTimerText').innerText = s.timer.main;
-            document.getElementById('mainTimerIcon').innerText = s.timer.icon;
-            document.getElementById('modalTimerText').innerText = s.timer.label;
-            document.getElementById('modalTimerIcon').innerText = s.timer.icon;
-            document.getElementById('timerSlider').value = s.timer.val;
-            for(let i=0; i<4; i++) {
-                const label = document.getElementById('label'+i);
-                if(label) label.className = (i==s.timer.val ? 'active-label':'');
-            }
+
+        // تحديث تمييز الأرقام تحت السلايدر
+        for(let i=0; i<4; i++) {
+            const label = document.getElementById('label'+i);
+            if(label) label.className = (i == s.timer.val ? 'active-label' : '');
         }
-    });
+    }
+});
 
     function renderLobby(players, adminId) {
         const containers = {
@@ -569,6 +627,17 @@ const statusRef = ref(db, `rooms/${roomId}/status`);
 onValue(statusRef, snap => {
     if (snap.val() === "started") {
         window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
+    }
+});
+// عمل فوكس تلقائي عند تحميل الصفحة لأول مرة
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        document.getElementById('nicknameInput').focus();
+    }, 100); // تأخير بسيط لضمان استقرار العناصر في المتصفح
+});
+document.getElementById('nicknameInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        saveProfile();
     }
 });
 
