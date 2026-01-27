@@ -399,21 +399,52 @@ function getNextImageFromPool(type) {
         myData.avatar = "img/" + el.src.split('/').pop();
     };
 
-    window.saveProfile = () => {
-        const name = document.getElementById('nicknameInput').value.trim();
-        if (!name) return alert("الرجاء إدخال اسمك");
-        myData.name = name;
-        hasJoined = true;
-        document.getElementById('profileModal').style.display = 'none';
-        
-        updateServer();
-        // جعل الأونلاين هو الافتراضي عند إنشاء الغرفة
-        get(playersRef).then(snap => {
-            if (Object.keys(snap.val() || {}).length === 1) {
-                update(settingsRef, { mode: 'online' }); 
-            }
+// دالة لتحديث نشاط الغرفة عند أي تغيير (مود، مؤقت، انضمام)
+function updateRoomActivity() {
+    update(roomRef, { lastActivity: Date.now() });
+}
+
+window.saveProfile = async () => {
+    const name = document.getElementById('nicknameInput').value.trim();
+    if (!name) return alert("الرجاء إدخال اسمك");
+    
+    myData.name = name;
+    hasJoined = true;
+    document.getElementById('profileModal').style.display = 'none';
+
+    const now = Date.now();
+    
+    // فحص هل الغرفة موجودة؟
+    const roomSnap = await get(roomRef);
+    if (!roomSnap.exists()) {
+        // إنشاء الغرفة لأول مرة فقط هنا
+        await set(roomRef, {
+            lastActivity: now,
+            status: "lobby",
+            settings: { mode: 'online', timer: { val: 0, main: "بدون", icon: "🚫" } }
         });
-    };
+    } else {
+        // إذا كانت موجودة، نحدث نشاطها فقط
+        updateRoomActivity();
+    }
+
+    // إضافة اللاعب
+    await set(myPlayerRef, {
+        ...myData,
+        lastActive: now
+    });
+
+    startHeartbeat(); // بدء إرسال النبضات للحفاظ على الغرفة نشطة
+};
+
+function updateServer() {
+    if (!hasJoined) return;
+    set(myPlayerRef, {
+        ...myData,
+        lastActive: Date.now()
+    });
+    updateRoomActivity(); // تحديث نشاط الغرفة عند تغيير الفريق أو البيانات
+}
 
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
@@ -455,32 +486,27 @@ window.openProfileSettings = () => {
         });
     };
 
-    function updateServer() {
-        if (!hasJoined) return;
-        set(myPlayerRef, {
-            ...myData,
-            lastActive: Date.now()
-        });
-    }
 
-    window.setGameMode = (mode) => {
-        if (!isAdmin) return;
-        update(settingsRef, { mode: mode });
-    };
+window.setGameMode = (mode) => {
+    if (!isAdmin) return;
+    update(settingsRef, { mode: mode });
+    updateRoomActivity(); // سجل نشاط
+};
     window.openTimerModal = () => {
         if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
     };
 
-    window.changeTimer = (val) => {
-        if (!isAdmin) return;
-        const configs = [
-            { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
-            { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
-            { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
-            { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
-        ];
-        update(settingsRef, { timer: configs[val] });
-    };
+window.changeTimer = (val) => {
+    if (!isAdmin) return;
+    const configs = [
+        { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
+        { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
+        { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
+        { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
+    ];
+    update(settingsRef, { timer: configs[val] });
+    updateRoomActivity(); // سجل نشاط
+};
     
 function generateBoard() {
     const words = ["أسد", "شمس", "كتاب", "طائرة", "قلم", "بحر", "تفاحة", "ساعة", "نجم", "جبل", "نهر", "سيارة", "هاتف", "قمر", "شجرة", "ورقة", "مفتاح", "باب", "نافذة", "كرة", "حاسوب", "قهوة", "خبز", "ملك", "عطش"];
@@ -642,7 +668,45 @@ document.getElementById('nicknameInput').addEventListener('keypress', (e) => {
     }
 });
 
+// دالة لتنظيف الغرف المهجورة
+async function vacuumCleaner() {
+    const allRoomsRef = ref(db, `rooms`);
+    try {
+        const snapshot = await get(allRoomsRef);
+        if (!snapshot.exists()) return;
 
+        const now = Date.now();
+        const TEN_MINUTES = 10 * 60 * 1000;
+        const rooms = snapshot.val();
+
+        for (const id in rooms) {
+            const room = rooms[id];
+            // حذف الغرفة إذا: مر 10 دقائق + اللعبة لم تبدأ
+            if (room.lastActivity && (now - room.lastActivity > TEN_MINUTES)) {
+                if (room.status !== "started") {
+                    console.log(`تم حذف غرفة غير نشطة: ${id}`);
+                    remove(ref(db, `rooms/${id}`));
+                }
+            }
+            // حالة خاصة: إذا كانت الغرفة فارغة تماماً من حقل lastActivity (غرف قديمة)
+            else if (!room.lastActivity) {
+                remove(ref(db, `rooms/${id}`));
+            }
+        }
+    } catch (e) { console.error("Vacuum failed:", e); }
+}
+
+// نبضات القلب: تحديث نشاط الغرفة كل دقيقتين طالما اللاعب متواجد
+function startHeartbeat() {
+    setInterval(() => {
+        if (hasJoined && isAdmin) { // الآدمن فقط يحدث نشاط الغرفة لتوفير البيانات
+            updateRoomActivity();
+        }
+    }, 120000); // كل دقيقتين
+}
+
+// تشغيل المكنسة فور دخول أي شخص للرابط (حتى قبل تسجيل اسمه)
+vacuumCleaner();
 </script>
 </body>
 </html>
