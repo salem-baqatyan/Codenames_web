@@ -184,8 +184,8 @@
                 <div class="icon-circle">
                     <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
                 </div>
-                <div class="btn-room-code" onclick="copyRoomLink()">🔗 الغرفة</div>
-            </div>
+                    <div class="btn-room-code" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
+                </div>
 
             <div class="top-timer" id="lobbyDisplayTimer"></div>
 
@@ -273,6 +273,7 @@
         roomId = Math.random().toString(36).substring(2, 8);
         window.location.href = window.location.pathname + '?r=' + roomId;
     }
+    document.getElementById('roomDisplay').innerText = "🔗 " + roomId;
 
     let playerId = localStorage.getItem('codenames_playerId');
     if (!playerId) {
