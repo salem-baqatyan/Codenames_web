@@ -446,7 +446,7 @@ window.saveProfile = async () => {
         await set(roomRef, {
             lastActivity: now,
             status: "lobby",
-            settings: { mode: 'online', timer: { val: 0, main: "بدون", icon: "🚫" } }
+            settings: { mode: 'online', timer: 0 } // أصبحت صفر مباشرة
         });
     } else {
         // إذا كانت موجودة، نحدث نشاطها فقط
@@ -523,14 +523,13 @@ window.setGameMode = (mode) => {
 
 window.changeTimer = (val) => {
     if (!isAdmin) return;
-    const configs = [
-        { label: "بدون مؤقت", main: "بدون", icon: "🚫", val: 0 },
-        { label: "سريع (30ث)", main: "30 ثانية", icon: "⚡", val: 1 },
-        { label: "متوسط (1د)", main: "1 دقيقة", icon: "⏱️", val: 2 },
-        { label: "بطيء (2د)", main: "2 دقيقة", icon: "🐢", val: 3 }
-    ];
-    update(settingsRef, { timer: configs[val] });
-    updateRoomActivity(); // سجل نشاط
+    // تحويل القيمة من السلايدر (0-3) إلى ثواني حقيقية
+    const secondsMap = [0, 30, 60, 120]; 
+    const seconds = secondsMap[val];
+    
+    // نحدث فقط رقم الثواني في قاعدة البيانات
+    update(settingsRef, { timer: seconds });
+    updateRoomActivity();
 };
     
 function generateBoard() {
@@ -599,46 +598,52 @@ window.handleStartGame = async () => {
 
 onValue(settingsRef, (snapshot) => {
     const s = snapshot.val();
-    if (!s) return;
+    if (!s || s.timer === undefined) return;
 
-    // تحديث وضع اللعبة (أونلاين/أوفلاين)
+    // 1. تحديث وضع اللعبة
     document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
     if (s.mode) {
         const activeCard = document.getElementById('mode-' + s.mode);
         if(activeCard) activeCard.classList.add('active');
     }
 
-    // --- تحديث المؤقت والتزامن والظهور ---
-    if (s.timer) {
-        // تحديث قيم لوحة الإعدادات
-        document.getElementById('mainTimerText').innerText = s.timer.main;
-        document.getElementById('mainTimerIcon').innerText = s.timer.icon;
-        document.getElementById('modalTimerText').innerText = s.timer.label;
-        document.getElementById('modalTimerIcon').innerText = s.timer.icon;
-        document.getElementById('timerSlider').value = s.timer.val;
+    // 2. تحديث واجهة المؤقت بناءً على عدد الثواني (المزامنة)
+    const seconds = s.timer;
+    const displayTimer = document.getElementById('lobbyDisplayTimer');
+    const mainTimerText = document.getElementById('mainTimerText');
+    const mainTimerIcon = document.getElementById('mainTimerIcon');
+    const modalTimerText = document.getElementById('modalTimerText');
+    const modalTimerIcon = document.getElementById('modalTimerIcon');
 
-        const displayTimer = document.getElementById('lobbyDisplayTimer');
-        
-        // منطق الظهور والاختفاء: إذا كانت القيمة 0 (بدون مؤقت) يتم إخفاؤه
-        if (parseInt(s.timer.val) === 0) {
-            displayTimer.style.display = 'none';
-        } else {
-            displayTimer.style.display = 'block';
-            
-            // تعيين الوقت بناءً على القيمة
-            const timeMap = {
-                1: "00:30",
-                2: "01:00",
-                3: "02:00"
-            };
-            displayTimer.innerText = timeMap[s.timer.val];
-        }
+    // تحديد النصوص والأيقونات محلياً بناءً على الثواني القادمة من السيرفر
+    let label = "بدون";
+    let icon = "🚫";
+    let displayStr = "";
 
-        // تحديث تمييز الأرقام تحت السلايدر
-        for(let i=0; i<4; i++) {
-            const label = document.getElementById('label'+i);
-            if(label) label.className = (i == s.timer.val ? 'active-label' : '');
-        }
+    if (seconds > 0) {
+        icon = seconds === 30 ? "⚡" : (seconds === 60 ? "⏱️" : "🐢");
+        label = seconds < 60 ? `${seconds} ثانية` : `${seconds / 60} دقيقة`;
+        displayStr = seconds === 30 ? "00:30" : (seconds === 60 ? "01:00" : "02:00");
+        displayTimer.style.display = 'block';
+    } else {
+        displayTimer.style.display = 'none';
+    }
+
+    // تحديث العناصر في الصفحة
+    mainTimerText.innerText = label;
+    mainTimerIcon.innerText = icon;
+    modalTimerText.innerText = label;
+    modalTimerIcon.innerText = icon;
+    displayTimer.innerText = displayStr;
+
+    // تحديث السلايدر ومكان التمييز (0, 30, 60, 120) -> (0, 1, 2, 3)
+    const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
+    const sliderVal = valMap[seconds];
+    document.getElementById('timerSlider').value = sliderVal;
+
+    for(let i=0; i<4; i++) {
+        const lbl = document.getElementById('label'+i);
+        if(lbl) lbl.className = (i == sliderVal ? 'active-label' : '');
     }
 });
 
