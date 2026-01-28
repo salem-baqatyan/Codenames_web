@@ -37,24 +37,45 @@
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
-    padding: 5px 15px; 
-    height: 50px; /* طول ثابت للبار */
-    flex-shrink: 0; 
+    padding: 10px 15px; 
+    position: relative; 
+    z-index: 10;
 }
 
-.top-left { display: flex; align-items: center; }
-.top-right { display: flex; gap: 8px; align-items: center; }
+.top-timer {
+    color: #ff0000;
+    font-size: 1.8rem; /* أكبر قليلاً للوضوح */
+    font-weight: 900;
+    font-family: 'Courier New', Courier, monospace;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
 
+/* الأنييميشن النبضي */
+@keyframes pulse-red {
+    0% { transform: translateX(-50%) scale(1); text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
+    50% { transform: translateX(-50%) scale(1.2); text-shadow: 0 0 25px rgba(255, 0, 0, 0.8); }
+    100% { transform: translateX(-50%) scale(1); text-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
+}
+
+.timer-critical {
+    animation: pulse-red 0.6s infinite;
+    color: #ff4444;
+}
+
+/* تنسيق الأيقونات */
 .icon-circle {
-    width: 38px; height: 38px; background: rgba(255,255,255,0.1);
+    width: 35px; height: 35px; background: rgba(255,255,255,0.1);
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    border: 0.5px solid white; cursor: pointer; color: white;
+    border: 0.5px solid white; font-size: 0.8rem;
 }
 
-.btn-pill {
+.btn-room-code, .btn-rules {
     background: rgba(255,255,255,0.1); border: 1px solid #444;
-    padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
-    display: flex; align-items: center; gap: 5px; cursor: pointer; color: white;
+    padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; color: white;
 }
     /* --- الجزء الأول: اللاعبين --- */
     .dashboard { height: 35%; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 0px 10px 10px 10px; flex-shrink: 0; }
@@ -163,16 +184,19 @@
         </div>
     </div>
 
-        <div class="top-bar">
-            <div class="top-left">
-                <div class="icon-circle">
-                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 🔗
-                </div>
+    <div class="top-bar">
+        <div class="top-left">
+            <div class="icon-circle">
+                <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
             </div>
-            <div class="top-right">
-                <div class="btn-pill">📝 القواعد</div>
-                <div class="icon-circle">⚙️</div>
+                <div class="btn-room-code" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
             </div>
+
+        <div class="top-timer" id="lobbyDisplayTimer"></div>
+
+        <div class="top-right">
+            <div class="btn-rules">📝 القواعد</div>
+            <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
         </div>
         <div class="dashboard"> 
         <div class="team-side blue-team">
@@ -276,6 +300,8 @@ let gameState = null;   // سيتم ملؤه من Firebase
 let selectedCards = new Set();   // محلي فقط للعميل
 let guessesThisTurn = 0;
 
+let countdownInterval;
+let timerDuration = 0; // سيتم جلبها من إعدادات الغرفة
 
 
 /* ---------- تحميل الصور (كما في كودك الأصلي) ---------- */
@@ -372,6 +398,19 @@ onValue(statusRef, (snap) => {
 });
 
 /* =====================================================
+    ⏱️ جلب إعدادات المؤقت من Firebase
+   ===================================================== */
+
+onValue(ref(db, `rooms/${roomId}/settings/timer`), (snap) => {
+    const timerData = snap.val();
+    if (timerData) {
+        // تحويل القيم (1 -> 30ث، 2 -> 60ث، 3 -> 120ث)
+        const timesMap = { 0: 0, 1: 30, 2: 60, 3: 120 };
+        timerDuration = timesMap[timerData.val] || 0;
+    }
+});
+
+/* =====================================================
    🚀 تحميل أولي
    ===================================================== */
 
@@ -463,7 +502,7 @@ function renderGrid() {
 }
 
 /* =====================================================
-   🖼️ Peek (قادة فقط)
+   🖼️ Peek
    ===================================================== */
 
 window.togglePeek = function(i, event) {
@@ -567,13 +606,18 @@ function showTurnInfo(container, turn) {
    ===================================================== */
 
 function applyGameStateToUI() {
-    if (!gameState) return;
+if (!gameState) return;
 
     // إعادة تعيين التحديدات المحلية عند تغيير الدور
     if (gameState.turn.phase === "spymaster") {
         selectedCards.clear();
         guessesThisTurn = 0;
         document.getElementById('clueInput').value = '';
+    }
+
+    // 🕒 تشغيل العداد التنازلي فور تحديث الحالة
+    if (timerDuration > 0) {
+        startTimer(timerDuration);
     }
 
     renderGrid();
@@ -843,6 +887,60 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
         window.location.href = "index.html";
     });
 });
+
+
+/* =====================================================
+    ⏱️ مؤقت العد التنازلي
+   ===================================================== */
+function startTimer(seconds) {
+    const timerElement = document.getElementById('lobbyDisplayTimer');
+    clearInterval(countdownInterval); // مسح أي مؤقت سابق
+    
+    if (!seconds || seconds === 0) {
+        timerElement.style.display = 'none';
+        return;
+    }
+
+    timerElement.style.display = 'block';
+    let timeLeft = seconds;
+
+    countdownInterval = setInterval(() => {
+        timeLeft--;
+        
+        // تحويل الثواني إلى صيغة MM:SS
+        let mins = Math.floor(timeLeft / 60);
+        let secs = timeLeft % 60;
+        timerElement.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        // 🔥 تفعيل التأثير النبضي إذا بقي أقل من 10 ثواني
+        if (timeLeft <= 10 && timeLeft > 0) {
+            timerElement.classList.add('timer-critical');
+        } else {
+            timerElement.classList.remove('timer-critical');
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            timerElement.classList.remove('timer-critical');
+            timerElement.innerText = "00:00";
+            
+            // إذا كان دوري وانتهى الوقت، أجبر اللعبة على الانتقال (اختياري)
+            if (myTeam === gameState?.turn?.team) {
+                handleTimeOut(); 
+            }
+        }
+    }, 1000);
+}
+
+// دالة تنفذ عند انتهاء الوقت تلقائياً
+function handleTimeOut() {
+    if (gameState?.turn?.phase === 'spymaster') {
+        // إذا كان القائد ولم يرسل تلميح، يمكن إنهاء الدور أو تركها للمدير
+        console.log("انتهى وقت القائد!");
+    } else {
+        endTurn(); // إنهاء دور العميل تلقائياً
+    }
+}
 
 </script>
 </body>
