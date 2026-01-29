@@ -70,27 +70,40 @@
         /* Top Bar & Navigation */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
         .top-left { display: flex; gap: 8px; align-items: center; }
-        .icon-circle {
-            width: 40px; height: 40px; background: rgba(255,255,255,0.1);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 0.5px solid white; cursor: pointer;
-        }
-        .btn-room-code {
-            background: rgba(255,255,255,0.1); border: 1px solid #444;
-            padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
-            display: flex; align-items: center; gap: 5px; cursor: pointer;
-        }
+        .top-right { display: flex; gap: 8px; align-items: center; }
         .top-timer {
-            color: #ff0000; font-size: 1.5rem; font-weight: 900;
-            font-family: 'Courier New', Courier, monospace; position: absolute;
-            left: 50%; transform: translateX(-50%);
+            color: #ff0000; 
+            font-size: 1.5rem; 
+            font-weight: 900;
+            font-family: 'Courier New', Courier, monospace; 
+            position: absolute;
+            left: 50%; 
+            transform: translateX(-50%);
             text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
         }
-        .top-right { display: flex; gap: 8px; align-items: center; }
-        .btn-rules {
-            background: rgba(255,255,255,0.1); border: 1px solid #444;
-            padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
-            display: flex; align-items: center; gap: 5px; cursor: pointer;
+        .icon-circle {
+            width: 40px; 
+            height: 40px; 
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            border: 0.5px solid white; 
+            cursor: pointer; 
+            color: white;
+        }
+        .btn-pill {
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid #444;
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.75rem;
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            cursor: pointer; 
+            color: white;
         }
 
         /* Spectators */
@@ -209,13 +222,13 @@
                 <div class="icon-circle">
                     <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
                 </div>
-                    <div class="btn-room-code" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
+                    <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
                 </div>
 
             <div class="top-timer" id="lobbyDisplayTimer"></div>
 
             <div class="top-right">
-                <div class="btn-rules">📝 القواعد</div>
+                <div class="btn-pill">📝 القواعد</div>
                 <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
             </div>
         </div>

@@ -42,25 +42,42 @@
     .btn-cancel { background: #d0021b; color: white; }
 
     /* 5. Top Bar (.top-bar) */
-    .top-bar { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        padding: 5px 15px; 
-        height: 50px; 
-        flex-shrink: 0; 
-    }
-    .top-left { display: flex; align-items: center; }
-    .icon-circle {
-        width: 38px; height: 38px; background: rgba(255,255,255,0.1);
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        border: 0.5px solid white; cursor: pointer; color: white;
-    }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
+    .top-left { display: flex; gap: 8px; align-items: center; }
     .top-right { display: flex; gap: 8px; align-items: center; }
+    .top-timer {
+        color: #ff0000; 
+        font-size: 1.5rem; 
+        font-weight: 900;
+        font-family: 'Courier New', Courier, monospace; 
+        position: absolute;
+        left: 50%; 
+        transform: translateX(-50%);
+        text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    }
+    .icon-circle {
+        width: 40px; 
+        height: 40px; 
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        border: 0.5px solid white; 
+        cursor: pointer; 
+        color: white;
+    }
     .btn-pill {
-        background: rgba(255,255,255,0.1); border: 1px solid #444;
-        padding: 6px 12px; border-radius: 20px; font-size: 0.75rem;
-        display: flex; align-items: center; gap: 5px; cursor: pointer; color: white;
+        background: rgba(255,255,255,0.1); 
+        border: 1px solid #444;
+        padding: 6px 12px; 
+        border-radius: 20px; 
+        font-size: 0.75rem;
+        display: flex; 
+        align-items: center; 
+        gap: 5px; 
+        cursor: pointer; 
+        color: white;
     }
 
     /* 6. Dashboard Section (.dashboard) */
@@ -161,14 +178,20 @@
         <div class="top-bar">
             <div class="top-left">
                 <div class="icon-circle">
-                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 🔗
+                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
                 </div>
-            </div>
+                    <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
+                </div>
+
+            <div class="top-timer" id="lobbyDisplayTimer"></div>
+
             <div class="top-right">
                 <div class="btn-pill">📝 القواعد</div>
-                <div class="icon-circle">⚙️</div>
+                <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
             </div>
         </div>
+
+
         <div class="dashboard"> 
         <div class="team-side blue-team">
             <div class="player-card" id="blue-operative"><span class="role-title">Operatives</span><div class="avatar-box"></div><div class="player-name">—</div></div>
@@ -207,10 +230,6 @@
 </div>
 
 <script type="module">
-/* =====================================================
-   🔥 MULTIPLAYER FIREBASE VERSION — BY DESIGN NO UI CHANGE
-   ===================================================== */
-
 /* ---------- Firebase Setup ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, update, runTransaction, push } 
@@ -271,7 +290,9 @@ let gameState = null;   // سيتم ملؤه من Firebase
 let selectedCards = new Set();   // محلي فقط للعميل
 let guessesThisTurn = 0;
 
-
+let turnStartTime = null; // وقت بداية الدور الحقيقي من السيرفر
+let timerDuration = 0;   // المدة المختارة (30, 60, 120)
+let timerInterval = null;
 
 /* ---------- تحميل الصور (كما في كودك الأصلي) ---------- */
 const allImagesToPreload = [
@@ -574,6 +595,18 @@ function applyGameStateToUI() {
     renderGrid();
     renderLog();
     updateUI();
+
+    // جلب إعدادات المؤقت من السيرفر وبدء العد التنازلي
+    get(ref(db, `rooms/${roomId}/settings/timer`)).then((snap) => {
+        const seconds = snap.val();
+        if (seconds && seconds > 0) {
+            timerDuration = seconds;
+            // نستخدم وقت التغيير الأخير للدور كمرجع
+            startGlobalTimer(gameState.turn.updatedAt || Date.now());
+        } else {
+            document.getElementById('lobbyDisplayTimer').style.display = 'none';
+        }
+    });
 }
 
 /* =====================================================
@@ -685,9 +718,13 @@ async function sendClue() {
 
     const me = playersCache[playerId];
 
-    await update(gameRef, {
+await update(gameRef, {
         clue: { word: clueValue, count },
-        turn: { team: gameState.turn.team, phase: "operative" }
+        turn: { 
+            team: gameState.turn.team, 
+            phase: "operative",
+            updatedAt: Date.now() // إضافة هذا السطر
+        }
     });
 
     await push(ref(db, `rooms/${roomId}/game/log`), {
@@ -792,7 +829,11 @@ window.confirmSelection = async function(i) {
 
     // 🔄 تغيير الدور
     if (nextTurn) {
-        updates.turn = { team: nextTurn, phase: "spymaster" };
+        updates.turn = { 
+            team: nextTurn, 
+            phase: "spymaster",
+            updatedAt: Date.now() // إضافة هذا السطر
+        };
         updates.clue = { word: null, count: null };
         guessesThisTurn = 0;
         selectedCards.clear();
@@ -816,7 +857,11 @@ async function endTurn() {
     const enemy = myTeam === "blue" ? "red" : "blue";
 
     await update(gameRef, {
-        turn: { team: enemy, phase: "spymaster" },
+        turn: { 
+            team: enemy, 
+            phase: "spymaster",
+            updatedAt: Date.now() // تحديث الوقت لبدء مؤقت الفريق الآخر
+        },
         clue: { word: null, count: null }
     });
 
@@ -838,6 +883,44 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
         window.location.href = "index.html";
     });
 });
+
+/* =====================================================
+    ⏱️ المرحلة 9 — مؤقت الدور العالمي
+   ===================================================== */
+
+function startGlobalTimer(serverStartTime) {
+    if (timerInterval) clearInterval(timerInterval);
+    
+    const timerDisplay = document.getElementById('lobbyDisplayTimer');
+    timerDisplay.style.display = 'block';
+
+    timerInterval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - serverStartTime) / 1000);
+        const remaining = timerDuration - elapsed;
+
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.innerText = "00:00";
+            timerDisplay.style.color = "#ff4d4d";
+            
+            // تنفيذ إنهاء الدور فقط إذا كان الشخص هو صاحب الدور الحالي
+            // (لمنع تكرار الطلبات من 4 لاعبين في نفس اللحظة)
+            const isMyTurn = myTeam === gameState.turn.team;
+            const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
+                            (isOperative && gameState.turn.phase === 'operative');
+            
+            if (isMyTurn && isMyPhase) {
+                endTurn(); 
+            }
+        } else {
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            timerDisplay.style.color = remaining <= 10 ? "#ff4d4d" : "white";
+        }
+    }, 1000);
+}
 
 </script>
 </body>
