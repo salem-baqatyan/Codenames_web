@@ -32,11 +32,11 @@
         font-weight: bold;
     }
 
-    @keyframes pulse-red {
-        0% { transform: scale(1); text-shadow: 0 0 0px red; }
-        50% { transform: scale(1.1); text-shadow: 0 0 15px red; opacity: 0.8; }
-        100% { transform: scale(1); text-shadow: 0 0 0px red; }
-    }
+@keyframes pulse-red {
+    0% { transform: translateX(-50%) scale(1); text-shadow: 0 0 0px red; }
+    50% { transform: translateX(-50%) scale(1.1); text-shadow: 0 0 15px red; opacity: 0.8; }
+    100% { transform: translateX(-50%) scale(1); text-shadow: 0 0 0px red; }
+}
     /* 3. Main Wrapper (.mobile-wrapper) */
     .mobile-wrapper {
         width: 100%; max-width: 450px; height: 100dvh; margin: 0 auto; overflow: hidden;
@@ -903,47 +903,48 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     ⏱️ المرحلة 9 — مؤقت الدور العالمي
    ===================================================== */
 
-const alertSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+ const alertSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
 
 
 function startGlobalTimer(serverStartTime) {
     if (timerInterval) clearInterval(timerInterval);
-    
+
     const timerDisplay = document.getElementById('lobbyDisplayTimer');
     if (!timerDisplay) return;
     timerDisplay.style.display = 'flex';
 
+    const syncNow = Date.now() + serverTimeOffset;
+    const fixedStart = serverStartTime || syncNow;
+
     timerInterval = setInterval(() => {
         const nowCorrected = Date.now() + serverTimeOffset;
-        const elapsed = Math.floor((nowCorrected - serverStartTime) / 1000);
-        let remaining = timerDuration - elapsed;
+        const elapsed = Math.ceil((nowCorrected - fixedStart) / 1000);
+        let remaining = Math.max(timerDuration - elapsed, 0);
 
-        // منع الأرقام السالبة أو غير المعرفة
-        if (isNaN(remaining)) remaining = timerDuration;
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
         if (remaining <= 0) {
             clearInterval(timerInterval);
-            timerDisplay.innerText = "00:00";
             timerDisplay.classList.remove('timer-pulse');
-            
-            const isMyTurn = myTeam === gameState.turn.team;
-            const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
-                            (isOperative && gameState.turn.phase === 'operative');
-            
-            if (isMyTurn && isMyPhase) endTurn(); 
-        } else {
-            const mins = Math.floor(remaining / 60);
-            const secs = remaining % 60;
-            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-            if (remaining <= 10) {
-                timerDisplay.style.color = "#ff4d4d";
-                timerDisplay.classList.add('timer-pulse');
-                if (remaining <= 5) alertSound.play().catch(() => {});
-            } else {
-                timerDisplay.style.color = "white";
-                timerDisplay.classList.remove('timer-pulse');
-            }
+            const isMyTurn = myTeam === gameState.turn.team;
+            const isMyPhase =
+                (isSpy && gameState.turn.phase === 'spymaster') ||
+                (isOperative && gameState.turn.phase === 'operative');
+
+            if (isMyTurn && isMyPhase) endTurn();
+            return;
+        }
+
+        if (remaining <= 10) {
+            timerDisplay.style.color = "#ff4d4d";
+            timerDisplay.classList.add('timer-pulse');
+            if (remaining <= 5) alertSound.play().catch(() => {});
+        } else {
+            timerDisplay.style.color = "white";
+            timerDisplay.classList.remove('timer-pulse');
         }
     }, 1000);
 }
