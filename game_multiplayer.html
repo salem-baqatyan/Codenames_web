@@ -26,7 +26,17 @@
         margin-bottom: 15px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* تأثير النبض للمؤقت */
+    .timer-pulse {
+        animation: pulse-red 1s infinite;
+        font-weight: bold;
+    }
 
+    @keyframes pulse-red {
+        0% { transform: scale(1); text-shadow: 0 0 0px red; }
+        50% { transform: scale(1.1); text-shadow: 0 0 15px red; opacity: 0.8; }
+        100% { transform: scale(1); text-shadow: 0 0 0px red; }
+    }
     /* 3. Main Wrapper (.mobile-wrapper) */
     .mobile-wrapper {
         width: 100%; max-width: 450px; height: 100dvh; margin: 0 auto; overflow: hidden;
@@ -293,6 +303,7 @@ let guessesThisTurn = 0;
 let turnStartTime = null; // وقت بداية الدور الحقيقي من السيرفر
 let timerDuration = 0;   // المدة المختارة (30, 60, 120)
 let timerInterval = null;
+let serverTimeOffset = 0; // الفرق بين وقت المتصفح ووقت السيرفر
 
 /* ---------- تحميل الصور (كما في كودك الأصلي) ---------- */
 const allImagesToPreload = [
@@ -323,6 +334,10 @@ function preloadImages() {
     });
     return Promise.all(promises);
 }
+const offsetRef = ref(db, ".info/serverTimeOffset");
+onValue(offsetRef, (snap) => {
+    serverTimeOffset = snap.val() || 0;
+});
 
 /* ---------- أدوات UI ---------- */
 function showCustomAlert(msg, showCancel = false, onOk = null) {
@@ -597,16 +612,16 @@ function applyGameStateToUI() {
     updateUI();
 
     // جلب إعدادات المؤقت من السيرفر وبدء العد التنازلي
-    get(ref(db, `rooms/${roomId}/settings/timer`)).then((snap) => {
-        const seconds = snap.val();
-        if (seconds && seconds > 0) {
-            timerDuration = seconds;
-            // نستخدم وقت التغيير الأخير للدور كمرجع
-            startGlobalTimer(gameState.turn.updatedAt || Date.now());
-        } else {
-            document.getElementById('lobbyDisplayTimer').style.display = 'none';
-        }
-    });
+get(ref(db, `rooms/${roomId}/settings`)).then((snap) => {
+    const settings = snap.val();
+    if (settings && settings.timer > 0) {
+        timerDuration = settings.timer;
+        // نستخدم الوقت المسجل في السيرفر لبدء الدور
+        startGlobalTimer(gameState.turn.updatedAt);
+    } else {
+        document.getElementById('lobbyDisplayTimer').style.display = 'none';
+    }
+});
 }
 
 /* =====================================================
@@ -888,36 +903,49 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     ⏱️ المرحلة 9 — مؤقت الدور العالمي
    ===================================================== */
 
+// تعريف ملف الصوت (يمكنك استبدال الرابط بملف محلي)
+const alertSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+
 function startGlobalTimer(serverStartTime) {
     if (timerInterval) clearInterval(timerInterval);
     
     const timerDisplay = document.getElementById('lobbyDisplayTimer');
-    timerDisplay.style.display = 'block';
+    timerDisplay.style.display = 'flex';
 
     timerInterval = setInterval(() => {
-        const now = Date.now();
-        const elapsed = Math.floor((now - serverStartTime) / 1000);
+        // حساب الوقت الحالي الحقيقي بناءً على توقيت السيرفر
+        const nowCorrected = Date.now() + serverTimeOffset;
+        const elapsed = Math.floor((nowCorrected - serverStartTime) / 1000);
         const remaining = timerDuration - elapsed;
 
         if (remaining <= 0) {
             clearInterval(timerInterval);
             timerDisplay.innerText = "00:00";
-            timerDisplay.style.color = "#ff4d4d";
+            timerDisplay.classList.remove('timer-pulse'); // إيقاف الوميض
             
-            // تنفيذ إنهاء الدور فقط إذا كان الشخص هو صاحب الدور الحالي
-            // (لمنع تكرار الطلبات من 4 لاعبين في نفس اللحظة)
             const isMyTurn = myTeam === gameState.turn.team;
             const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
                             (isOperative && gameState.turn.phase === 'operative');
             
-            if (isMyTurn && isMyPhase) {
-                endTurn(); 
-            }
+            if (isMyTurn && isMyPhase) endTurn(); 
         } else {
             const mins = Math.floor(remaining / 60);
             const secs = remaining % 60;
             timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            timerDisplay.style.color = remaining <= 10 ? "#ff4d4d" : "white";
+
+            // --- منطق التنبيه (10 ثوانٍ الأخيرة) ---
+            if (remaining <= 10) {
+                timerDisplay.style.color = "#ff4d4d";
+                timerDisplay.classList.add('timer-pulse'); // تشغيل الوميض من CSS
+                
+                // تشغيل صوت تنبيه بسيط كل ثانية في آخر 5 ثوانٍ مثلاً
+                if (remaining <= 5) {
+                    alertSound.play().catch(() => {}); // catch لتجنب أخطاء سياسة المتصفح
+                }
+            } else {
+                timerDisplay.style.color = "white";
+                timerDisplay.classList.remove('timer-pulse');
+            }
         }
     }, 1000);
 }
