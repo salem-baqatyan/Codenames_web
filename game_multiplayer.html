@@ -600,7 +600,6 @@ function showTurnInfo(container, turn) {
 function applyGameStateToUI() {
     if (!gameState) return;
 
-    // إعادة تعيين التحديدات المحلية عند تغيير الدور
     if (gameState.turn.phase === "spymaster") {
         selectedCards.clear();
         guessesThisTurn = 0;
@@ -611,17 +610,18 @@ function applyGameStateToUI() {
     renderLog();
     updateUI();
 
-    // جلب إعدادات المؤقت من السيرفر وبدء العد التنازلي
-get(ref(db, `rooms/${roomId}/settings`)).then((snap) => {
-    const settings = snap.val();
-    if (settings && settings.timer > 0) {
-        timerDuration = settings.timer;
-        // نستخدم الوقت المسجل في السيرفر لبدء الدور
-        startGlobalTimer(gameState.turn.updatedAt);
-    } else {
-        document.getElementById('lobbyDisplayTimer').style.display = 'none';
-    }
-});
+    // إصلاح الـ NaN: التحقق من وجود الإعدادات ووقت التحديث
+    get(ref(db, `rooms/${roomId}/settings/timer`)).then((snap) => {
+        const seconds = snap.val();
+        if (seconds && seconds > 0) {
+            timerDuration = seconds;
+            // إذا لم يكن updatedAt موجوداً (أول دور)، نستخدم الوقت الحالي كمرجع
+            const startTime = gameState.turn.updatedAt || (Date.now() + serverTimeOffset);
+            startGlobalTimer(startTime);
+        } else {
+            document.getElementById('lobbyDisplayTimer').style.display = 'none';
+        }
+    });
 }
 
 /* =====================================================
@@ -903,25 +903,28 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     ⏱️ المرحلة 9 — مؤقت الدور العالمي
    ===================================================== */
 
-// تعريف ملف الصوت (يمكنك استبدال الرابط بملف محلي)
 const alertSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+
 
 function startGlobalTimer(serverStartTime) {
     if (timerInterval) clearInterval(timerInterval);
     
     const timerDisplay = document.getElementById('lobbyDisplayTimer');
+    if (!timerDisplay) return;
     timerDisplay.style.display = 'flex';
 
     timerInterval = setInterval(() => {
-        // حساب الوقت الحالي الحقيقي بناءً على توقيت السيرفر
         const nowCorrected = Date.now() + serverTimeOffset;
         const elapsed = Math.floor((nowCorrected - serverStartTime) / 1000);
-        const remaining = timerDuration - elapsed;
+        let remaining = timerDuration - elapsed;
+
+        // منع الأرقام السالبة أو غير المعرفة
+        if (isNaN(remaining)) remaining = timerDuration;
 
         if (remaining <= 0) {
             clearInterval(timerInterval);
             timerDisplay.innerText = "00:00";
-            timerDisplay.classList.remove('timer-pulse'); // إيقاف الوميض
+            timerDisplay.classList.remove('timer-pulse');
             
             const isMyTurn = myTeam === gameState.turn.team;
             const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
@@ -933,15 +936,10 @@ function startGlobalTimer(serverStartTime) {
             const secs = remaining % 60;
             timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-            // --- منطق التنبيه (10 ثوانٍ الأخيرة) ---
             if (remaining <= 10) {
                 timerDisplay.style.color = "#ff4d4d";
-                timerDisplay.classList.add('timer-pulse'); // تشغيل الوميض من CSS
-                
-                // تشغيل صوت تنبيه بسيط كل ثانية في آخر 5 ثوانٍ مثلاً
-                if (remaining <= 5) {
-                    alertSound.play().catch(() => {}); // catch لتجنب أخطاء سياسة المتصفح
-                }
+                timerDisplay.classList.add('timer-pulse');
+                if (remaining <= 5) alertSound.play().catch(() => {});
             } else {
                 timerDisplay.style.color = "white";
                 timerDisplay.classList.remove('timer-pulse');

@@ -581,7 +581,11 @@ window.handleStartGame = async () => {
     if (!snap.exists()) {
         await set(gameRef, {
             board: generateBoard(),
-            turn: { team: "red", phase: "spymaster" },
+            turn: { 
+                team: "red", 
+                phase: "spymaster", 
+                updatedAt: Date.now() // أضف هذا السطر هنا لضمان وجود وقت لأول دور
+            },
             scores: { red: 0, blue: 0 },
             remaining: { red: 8, blue: 9 }
         });
