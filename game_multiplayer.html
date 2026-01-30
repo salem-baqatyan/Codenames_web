@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Codenames Pro - Card Peek System</title>
 <style>
-    
     /* 1. Global & Root Styles */
     :root { 
         --bg-color: #0d1117; 
@@ -32,32 +31,6 @@
         animation: pulse-red 1s infinite;
         font-weight: bold;
     }
-.card {
-  perspective: 1200px;
-}
-
-.card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(.4,.2,.2,1);
-}
-
-.card.flipping .card-inner {
-  transform: rotateY(180deg);
-}
-
-.card-face {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  border-radius: inherit;
-}
-
-.card-back {
-  transform: rotateY(180deg);
-}
 
 @keyframes pulse-red {
     0% { transform: translateX(-50%) scale(1); text-shadow: 0 0 0px red; }
@@ -507,29 +480,18 @@ function renderGrid() {
         div.className = `card ${isHidden ? 'card-hidden' : visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
         div.id = `card-${i}`;
 
-div.innerHTML = `
-  <div class="card-inner">
-
-    <div class="card-face card-front">
-      <div class="confirm-btn" id="confirm-${i}" 
-           style="display: ${isSelected ? 'flex' : 'none'}" 
-           onclick="event.stopPropagation(); confirmSelection(${i});">
-        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-      </div>
-
-      <img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">
-      
-      <div class="card-main-body">
-        <div class="bottom-box">${card.word}</div>
-      </div>
-    </div>
-
-    <div class="card-face card-back ${visualClass}">
-    </div>
-
-  </div>
-`;
-
+        div.innerHTML = `
+            <div class="confirm-btn" id="confirm-${i}" 
+                 style="display: ${isSelected ? 'flex' : 'none'}" 
+                 onclick="event.stopPropagation(); confirmSelection(${i});">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            </div>
+            
+            <img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">
+            
+            <div class="card-main-body">
+                <div class="bottom-box">${card.word}</div>
+            </div>`;
 
         div.onclick = () => handleCardSelection(i);
         grid.appendChild(div);
@@ -837,10 +799,6 @@ window.handleCardSelection = function(i) {
    ===================================================== */
 
 window.confirmSelection = async function(i) {
-  const cardEl = document.getElementById(`card-${i}`);
-  cardEl.classList.add("flipping");
-
-  await new Promise(r => setTimeout(r, 450)); // ننتظر نصف الأنميشن
     const input = document.getElementById('clueInput');
     if (!gameState) return;
     if (gameState.turn.phase !== 'operative') return;
