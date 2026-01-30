@@ -139,8 +139,12 @@
     .card-brown { background: #fbe0c3; } .card-brown .card-main-body { background: #f7cda3; border-color: #9a7452; } .card-brown .bottom-box { background: #9a7452; border-color: #fbe0c3; }
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
-    /* Card Reveal Logic */
-/* 7. Card Reveal Logic (Fixed Calendar Style) */
+/* 7. Card Reveal Logic (Push Animation Style) */
+    .card { 
+        /* ... كودك السابق ... */
+        overflow: hidden !important; /* ضروري جداً لعمل تأثير الـ Push من داخل الإطار */
+    }
+
     .card-reveal-img {
         position: absolute;
         top: 0;
@@ -152,36 +156,44 @@
         border-radius: 3px;
         opacity: 0;
         pointer-events: none;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        transform-origin: top;
+        /* نجعل الصورة تبدأ من خارج الإطار العلوي مباشرة */
+        transform: translateY(-100%); 
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* أنيميشن السقوط للبطاقة التي تُكشف "لأول مرة" فقط */
+    /* أنيميشن الـ Push للبطاقة الجديدة */
     .card-revealed:not(.already-revealed) .card-reveal-img {
         opacity: 1;
         pointer-events: auto;
-        animation: dropCalendarInner 0.5s ease-out forwards;
+        animation: pushFromTop 0.5s ease-out forwards;
     }
 
-    /* البطاقات التي كُشفت سابقاً تظل ثابتة بدون أنيميشن */
+    /* البطاقات القديمة تظل ثابتة */
     .already-revealed .card-reveal-img {
         opacity: 1;
         pointer-events: auto;
-        top: 0;
+        transform: translateY(0);
     }
 
-    @keyframes dropCalendarInner {
-        0% { transform: translateY(-100%) rotateX(-20deg); opacity: 0; }
-        100% { transform: translateY(0) rotateX(0deg); opacity: 1; }
+    @keyframes pushFromTop {
+        0% { 
+            transform: translateY(-100%); 
+            opacity: 1; /* جعلناها 1 ليظهر الانزلاق بوضوح */
+        }
+        100% { 
+            transform: translateY(0); 
+            opacity: 1;
+        }
     }
 
-    /* حركة البييك (الاختلاس) */
+    /* حركة البييك (الاختلاس) - تظل كما هي لأنها رائعة */
     .card-peeking .card-reveal-img {
-        transform: rotateX(-55deg) translateY(-5px) !important;
+        transform: rotateX(-55deg) translateY(-10px) !important;
         z-index: 10;
+        /* نلغي الـ overflow مؤقتاً أثناء الاختلاس لكي لا يختفي الجزء المرفوع */
     }
-            .card-revealed { cursor: default; }
+    .card-peeking { overflow: visible !important; }
+                .card-revealed { cursor: default; }
 
     /* 8. Control Area (.control-area) */
     .control-area { height: 65px; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
@@ -511,11 +523,10 @@ function renderGrid() {
             "card-brown";
 
         div.id = cardId;
-        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
         
         if (isHidden) div.classList.add('card-hidden');
         
-        // إذا كانت البطاقة مكشوفة بالفعل في الرندر السابق، نمنع تكرار الأنيميشن
         if (card.revealed && existingRevealed.includes(cardId)) {
             div.classList.add('already-revealed');
         }
