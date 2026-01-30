@@ -126,7 +126,7 @@
     .grid-container {flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; min-height: 0;}
     .card { height: 100%; width: 100%; border-radius: 5px; padding: 2px; display: flex; cursor: pointer; position: relative; overflow: visible; perspective: 1000px; }
     .card-selected { transform: scale(0.95); box-shadow: 0 0 10px #7ed321; }
-    .confirm-btn { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: #7ed321; border: 2px solid white; border-radius: 50%; display: none; justify-content: center; align-items: center; z-index: 10; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    .confirm-btn { z-index: 110; position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: #7ed321; border: 2px solid white; border-radius: 50%; display: none; justify-content: center; align-items: center; z-index: 10; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
     .confirm-btn svg { width: 14px; height: 14px; fill: white; }
     
     /* Card Body & Colors */
@@ -140,12 +140,12 @@
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
 /* 7. Card Reveal Logic (Push Animation Style) */
-    .card { 
-        /* ... كودك السابق ... */
-        overflow: hidden !important; /* ضروري جداً لعمل تأثير الـ Push من داخل الإطار */
+.card { 
+        position: relative;
+        overflow: hidden; /* يحافظ على تأثير الـ Push من الداخل */
+        perspective: 1000px;
     }
-
-    .card-reveal-img {
+.card-reveal-img {
         position: absolute;
         top: 0;
         left: 0;
@@ -156,8 +156,9 @@
         border-radius: 3px;
         opacity: 0;
         pointer-events: none;
-        /* نجعل الصورة تبدأ من خارج الإطار العلوي مباشرة */
         transform: translateY(-100%); 
+        /* محور الدوران من الأعلى (المركز العلوي) */
+        transform-origin: top center; 
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -175,24 +176,24 @@
         transform: translateY(0);
     }
 
-    @keyframes pushFromTop {
-        0% { 
-            transform: translateY(-100%); 
-            opacity: 1; /* جعلناها 1 ليظهر الانزلاق بوضوح */
-        }
-        100% { 
-            transform: translateY(0); 
-            opacity: 1;
-        }
+@keyframes pushFromTop {
+        0% { transform: translateY(-100%); opacity: 1; }
+        100% { transform: translateY(0); opacity: 1; }
     }
 
     /* حركة البييك (الاختلاس) - تظل كما هي لأنها رائعة */
-    .card-peeking .card-reveal-img {
-        transform: rotateX(-55deg) translateY(-5px) !important;
-        z-index: 10;
+.card-peeking .card-reveal-img {
+        /* تدوير لرفع الطرف السفلي للأعلى */
+        transform: rotateX(-45deg) scale(1.05) !important; 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.8);
+        opacity: 1;
+        pointer-events: auto;
     }
-    .card-peeking { overflow: visible !important; }
-    .card-revealed { cursor: default; }
+.card.card-peeking { 
+        overflow: visible !important; 
+        z-index: 100 !important; /* لضمان ظهورها فوق البطاقات الأخرى */
+    }
+        .card-revealed { cursor: default; }
 
     /* 8. Control Area (.control-area) */
     .control-area { height: 65px; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
