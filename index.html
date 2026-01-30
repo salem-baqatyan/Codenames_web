@@ -911,19 +911,14 @@ window.handleStartGame = async () => {
     const snap = await get(gameRef);
 
     // 2. إنشاء اللعبة إذا لم تكن موجودة
-if (!snap.exists()) {
-    const firstTeam = Math.random() < 0.5 ? "red" : "blue";
-
-    await set(gameRef, {
-        board: generateBoard(),
-        turn: { team: firstTeam, phase: "spymaster", updatedAt: Date.now() },
-        scores: { red: 0, blue: 0 },
-        remaining: firstTeam === "red"
-            ? { red: 9, blue: 8 }
-            : { red: 8, blue: 9 }
-    });
-}
-
+    if (!snap.exists()) {
+        await set(gameRef, {
+            board: generateBoard(),
+            turn: { team: "red", phase: "spymaster", updatedAt: Date.now() },
+            scores: { red: 0, blue: 0 },
+            remaining: { red: 8, blue: 9 }
+        });
+    }
 
     // 3. تحديث حالة الغرفة للجميع
     await update(ref(db, `rooms/${roomId}`), { status: "started" });

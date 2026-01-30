@@ -106,22 +106,30 @@
     .score { font-size: 1.5rem; font-weight: 900; text-align: center; color: white; display: flex; align-items: center; justify-content: center;}
 
     /* Game Log (Inside Dashboard) */
-    .game-log-container { background: #333; border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
+.game-log-container { background: #333; border-radius: 10px; border: 1px solid #555; padding: 5px; overflow: hidden; display: flex; flex-direction: column; }
     #log-content { flex: 1; background: #2a2a2a; border-radius: 4px; font-size: 0.6rem; overflow-y: auto; color: white; padding: 5px; display: flex; flex-direction: column-reverse; gap: 8px; scrollbar-width: none; }
     #log-content::-webkit-scrollbar { display: none; }
     .log-row { display: flex; width: 100%; align-items: center; gap: 5px; }
-    .row-blue { justify-content: flex-start; flex-direction: row-reverse; } 
-    .row-red { justify-content: flex-start; flex-direction: row; } 
+    
+    .row-blue { justify-content: flex-start; flex-direction: row; } 
+    .row-red { justify-content: flex-end; flex-direction: row; } 
+    
     .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
-    .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
-    .log-clue-red { background: #e74c3c; flex-direction: row; }
+    
+    .log-clue-blue { background: #3498db; flex-direction: row; }
+    .log-clue-red { background: #e74c3c; flex-direction: row-reverse; }
+    
     .log-avatar { width: 18px; height: 18px; border-radius: 50%; border: 2px solid; }
     .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 0.55rem;}
     .log-num-circle { width: 16px; height: 16px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.55rem; flex-shrink: 0;}
+    
     .log-guess-item { display: flex; align-items: center; gap: 4px; }
-    .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
-    .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }
+    .row-blue .log-guess-item { flex-direction: row; }
+    .row-red .log-guess-item { flex-direction: row-reverse; }
 
+    .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
+    .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }    
+    
     /* 7. Grid Section (.grid-container) */
     .grid-container {flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; padding: 8px; flex-shrink: 0; min-height: 0;}
     .card { height: 100%; width: 100%; border-radius: 5px; padding: 2px; display: flex; cursor: pointer; position: relative; overflow: visible; perspective: 1000px; }
@@ -322,6 +330,7 @@ const logRef = ref(db, `rooms/${roomId}/game/log`);
 
 /* ---------- متغيرات محلية ---------- */
 const avatarImages = [
+"img/avatar/snowman.webp",
 "img/avatar/confused_woman.webp",
 "img/avatar/cool_girl.webp",
 "img/avatar/delivery_boy.webp",
@@ -330,7 +339,6 @@ const avatarImages = [
 "img/avatar/photographer.webp",
 "img/avatar/pizza_guy.webp",
 "img/avatar/reader.webp",
-"img/avatar/snowman.webp",
 "img/avatar/surprised_man.webp",
 ];
 
@@ -404,6 +412,48 @@ function showCustomAlert(msg, showCancel = false, onOk = null) {
     document.getElementById('alertCancel').onclick = () => { modal.style.display = 'none'; };
 }
 
+document.getElementById('roomDisplay').innerText = "🔗 " + roomId;
+window.copyRoomLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    showToast("✅ تم نسخ رابط الغرفة!");
+};
+
+function showToast(message) {
+    const toast = document.createElement("div");
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: rgba(20, 20, 20, 0.95);
+        color: #ddd;
+        padding: 10px 18px;
+        border-radius: 14px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid rgba(52, 152, 219, 0.6);
+        box-shadow: 0 8px 20px rgba(0,0,0,.6);
+        opacity: 0;
+        transition: all .25s ease;
+        z-index: 9999;
+        pointer-events: none;
+        backdrop-filter: blur(6px);
+    `;
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateX(-50%) translateY(0)";
+    });
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%) translateY(10px)";
+        setTimeout(() => toast.remove(), 250);
+    }, 1800);
+}
 /* =====================================================
    🧠 المرحلة 1 — قراءة اللاعبين وتحديد دوري الحقيقي
    ===================================================== */
@@ -721,17 +771,16 @@ function renderLog() {
     const logContainer = document.getElementById('log-content');
     if (!logContainer || !gameState || !gameState.log) return;
 
-    // تحويل البيانات لمصفوفة وترتيبها زمنياً (الأقدم للأحدث)
-    const logEntries = Object.values(gameState.log).sort((a, b) => a.at - b.at);
-    
-    logContainer.innerHTML = ''; // مسح المحتوى القديم لمنع التكرار
+    const logEntries = Object.values(gameState.log).sort((a, b) => b.at - a.at);
+    logContainer.innerHTML = ''; 
 
     logEntries.forEach(entry => {
         let html = '';
-        const rowClass = entry.team === 'blue' ? 'row-blue' : 'row-red';
+        const isBlue = entry.team === 'blue';
+        const rowClass = isBlue ? 'row-blue' : 'row-red';
 
         if (entry.type === "clue") {
-            const clueClass = entry.team === 'blue' ? 'log-clue-blue' : 'log-clue-red';
+            const clueClass = isBlue ? 'log-clue-blue' : 'log-clue-red';
             html = `
                 <div class="log-row ${rowClass}">
                     <div class="log-clue-item ${clueClass}">
@@ -747,20 +796,15 @@ function renderLog() {
                                entry.cardColor === 'black' ? 'bg-black' : 'bg-brown';
             html = `
                 <div class="log-row ${rowClass}">
-                    <div class="log-guess-item" style="flex-direction:${entry.team==='blue'?'row-reverse':'row'}">
-                        <img src="${entry.avatar}" class="log-avatar" style="border-color:${entry.team==='blue'?'#3498db':'#e74c3c'}">
+                    <div class="log-guess-item">
+                        <img src="${entry.avatar}" class="log-avatar" style="border-color:${isBlue ? '#3498db':'#e74c3c'}">
                         <div class="log-guess-text ${colorClass}">${entry.word}</div>
                     </div>
                 </div>`;
         }
-        
         logContainer.insertAdjacentHTML('beforeend', html);
     });
-
-    // تمرير تلقائي لأسفل السجل لمشاهدة آخر حركة
-    logContainer.scrollTop = logContainer.scrollHeight;
 }
-
 /* =====================================================
    🎯 المرحلة 8 — التفاعل (حسب الدور فقط)
    ===================================================== */
