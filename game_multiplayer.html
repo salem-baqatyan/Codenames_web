@@ -140,63 +140,68 @@
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
 /* 7. Card Reveal Logic (Push Animation Style) */
-    .card { 
-        position: relative;
-        overflow: hidden; /* يحافظ على تأثير الـ Push من الداخل */
-        perspective: 1000px;
-    }
-    .card-reveal-img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        z-index: 5;
-        border-radius: 3px;
-        opacity: 0;
-        pointer-events: none;
-        transform: translateY(-100%); 
-        /* محور الدوران من الأعلى (المركز العلوي) */
-        transform-origin: top center; 
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+/* 7. Card Reveal Logic (Enhanced Animation & Smooth Peek) */
+.card { 
+    position: relative;
+    overflow: hidden; 
+    perspective: 1000px;
+}
 
-    /* أنيميشن الـ Push للبطاقة الجديدة */
-    .card-revealed:not(.already-revealed) .card-reveal-img {
-        opacity: 1;
-        pointer-events: auto;
-        animation: pushFromTop 1s ease-out forwards;
-    }
+.card-reveal-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 5;
+    border-radius: 3px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-100%); 
+    transform-origin: top center; 
+    /* جعلنا الانتقال الخاص بالبيك سلساً جداً لمدة 0.5 ثانية */
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+}
 
-    /* البطاقات القديمة تظل ثابتة */
-    .already-revealed .card-reveal-img {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0);
-    }
+/* أنيميشن الكشف - المدة: 1 ثانية مع تأثير انزلاق مرن */
+.card-revealed:not(.already-revealed) .card-reveal-img {
+    opacity: 1;
+    pointer-events: auto;
+    animation: pushFromTopBounce 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
 
-    @keyframes pushFromTop {
-        0% { transform: translateY(-100%); opacity: 1; }
-        100% { transform: translateY(0); opacity: 1; }
-    }
+/* البطاقات المكشوفة سابقاً تظل ثابتة */
+.already-revealed .card-reveal-img {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
 
-        /* حركة البييك (الاختلاس) - تظل كما هي لأنها رائعة */
-    .card-peeking .card-reveal-img {
-        /* تدوير لرفع الطرف السفلي للأعلى */
-        transform: rotateX(-55deg) translateY(-5px); 
-        z-index: 6; 
-        box-shadow: 0 15px 30px rgba(0,0,0,0.8);
-        opacity: 1;
-        pointer-events: auto;
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .card.card-peeking { 
-        overflow: visible !important; 
-        z-index: 100 !important; /* لضمان ظهورها فوق البطاقات الأخرى */
-    }
-    .card-revealed { cursor: default; }
+/* أنيميشن السقوط بمدة ثانية واحدة مع ارتداد خفيف في النهاية */
+@keyframes pushFromTopBounce {
+    0% { transform: translateY(-100%); opacity: 1; }
+    70% { transform: translateY(5%); opacity: 1; } /* ارتداد بسيط لأسفل */
+    100% { transform: translateY(0); opacity: 1; }
+}
 
+/* أنيميشن البييك (الاختلاس) - رفع الورقة للأعلى بسلاسة */
+.card-peeking .card-reveal-img {
+    /* زاوية الرفع مع إزاحة طفيفة لإظهار ما خلفها */
+    transform: rotateX(-55deg) translateY(-5px); 
+    z-index: 10; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* لضمان عدم قص البطاقة أثناء حركة البييك المرتفعة */
+.card.card-peeking { 
+    overflow: visible !important; 
+    z-index: 100 !important; 
+}
+
+.card-revealed { cursor: default; }
     /* 8. Control Area (.control-area) */
     .control-area { height: 65px; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
     .clue-bar-layout { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0 10px;}
