@@ -140,13 +140,14 @@
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
 /* 7. Card Reveal Logic (Push Animation Style) */
-/* 7. Card Reveal Logic (Enhanced Animation & Smooth Peek) */
+/* 7. Unified & Smooth Card Logic */
 .card { 
     position: relative;
-    overflow: hidden; 
     perspective: 1000px;
+    transition: transform 0.3s ease;
 }
 
+/* الصورة المخفية تحت البطاقة */
 .card-reveal-img {
     position: absolute;
     top: 0;
@@ -158,50 +159,53 @@
     border-radius: 3px;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-100%); 
+    /* نقطة الارتكاز من الأعلى لجعلها تبدو كالورقة التي تُرفع */
     transform-origin: top center; 
-    /* جعلنا الانتقال الخاص بالبيك سلساً جداً لمدة 0.5 ثانية */
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    /* هذا هو سر الانسيابية: transition شامل */
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease;
+    transform: translateY(-100%);
 }
 
-/* أنيميشن الكشف - المدة: 1 ثانية مع تأثير انزلاق مرن */
-.card-revealed:not(.already-revealed) .card-reveal-img {
-    opacity: 1;
-    pointer-events: auto;
-    animation: pushFromTopBounce 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* البطاقات المكشوفة سابقاً تظل ثابتة */
-.already-revealed .card-reveal-img {
+/* حالة الكشف (الظهور لأول مرة) - أنميشن ثانية واحدة للكل */
+.card-revealed .card-reveal-img {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
 }
 
-/* أنيميشن السقوط بمدة ثانية واحدة مع ارتداد خفيف في النهاية */
-@keyframes pushFromTopBounce {
-    0% { transform: translateY(-100%); opacity: 1; }
-    70% { transform: translateY(5%); opacity: 1; } /* ارتداد بسيط لأسفل */
-    100% { transform: translateY(0); opacity: 1; }
+/* أنيميشن الدخول للبطاقة الجديدة فقط (لإضافة لمسة احترافية) */
+.card-revealed:not(.already-revealed) .card-reveal-img {
+    animation: slideInDown 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* أنيميشن البييك (الاختلاس) - رفع الورقة للأعلى بسلاسة */
-.card-peeking .card-reveal-img {
-    /* زاوية الرفع مع إزاحة طفيفة لإظهار ما خلفها */
-    transform: rotateX(-55deg) translateY(-5px); 
-    z-index: 10; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+@keyframes slideInDown {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(0); }
+}
+
+/* --- أنميشن البيك (الاختلاس) الانسيابي --- */
+.card.card-peeking .card-reveal-img {
+    /* رفع البطاقة بزاوية 3D مع إزاحة بسيطة */
+    transform: rotateX(-55deg) translateY(-10px) scale(1.05) !important;
+    z-index: 50;
     opacity: 1;
     pointer-events: auto;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.7);
 }
 
-/* لضمان عدم قص البطاقة أثناء حركة البييك المرتفعة */
-.card.card-peeking { 
-    overflow: visible !important; 
-    z-index: 100 !important; 
+/* حالة الجمهور والسباي ماستر (تأكيد المساواة في العرض) */
+.card-peeking {
+    z-index: 100 !important;
+    overflow: visible !important;
 }
 
-.card-revealed { cursor: default; }
+.already-revealed .card-reveal-img {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+    .card-revealed { cursor: default; }
+
     /* 8. Control Area (.control-area) */
     .control-area { height: 65px; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
     .clue-bar-layout { width: 100%; display: flex; align-items: center; gap: 8px; padding: 0 10px;}
@@ -533,7 +537,6 @@ function renderGrid() {
         div.id = cardId;
         // أضفنا التحقق من isPeeking هنا في الكلاسات
         div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
-        
         if (isHidden) div.classList.add('card-hidden');
         
         if (card.revealed && existingRevealed.includes(cardId)) {
@@ -564,15 +567,18 @@ function renderGrid() {
 
 window.togglePeek = function(i, event) {
     event.stopPropagation();
-    if (!gameState.board[i].revealed) return; // البيك يعمل فقط للبطاقات المكشوفة
+    if (!gameState.board[i].revealed) return; 
 
+    const cardEl = document.getElementById(`card-${i}`);
+    
     if (peekingCards.has(i)) {
         peekingCards.delete(i);
+        if (cardEl) cardEl.classList.remove('card-peeking');
     } else {
         peekingCards.add(i);
+        if (cardEl) cardEl.classList.add('card-peeking');
     }
-    
-    renderGrid(); // إعادة الرسم لتطبيق الكلاس الجديد والحفاظ عليه
+    // لا نحتاج لـ renderGrid() هنا لضمان سلاسة الأنميشن
 };
 
 /* =====================================================
