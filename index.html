@@ -281,7 +281,79 @@
             <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
         </div>
     </div>
-<div class="modal-overlay" id="rulesModal">
+    <div class="top-section">
+        <div class="top-bar">
+            <div class="top-left">
+                <div class="icon-circle">
+                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
+                </div>
+                    <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
+                </div>
+
+            <div class="top-timer" id="lobbyDisplayTimer"></div>
+
+            <div class="top-right">
+                <div class="btn-pill" onclick="toggleRulesModal(true)">📜القواعد</div>
+                <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
+            </div>
+        </div>
+
+        <div class="spectators-section">
+            <div class="box-title">الجمهور</div>
+            <div class="spectators-list" id="spectators-list"></div>
+            <button class="join-btn" style="width:100px; margin-top:5px; background:none; border:1px solid #fff;" onclick="joinTeam('spectators-list')">انضمام</button>
+        </div>
+
+        <div class="settings-panel">
+            <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
+            <div class="mode-options">
+                <div class="mode-card" id="mode-offline" onclick="setGameMode('offline')">
+                    <img src="img/local.webp" class="mode-img">
+                    <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
+                </div>
+                <div class="mode-card active" id="mode-online" onclick="setGameMode('online')">
+                    <img src="img/online.webp" class="mode-img">
+                    <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
+                </div>
+            </div>
+            <div class="setting-row" onclick="openTimerModal()">
+                <span style="font-size: 1.2rem;" id="mainTimerIcon">🚫</span>
+                <div style="margin-right: 10px;">
+                    <b style="font-size: 0.7rem; display: block;">المؤقت</b>
+                    <span style="font-size: 0.55rem; color: #888;" id="mainTimerText">بدون</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="teams-grid">
+            <div class="team-box blue-box">
+                <div class="box-title">OPERATIVE</div>
+                <div class="player-slot-container" id="blue-operative"></div>
+                <button class="join-btn" id="btn-blue-operative" onclick="joinTeam('blue-operative')">أنضمام</button>
+            </div>
+            <div class="team-box red-box">
+                <div class="box-title">OPERATIVE</div>
+                <div class="player-slot-container" id="red-operative"></div>
+                <button class="join-btn" id="btn-red-operative" onclick="joinTeam('red-operative')">أنضمام</button>
+            </div>
+            <div class="team-box blue-box">
+                <div class="box-title">SPYMASTER</div>
+                <div class="player-slot-container" id="blue-spymaster"></div>
+                <button class="join-btn" id="btn-blue-spymaster" onclick="joinTeam('blue-spymaster')">أنضمام</button>
+            </div>
+            <div class="team-box red-box">
+                <div class="box-title">SPYMASTER</div>
+                <div class="player-slot-container" id="red-spymaster"></div>
+                <button class="join-btn" id="btn-red-spymaster" onclick="joinTeam('red-spymaster')">أنضمام</button>
+            </div>
+        </div>
+        <div class="footer">
+            <button class="start-btn" id="startBtn" onclick="handleStartGame()">بدء اللعبة</button>
+        </div>
+    </div>
+    <div class="modal-overlay" id="rulesModal">
     <div class="settings-modal">
         <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
         <div class="modal-header">كيفية اللعب</div>
@@ -455,78 +527,6 @@
         <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
     </div>
 </div>
-    <div class="top-section">
-        <div class="top-bar">
-            <div class="top-left">
-                <div class="icon-circle">
-                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
-                </div>
-                    <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
-                </div>
-
-            <div class="top-timer" id="lobbyDisplayTimer"></div>
-
-            <div class="top-right">
-                <div class="btn-pill" onclick="toggleRulesModal(true)">📜القواعد</div>
-                <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
-            </div>
-        </div>
-
-        <div class="spectators-section">
-            <div class="box-title">الجمهور</div>
-            <div class="spectators-list" id="spectators-list"></div>
-            <button class="join-btn" style="width:100px; margin-top:5px; background:none; border:1px solid #fff;" onclick="joinTeam('spectators-list')">انضمام</button>
-        </div>
-
-        <div class="settings-panel">
-            <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
-            <div class="mode-options">
-                <div class="mode-card" id="mode-offline" onclick="setGameMode('offline')">
-                    <img src="img/local.webp" class="mode-img">
-                    <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
-                </div>
-                <div class="mode-card active" id="mode-online" onclick="setGameMode('online')">
-                    <img src="img/online.webp" class="mode-img">
-                    <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
-                </div>
-            </div>
-            <div class="setting-row" onclick="openTimerModal()">
-                <span style="font-size: 1.2rem;" id="mainTimerIcon">🚫</span>
-                <div style="margin-right: 10px;">
-                    <b style="font-size: 0.7rem; display: block;">المؤقت</b>
-                    <span style="font-size: 0.55rem; color: #888;" id="mainTimerText">بدون</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="bottom-section">
-        <div class="teams-grid">
-            <div class="team-box blue-box">
-                <div class="box-title">OPERATIVE</div>
-                <div class="player-slot-container" id="blue-operative"></div>
-                <button class="join-btn" id="btn-blue-operative" onclick="joinTeam('blue-operative')">أنضمام</button>
-            </div>
-            <div class="team-box red-box">
-                <div class="box-title">OPERATIVE</div>
-                <div class="player-slot-container" id="red-operative"></div>
-                <button class="join-btn" id="btn-red-operative" onclick="joinTeam('red-operative')">أنضمام</button>
-            </div>
-            <div class="team-box blue-box">
-                <div class="box-title">SPYMASTER</div>
-                <div class="player-slot-container" id="blue-spymaster"></div>
-                <button class="join-btn" id="btn-blue-spymaster" onclick="joinTeam('blue-spymaster')">أنضمام</button>
-            </div>
-            <div class="team-box red-box">
-                <div class="box-title">SPYMASTER</div>
-                <div class="player-slot-container" id="red-spymaster"></div>
-                <button class="join-btn" id="btn-red-spymaster" onclick="joinTeam('red-spymaster')">أنضمام</button>
-            </div>
-        </div>
-        <div class="footer">
-            <button class="start-btn" id="startBtn" onclick="handleStartGame()">بدء اللعبة</button>
-        </div>
-    </div>
 </div>
 
 <script type="module">
@@ -1073,21 +1073,20 @@ async function vacuumCleaner() {
         if (!snapshot.exists()) return;
 
         const now = Date.now();
-        const TEN_MINUTES = 10 * 60 * 1000;
+        const TEN_MINUTES = 10000;
         const rooms = snapshot.val();
 
         for (const id in rooms) {
             const room = rooms[id];
-            // حذف الغرفة إذا: مر 10 دقائق + اللعبة لم تبدأ
+            
+            // إذا مر 10 دقائق على آخر نشاط (Last Activity)
             if (room.lastActivity && (now - room.lastActivity > TEN_MINUTES)) {
-                if (room.status !== "started") {
-                    console.log(`تم حذف غرفة غير نشطة: ${id}`);
-                    remove(ref(db, `rooms/${id}`));
-                }
-            }
-            // حالة خاصة: إذا كانت الغرفة فارغة تماماً من حقل lastActivity (غرف قديمة)
+                console.log(`حذف الغرفة الخاملة: ${id}`);
+                await remove(ref(db, `rooms/${id}`));
+            } 
+            // حذف الغرف التالفة التي لا تحتوي على سجل نشاط أصلاً
             else if (!room.lastActivity) {
-                remove(ref(db, `rooms/${id}`));
+                await remove(ref(db, `rooms/${id}`));
             }
         }
     } catch (e) { console.error("Vacuum failed:", e); }
@@ -1096,10 +1095,11 @@ async function vacuumCleaner() {
 // نبضات القلب: تحديث نشاط الغرفة كل دقيقتين طالما اللاعب متواجد
 function startHeartbeat() {
     setInterval(() => {
-        if (hasJoined && isAdmin) { // الآدمن فقط يحدث نشاط الغرفة لتوفير البيانات
+        // الآدمن فقط هو المسؤول عن إرسال إشارة "الغرفة لا تزال قيد الاستخدام"
+        if (hasJoined && isAdmin) {
             updateRoomActivity();
         }
-    }, 120000); // كل دقيقتين
+    }, 300000); // إرسال إشارة كل 5 دقائق (أقل من الـ 10 دقائق)
 }
 
 // تشغيل المكنسة فور دخول أي شخص للرابط (حتى قبل تسجيل اسمه)
