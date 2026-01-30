@@ -602,7 +602,7 @@ function showTurnInfo(container, turn) {
    🧠 المرحلة 6 — تطبيق الحالة القادمة من Firebase
    ===================================================== */
 
-async function applyGameStateToUI() {
+function applyGameStateToUI() {
     if (!gameState) return;
 
     if (gameState.turn.phase === "spymaster") {
@@ -616,33 +616,36 @@ async function applyGameStateToUI() {
     updateUI();
 
     // جلب إعدادات المؤقت
-    const timerSnap = await get(ref(db, `rooms/${roomId}/settings/timer`));
-    const seconds = timerSnap.val();
+    get(ref(db, `rooms/${roomId}/settings/timer`)).then((snap) => {
+        const seconds = snap.val();
+        const timerDisplay = document.getElementById('lobbyDisplayTimer');
 
-    if (seconds && seconds > 0) {
-        timerDuration = seconds;
-        
-        const isMyTurn = myTeam === gameState.turn.team;
-        const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
-                          (isOperative && gameState.turn.phase === 'operative');
+        if (seconds && seconds > 0) {
+            timerDuration = seconds;
+            
+            // التحقق من دوري: هل أنا اللاعب المطلوب حالياً؟
+            const isMyTurn = myTeam === gameState.turn.team;
+            const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
+                              (isOperative && gameState.turn.phase === 'operative');
 
-        // إذا كان دوري ولم يبدأ المؤقت بعد (updatedAt غير موجود)، أقم بتحديثه الآن
-        if (isMyTurn && isMyPhase && !gameState.turn.updatedAt && isPageLoaded) {
-            await update(gameRef, { "turn/updatedAt": Date.now() + serverTimeOffset });
-            return; // onValue ستعمل مجدداً بعد التحديث
-        }
+            // إذا كنت أنا صاحب الدور ولم أرسل إشارة الجاهزية بعد
+            if (isMyTurn && isMyPhase && !gameState.turn.ready) {
+                // إخبار السيرفر أنني حملت الصفحة وجاهز لبدء وقتي
+                update(gameRef, { "turn/ready": true, "turn/updatedAt": Date.now() + serverTimeOffset });
+            }
 
-        // تشغيل المؤقت فقط إذا كان هناك وقت بداية مسجل
-        if (gameState.turn.updatedAt) {
-            startGlobalTimer(gameState.turn.updatedAt);
+            // لا يبدأ المؤقت عند الجميع إلا إذا كانت حالة الدور "ready"
+            if (gameState.turn.ready) {
+                startGlobalTimer(gameState.turn.updatedAt);
+            } else {
+                if(timerDisplay) timerDisplay.innerText = "في انتظار اللاعب...";
+            }
         } else {
-            // انتظار اللاعب صاحب الدور ليبدأ المؤقت
-            document.getElementById('lobbyDisplayTimer').innerText = "00:00";
+            if(timerDisplay) timerDisplay.style.display = 'none';
         }
-    } else {
-        document.getElementById('lobbyDisplayTimer').style.display = 'none';
-    }
+    });
 }
+
 /* =====================================================
    📜 المرحلة 7 — رسم سجل اللعبة من Firebase
    ===================================================== */
@@ -753,13 +756,14 @@ async function sendClue() {
     const me = playersCache[playerId];
 
 await update(gameRef, {
-        clue: { word: clueValue, count },
-        turn: { 
-            team: gameState.turn.team, 
-            phase: "operative",
-            updatedAt: Date.now() // إضافة هذا السطر
-        }
-    });
+    clue: { word: clueValue, count },
+    turn: { 
+        team: gameState.turn.team, 
+        phase: "operative",
+        ready: false, // اجعل العميل يحمل الصفحة أولاً قبل بدء وقته
+        updatedAt: null 
+    }
+});
 
     await push(ref(db, `rooms/${roomId}/game/log`), {
         type: "clue",
@@ -863,11 +867,12 @@ window.confirmSelection = async function(i) {
 
     // 🔄 تغيير الدور
 if (nextTurn) {
-        updates.turn = { 
-            team: nextTurn, 
-            phase: "spymaster",
-            updatedAt: null // المؤقت سيبدأ عند ظهور الخصم
-        };
+updates.turn = { 
+        team: nextTurn, 
+        phase: "spymaster",
+        ready: false, 
+        updatedAt: null 
+    };
         updates.clue = { word: null, count: null };
         guessesThisTurn = 0;
         selectedCards.clear();
@@ -885,27 +890,24 @@ if (nextTurn) {
    ===================================================== */
 
 async function endTurn() {
-    const input = document.getElementById('clueInput');
     if (!gameState) return;
 
     const enemy = myTeam === "blue" ? "red" : "blue";
 
-    // منطق انتقال الدور الذي طلبته:
-    // الإوبريتف ينقل الدور لسباي ماستر الخصم
-    // السباي ماستر إذا انتهى وقته (أو أرسل تلميح) ينتقل للأوبريتف في نفس الفريق أو الخصم حسب الحالة
-    // هنا نوحد النهاية بأنها دائماً تبدأ دور الخصم "سباي ماستر" بوقته الكامل
     await update(gameRef, {
         turn: { 
             team: enemy, 
             phase: "spymaster",
-            updatedAt: null // مهم جداً: المؤقت لن يبدأ حتى يفتح الخصم الصفحة
+            ready: false, // مهم جداً: تعيين غير جاهز حتى يحمل الخصم صفحته
+            updatedAt: null // سيتم تحديثه عند جاهزية اللاعب القادم
         },
         clue: { word: null, count: null }
     });
 
     guessesThisTurn = 0;
     selectedCards.clear();
-    if (input) input.value = '';
+    const input = document.getElementById('clueInput');
+    if(input) input.value = '';
 }
 
 /* =====================================================
@@ -926,9 +928,6 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     ⏱️ المرحلة 9 — مؤقت الدور العالمي
    ===================================================== */
 
- const alertSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-
-
 function startGlobalTimer(serverStartTime) {
     if (timerInterval) clearInterval(timerInterval);
 
@@ -936,12 +935,10 @@ function startGlobalTimer(serverStartTime) {
     if (!timerDisplay) return;
     timerDisplay.style.display = 'flex';
 
-    const syncNow = Date.now() + serverTimeOffset;
-    const fixedStart = serverStartTime || syncNow;
-
     timerInterval = setInterval(() => {
         const nowCorrected = Date.now() + serverTimeOffset;
-        const elapsed = Math.ceil((nowCorrected - fixedStart) / 1000);
+        // حساب الوقت بناءً على لحظة الجاهزية المسجلة
+        const elapsed = Math.floor((nowCorrected - serverStartTime) / 1000);
         let remaining = Math.max(timerDuration - elapsed, 0);
 
         const mins = Math.floor(remaining / 60);
@@ -952,19 +949,21 @@ function startGlobalTimer(serverStartTime) {
             clearInterval(timerInterval);
             timerDisplay.classList.remove('timer-pulse');
 
+            // منطق إنهاء الدور عند انتهاء الوقت
             const isMyTurn = myTeam === gameState.turn.team;
-            const isMyPhase =
-                (isSpy && gameState.turn.phase === 'spymaster') ||
-                (isOperative && gameState.turn.phase === 'operative');
+            const isMyPhase = (isSpy && gameState.turn.phase === 'spymaster') || 
+                              (isOperative && gameState.turn.phase === 'operative');
 
-            if (isMyTurn && isMyPhase) endTurn();
-            return;
-        }
+            if (isMyTurn && isMyPhase) {
+                // نادِ دالة إنهاء الدور التي تنقل الدور لخصمك (قائد الفريق الآخر)
+                endTurn(); 
+            }
+        } 
 
-        if (remaining <= 10) {
+        // وميض بصري فقط في آخر 10 ثوانٍ (بدون صوت)
+        if (remaining <= 10 && remaining > 0) {
             timerDisplay.style.color = "#ff4d4d";
             timerDisplay.classList.add('timer-pulse');
-            if (remaining <= 5) alertSound.play().catch(() => {});
         } else {
             timerDisplay.style.color = "white";
             timerDisplay.classList.remove('timer-pulse');
