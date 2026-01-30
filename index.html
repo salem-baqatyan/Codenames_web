@@ -1073,7 +1073,7 @@ async function vacuumCleaner() {
         if (!snapshot.exists()) return;
 
         const now = Date.now();
-        const TEN_MINUTES = 10000;
+        const TEN_MINUTES = 10 * 60 * 1000;
         const rooms = snapshot.val();
 
         for (const id in rooms) {
