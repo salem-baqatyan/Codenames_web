@@ -140,31 +140,16 @@
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
     /* Card Reveal Logic */
-/* التعديل الجديد لأنيميشن التقويم */
     .card-reveal-img {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         object-fit: cover; z-index: 5; border-radius: 3px;
-        opacity: 0; pointer-events: none;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        transform-origin: top; /* لكي يسقط من الأعلى */
-        transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
-        transform: translateY(-100%) rotateX(-20deg); /* يبدأ من الأعلى خارج الكادر */
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+        opacity: 0; pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        transform-origin: top; will-change: transform;
     }
-
-    /* عندما يتم كشف البطاقة - تسقط فوق الكلمة */
-    .card-revealed .card-reveal-img { 
-        opacity: 1; 
-        pointer-events: auto; 
-        transform: translateY(0) rotateX(0deg); 
-    }
-
-    /* حركة الاختلاس: ترفع طرف الصورة لرؤية الكلمة بالأسفل */
-    .card-peeking .card-reveal-img { 
-        transform: translateY(-60%) rotateX(45deg) scale(0.9); 
-        z-index: 10; 
-        box-shadow: 0 15px 30px rgba(0,0,0,0.8);
-    }
-        .card-revealed { cursor: default; }
+    .card-revealed .card-reveal-img { opacity: 1; pointer-events: auto; }
+    .card-peeking .card-reveal-img { transform: rotateX(-55deg) translateY(-5px); z-index: 6; }
+    .card-revealed { cursor: default; }
 
     /* 8. Control Area (.control-area) */
     .control-area { height: 65px; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
@@ -490,9 +475,10 @@ function renderGrid() {
             card.type === "killer" ? "card-black" :
             "card-brown"; // للنوع neutral
 
-// الكلاسات الأساسية + كلاس الكشف (الذي سيفعل أنيميشن السقوط)
+        // تعيين الكلاسات للـ div الرئيسي
+        // لاحظ إضافة visualClass دائماً للتحكم في الألوان الخلفية أو الحدود
         div.className = `card ${isHidden ? 'card-hidden' : visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
-                div.id = `card-${i}`;
+        div.id = `card-${i}`;
 
         div.innerHTML = `
             <div class="confirm-btn" id="confirm-${i}" 
@@ -820,37 +806,42 @@ window.confirmSelection = async function(i) {
 
     const card = gameState.board[i];
     if (card.revealed) return;
-    if (!selectedCards.has(i)) return;
 
-    // 1. إضافة كلاس الأنيميشن محلياً فوراً ليشعر اللاعب بالسرعة
-    const cardEl = document.getElementById(`card-${i}`);
-    cardEl.classList.add('card-revealed'); 
+    // 🧠 منع إعادة تأكيد نفس البطاقة
+    if (!selectedCards.has(i)) return;
 
     const me = playersCache[playerId];
     const enemy = myTeam === "blue" ? "red" : "blue";
+
     let nextTurn = null;
     let winner = null;
+
     const updates = {};
     updates[`board/${i}/revealed`] = true;
 
     let remaining = { ...gameState.remaining };
 
+    // 🔥 منطق البطاقة
     if (card.type === myTeam) {
         remaining[myTeam]--;
-    } else if (card.type === enemy) {
+    }
+    else if (card.type === enemy) {
         remaining[enemy]--;
         nextTurn = enemy;
-        if(input) input.value = '';
-    } else if (card.type === "neutral") {
+        input.value = '';
+
+    }
+    else if (card.type === "neutral") {
         nextTurn = enemy;
-        if(input) input.value = '';
-    } else if (card.type === "killer") {
+        input.value = '';
+    }
+    else if (card.type === "killer") {
         winner = enemy;
     }
 
     updates.remaining = remaining;
 
-    // 2. تحديث السجل
+    // 📝 إرسال إلى السجل (LOG)
     await push(ref(db, `rooms/${roomId}/game/log`), {
         type: "guess",
         team: myTeam,
@@ -860,9 +851,13 @@ window.confirmSelection = async function(i) {
         at: Date.now()
     });
 
+    // ✅ تحديث عداد المحاولات
     guessesThisTurn++;
+
+    // 🧹 إزالة هذه البطاقة فقط من التحديد
     selectedCards.delete(i);
 
+    // ☠️ فوز مباشر
     if (winner) {
         updates.winner = winner;
         await update(gameRef, updates);
@@ -870,24 +865,26 @@ window.confirmSelection = async function(i) {
         return;
     }
 
-    if (nextTurn) {
-        updates.turn = { 
-            team: nextTurn, 
-            phase: "spymaster",
-            ready: false, 
-            updatedAt: null 
-        };
+    // 🔄 تغيير الدور
+if (nextTurn) {
+updates.turn = { 
+        team: nextTurn, 
+        phase: "spymaster",
+        ready: false, 
+        updatedAt: null 
+    };
         updates.clue = { word: null, count: null };
         guessesThisTurn = 0;
         selectedCards.clear();
     }
 
-    // الانتظار قليلاً (600ms) حتى يكتمل أنيميشن سقوط الورقة قبل تحديث الداتا
-    setTimeout(async () => {
-        await update(gameRef, updates);
-        renderGrid();
-    }, 600);
+    await update(gameRef, updates);
+
+    // 🔁 إعادة الرسم بدون فقد التحديدات الأخرى
+    renderGrid();
 };
+
+
 /* =====================================================
    🔁 إنهاء الدور يدويًا
    ===================================================== */
