@@ -350,6 +350,7 @@ let timerDuration = 0;   // المدة المختارة (30, 60, 120)
 let timerInterval = null;
 let serverTimeOffset = 0; // الفرق بين وقت المتصفح ووقت السيرفر
 let isPageLoaded = false; // يحدد ما إذا كان اللاعب الحالي قد حمل الصفحة بالكامل
+let peekingCards = new Set(); // لتخزين أرقام البطاقات التي تم تفعيل البيك لها محلياً
 
 /* ---------- تحميل الصور (كما في كودك الأصلي) ---------- */
 const allImagesToPreload = [
@@ -504,7 +505,6 @@ function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
     
-    // حفظ البطاقات التي كانت مكشوفة بالفعل قبل الرندر الجديد
     const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
 
     grid.innerHTML = '';
@@ -516,6 +516,7 @@ function renderGrid() {
 
         const isHidden = !card.revealed && !isSpy && !isSpectator;
         const isSelected = selectedCards.has(i);
+        const isPeeking = peekingCards.has(i); // هل اللاعب فاتح البيك لهذه البطاقة؟
 
         const visualClass =
             card.type === "blue" ? "card-blue" :
@@ -524,7 +525,8 @@ function renderGrid() {
             "card-brown";
 
         div.id = cardId;
-div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+        // أضفنا التحقق من isPeeking هنا في الكلاسات
+        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
         
         if (isHidden) div.classList.add('card-hidden');
         
@@ -549,16 +551,22 @@ div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${i
         grid.appendChild(div);
     });
 }
+
 /* =====================================================
    🖼️ Peek
    ===================================================== */
 
 window.togglePeek = function(i, event) {
     event.stopPropagation();
-    const cardEl = document.getElementById(`card-${i}`);
-    if (gameState.board[i].revealed) {
-        cardEl.classList.toggle('card-peeking');
+    if (!gameState.board[i].revealed) return; // البيك يعمل فقط للبطاقات المكشوفة
+
+    if (peekingCards.has(i)) {
+        peekingCards.delete(i);
+    } else {
+        peekingCards.add(i);
     }
+    
+    renderGrid(); // إعادة الرسم لتطبيق الكلاس الجديد والحفاظ عليه
 };
 
 /* =====================================================
