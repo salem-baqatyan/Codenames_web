@@ -140,43 +140,48 @@
     .card-hidden { background: #fbe0c3 !important; } .card-hidden .card-main-body { background: #f7cda3 !important; border-color: #9a7452 !important; } .card-hidden .bottom-box { background: #9a7452 !important; border-color: #fbe0c3 !important; }
     
     /* Card Reveal Logic */
-/* 7. Card Reveal Logic (Calendar Style) */
+/* 7. Card Reveal Logic (Fixed Calendar Style) */
     .card-reveal-img {
         position: absolute;
-        top: -100%; /* تبدأ من خارج الكارت من الأعلى */
+        top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
         z-index: 5;
         border-radius: 3px;
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         opacity: 0;
         pointer-events: none;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         transform-origin: top;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* أنيميشن سقوط ورقة التقويم عند الكشف */
-    .card-revealed .card-reveal-img {
+    /* أنيميشن السقوط للبطاقة التي تُكشف "لأول مرة" فقط */
+    .card-revealed:not(.already-revealed) .card-reveal-img {
         opacity: 1;
-        top: 0; /* تسقط لتغطي الكلمة */
         pointer-events: auto;
-        animation: dropCalendar 0.6s ease-out forwards;
+        animation: dropCalendarInner 0.5s ease-out forwards;
     }
 
-    @keyframes dropCalendar {
-        0% { transform: translateY(-20px) rotateX(-30deg); opacity: 0; }
+    /* البطاقات التي كُشفت سابقاً تظل ثابتة بدون أنيميشن */
+    .already-revealed .card-reveal-img {
+        opacity: 1;
+        pointer-events: auto;
+        top: 0;
+    }
+
+    @keyframes dropCalendarInner {
+        0% { transform: translateY(-100%) rotateX(-20deg); opacity: 0; }
         100% { transform: translateY(0) rotateX(0deg); opacity: 1; }
     }
 
-    /* أنيميشن الاختلاس: يرفع الورقة من الأسفل للأعلى (مثل التقويم) */
+    /* حركة البييك (الاختلاس) */
     .card-peeking .card-reveal-img {
-        transform: rotateX(-75deg) translateY(-10px) scale(0.9);
+        transform: rotateX(-55deg) translateY(-5px) !important;
         z-index: 10;
-        box-shadow: 0 20px 30px rgba(0,0,0,0.7);
     }
-        .card-revealed { cursor: default; }
+            .card-revealed { cursor: default; }
 
     /* 8. Control Area (.control-area) */
     .control-area { height: 65px; background: #222; border-top: 1px solid #444; padding: 5px 15px; display: flex; align-items: center; flex-shrink: 0; }
@@ -485,11 +490,16 @@ function renderPlayersPanel() {
 function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
+    
+    // حفظ البطاقات التي كانت مكشوفة بالفعل قبل الرندر الجديد
+    const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
+
     grid.innerHTML = '';
 
     Object.entries(gameState.board).forEach(([i, card]) => {
         i = Number(i);
         const div = document.createElement('div');
+        const cardId = `card-${i}`;
 
         const isHidden = !card.revealed && !isSpy && !isSpectator;
         const isSelected = selectedCards.has(i);
@@ -500,11 +510,15 @@ function renderGrid() {
             card.type === "killer" ? "card-black" :
             "card-brown";
 
-        // أضفنا logic بسيط هنا: إذا كانت مكشوفة، نضع كلاس revealed لتشغيل أنيميشن السقوط
+        div.id = cardId;
         div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+        
         if (isHidden) div.classList.add('card-hidden');
         
-        div.id = `card-${i}`;
+        // إذا كانت البطاقة مكشوفة بالفعل في الرندر السابق، نمنع تكرار الأنيميشن
+        if (card.revealed && existingRevealed.includes(cardId)) {
+            div.classList.add('already-revealed');
+        }
 
         div.innerHTML = `
             <div class="confirm-btn" id="confirm-${i}" 
@@ -523,7 +537,6 @@ function renderGrid() {
         grid.appendChild(div);
     });
 }
-
 /* =====================================================
    🖼️ Peek
    ===================================================== */
@@ -531,7 +544,6 @@ function renderGrid() {
 window.togglePeek = function(i, event) {
     event.stopPropagation();
     const cardEl = document.getElementById(`card-${i}`);
-    // لا يمكن الاختلاس إلا إذا كانت البطاقة مكشوفة (الصورة مغطية للكلمة)
     if (gameState.board[i].revealed) {
         cardEl.classList.toggle('card-peeking');
     }
