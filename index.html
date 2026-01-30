@@ -317,7 +317,7 @@
                     </ul>
                     <div class="log-row row-red">
                         <div class="log-clue-item log-clue-red">
-                            <img src="img/avatar_snow_man.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
+                            <img src="img/avatar/snowman.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
                             <div class="log-text-clue">حيوان</div>
                             <div class="log-num-circle">3</div>
                         </div>
@@ -566,6 +566,7 @@
     const settingsRef = ref(db, `rooms/${roomId}/settings`);
 
 const avatarImages = [
+"img/avatar/snowman.webp",
 "img/avatar/confused_woman.webp",
 "img/avatar/cool_girl.webp",
 "img/avatar/delivery_boy.webp",
@@ -574,7 +575,6 @@ const avatarImages = [
 "img/avatar/photographer.webp",
 "img/avatar/pizza_guy.webp",
 "img/avatar/reader.webp",
-"img/avatar/snowman.webp",
 "img/avatar/surprised_man.webp",
 ];
 
@@ -715,7 +715,7 @@ function showToast(message) {
     let myData = {
         id: playerId,
         name: "",
-        avatar: "img/avatar_snow_man.webp",
+        avatar: "img/avatar/snowman.webp",
         team: "spectators-list",
         joinedAt: Date.now()
     };
@@ -854,7 +854,7 @@ window.changeTimer = (val) => {
     updateRoomActivity();
 };
     
-function generateBoard() {
+function generateBoard(startingTeam) {
 const words = [
   "أسد","نمر","ذئب","ثعلب","حصان","نسر","غراب","سمكة","قرش","حوت",
   "شمس","قمر","نجم","كوكب","مجرة","ظل","نور","ليل","نهار","برق",
@@ -880,10 +880,19 @@ const words = [
     const shuffledWords = [...words];
     shuffleArray(shuffledWords);
     
-    const types = ["killer", ...Array(8).fill("red"), ...Array(8).fill("blue"), ...Array(7).fill("neutral")];
-    types.push("blue"); // الفريق البادئ
+    // تحديد عدد بطاقات كل فريق بناءً على الفريق البادئ
+    const redCount = (startingTeam === "red") ? 9 : 8;
+    const blueCount = (startingTeam === "blue") ? 9 : 8;
 
-    // خلط الأنواع
+    // بناء مصفوفة الأنواع
+    const types = [
+        "killer", 
+        ...Array(redCount).fill("red"), 
+        ...Array(blueCount).fill("blue"), 
+        ...Array(7).fill("neutral")
+    ];
+
+    // خلط الأنواع لتوزيعها عشوائياً على الشبكة
     shuffleArray(types);
 
     const board = [];
@@ -893,32 +902,37 @@ const words = [
             word: shuffledWords[i],
             type: currentType,
             revealed: false,
-            // هنا يتم استدعاء الصورة بناءً على النوع
             visual: getNextImageFromPool(currentType) 
         });
     }
     return board;
 }
-    // --- وظيفة بدء اللعبة المحدثة ---
 window.handleStartGame = async () => {
     if (!isAdmin) return;
 
-    // 1. جلب الإعدادات الحالية (Mode)
     const settingsSnap = await get(settingsRef);
     const currentMode = settingsSnap.exists() ? settingsSnap.val().mode : 'online';
 
     const gameRef = ref(db, `rooms/${roomId}/game`);
     const snap = await get(gameRef);
 
-    // 2. إنشاء اللعبة إذا لم تكن موجودة
     if (!snap.exists()) {
+        // 1. اختيار الفريق البادئ عشوائياً
+        const firstTeam = Math.random() < 0.5 ? "red" : "blue";
+
+        // 2. توليد اللوحة بناءً على الفريق البادئ (تمرير المتغير للدالة)
+        const newBoard = generateBoard(firstTeam);
+
         await set(gameRef, {
-            board: generateBoard(),
-            turn: { team: "red", phase: "spymaster", updatedAt: Date.now() },
+            board: newBoard,
+            turn: { team: firstTeam, phase: "spymaster", updatedAt: Date.now() },
             scores: { red: 0, blue: 0 },
-            remaining: { red: 8, blue: 9 }
+            remaining: firstTeam === "red"
+                ? { red: 9, blue: 8 }
+                : { red: 8, blue: 9 }
         });
     }
+
 
     // 3. تحديث حالة الغرفة للجميع
     await update(ref(db, `rooms/${roomId}`), { status: "started" });
