@@ -708,7 +708,7 @@ function showToast(message) {
         toast.style.opacity = "0";
         toast.style.transform = "translateX(-50%) translateY(10px)";
         setTimeout(() => toast.remove(), 250);
-    }, 1800);
+    }, 2500);
 }
 
 
@@ -910,6 +910,27 @@ const words = [
 window.handleStartGame = async () => {
     if (!isAdmin) return;
 
+    // 1. جلب بيانات اللاعبين للتحقق من الأعداد
+    const playersSnap = await get(playersRef);
+    const players = playersSnap.val() || {};
+    
+    // تعريف الأدوار المطلوبة
+    const requiredRoles = [
+        'blue-operative', 
+        'blue-spymaster', 
+        'red-operative', 
+        'red-spymaster'
+    ];
+
+    // التحقق من أن كل دور مسكون بلاعب واحد على الأقل
+    const activeTeams = Object.values(players).map(p => p.team);
+    const isReady = requiredRoles.every(role => activeTeams.includes(role));
+
+    if (!isReady) {
+        showToast("⚠️لا يمكن البدء! يجب تعيين لاعب في كل دور⚠️");
+        return;
+    }
+
     const settingsSnap = await get(settingsRef);
     const currentMode = settingsSnap.exists() ? settingsSnap.val().mode : 'online';
 
@@ -917,34 +938,25 @@ window.handleStartGame = async () => {
     const snap = await get(gameRef);
 
     if (!snap.exists()) {
-        // 1. اختيار الفريق البادئ عشوائياً
         const firstTeam = Math.random() < 0.5 ? "red" : "blue";
-
-        // 2. توليد اللوحة بناءً على الفريق البادئ (تمرير المتغير للدالة)
         const newBoard = generateBoard(firstTeam);
 
         await set(gameRef, {
             board: newBoard,
             turn: { team: firstTeam, phase: "spymaster", updatedAt: Date.now() },
             scores: { red: 0, blue: 0 },
-            remaining: firstTeam === "red"
-                ? { red: 9, blue: 8 }
-                : { red: 8, blue: 9 }
+            remaining: firstTeam === "red" ? { red: 9, blue: 8 } : { red: 8, blue: 9 }
         });
     }
 
-
-    // 3. تحديث حالة الغرفة للجميع
     await update(ref(db, `rooms/${roomId}`), { status: "started" });
 
-    // 4. التوجيه بناءً على المود المختار
     if (currentMode === 'offline') {
         window.location.href = `game.html`;
     } else {
         window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
     }
 };
-
 
     onValue(playersRef, (snapshot) => {
         const players = snapshot.val();
