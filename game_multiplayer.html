@@ -312,6 +312,74 @@ function startGameManager() {
         preloadImages().then(finishLoading);
     }
 }
+/* ---------- 3. Profile Management ---------- */
+// إضافة متغيرات الحالة
+let hasJoined = false;
+let myData = {
+    id: playerId,
+    name: localStorage.getItem('codenames_playerName') || "",
+    avatar: localStorage.getItem('codenames_playerAvatar') || avatarImages[0],
+    team: "spectators-list" // الفريق الافتراضي للقادمين الجدد أثناء اللعب
+};
+
+// وظيفة تهيئة البروفايل عند تحميل الصفحة
+async function checkProfile() {
+    if (myData.name) {
+        // إذا كان لديه اسم مخزن مسبقاً، نتحقق من وجوده في الغرفة
+        const snap = await get(ref(db, `rooms/${roomId}/players/${playerId}`));
+        if (snap.exists()) {
+            document.getElementById('profileModal').style.display = 'none';
+            hasJoined = true;
+            startGameManager(); // بدء تحميل اللعبة
+        } else {
+            renderAvatars(); // اللاعب مسجل محلياً لكن ليس في الغرفة (نظهر المودال للتأكيد)
+        }
+    } else {
+        renderAvatars(); // لاعب جديد تماماً
+    }
+}
+
+// وظيفة حفظ الملف الشخصي (نفس التي في الردهة ولكن معدلة للعبة)
+window.saveProfile = async () => {
+    const nameInput = document.getElementById('nicknameInput');
+    const name = nameInput.value.trim();
+    if (!name) return alert("الرجاء إدخال اسمك");
+
+    myData.name = name;
+    localStorage.setItem('codenames_playerName', name);
+    localStorage.setItem('codenames_playerAvatar', myData.avatar);
+
+    // تسجيل اللاعب في قاعدة البيانات كجمهور
+    await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
+        id: playerId,
+        name: myData.name,
+        avatar: myData.avatar,
+        team: "spectators-list",
+        joinedAt: Date.now()
+    });
+
+    hasJoined = true;
+    document.getElementById('profileModal').style.display = 'none';
+    showToast("✅ تم دخولك كجمهور");
+    startGameManager(); // ابدأ اللعبة الآن
+};
+
+// وظيفة عرض الصور في المودال
+function renderAvatars() {
+    const container = document.getElementById('avatarContainer');
+    container.innerHTML = '';
+    avatarImages.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'avatar-option' + (myData.avatar === src ? ' selected' : '');
+        img.onclick = () => {
+            document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
+            img.classList.add('selected');
+            myData.avatar = src;
+        };
+        container.appendChild(img);
+    });
+}
 
 
 /* ---------- 4. Utility Helpers ---------- */
@@ -728,7 +796,7 @@ async function endTurn() {
 
 
 /* ---------- Final: Bootstrap ---------- */
-startGameManager();
+checkProfile();
 
 </script>
 </body>

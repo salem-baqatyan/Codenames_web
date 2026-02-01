@@ -501,23 +501,32 @@ async function renderAvatars() {
 
 window.saveProfile = async () => {
     const name = document.getElementById('nicknameInput').value.trim();
-    if (!name) return alert("الرجاء إدخال اسمك");
+    if (!name) return showToast("الرجاء إدخال اسمك");
     myData.name = name;
     hasJoined = true;
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
     const roomSnap = await get(roomRef);
+    
     if (!roomSnap.exists()) {
-        let typeParam = new URLSearchParams(window.location.search).get('type') || 'public';
+        let typeParam = urlParams.get('type'); 
+        
+        const visibility = (typeParam === 'private') ? 'private' : 'public';
+
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
-            settings: { mode: 'online', timer: 0, visibility: typeParam } 
-        });    
+            settings: { 
+                mode: 'online', 
+                timer: 0, 
+                visibility: visibility 
+            } 
+        });     
     } else {
         updateRoomActivity();
     }
+    
     await set(myPlayerRef, { ...myData, lastActive: now });
     startHeartbeat();
 };
@@ -603,6 +612,12 @@ function updateServer() {
 
 async function vacuumCleaner() {
     const allRoomsRef = ref(db, `rooms`);
+    get(roomRef).then(snap => {
+        if (!snap.exists()) {
+            const typeParam = urlParams.get('type') || 'public';
+            update(roomRef, { "settings/visibility": typeParam });
+        }
+    });
     try {
         const snapshot = await get(allRoomsRef);
         if (!snapshot.exists()) return;
