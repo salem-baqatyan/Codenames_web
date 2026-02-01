@@ -1,231 +1,0 @@
-    <div class="modal-overlay" id="rulesModal">
-        <div class="settings-modal">
-            <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
-            <div class="modal-header">كيفية اللعب</div>
-            <div class="rules-intro">
-                كودنايمز هي لعبة تعتمد على ربط الكلمات والعمل الجماعي بين فريقين: <b>الأزرق</b> و <b>الأحمر</b>. يحاول كل فريق تخمين كلماتهم السرية قبل الفريق الآخر.
-            </div>
-
-            <div id="rulesAccordion">
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎮 الإعداد والأدوار</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>ينقسم اللاعبون إلى فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</li>
-                            <li>يجب أن يحتوي كل فريق على <b>جاسوس (Spymaster)</b> واحد على الأقل و<b>عميل (Operative)</b>.</li>
-                            <li>يتم عرض شبكة 5×5 مكونة من 25 بطاقة كودنايمز على الطاولة.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕵️ قادة الجواسيس</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
-                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة</b> و <b>رقم</b> لمساعدة فريقه.</li>
-                        </ul>
-                        <div class="log-row row-red">
-                                <div class="log-clue-item log-clue-red">
-                                <img src="img/avatar_snow_man.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
-                                <div class="log-text-clue">حيوان</div>
-                                <div class="log-num-circle">3</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🙋‍♂️ العملاء (Operatives)</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>لا يعرف العملاء هويات البطاقات مسبقاً.</li>
-                            <li>يعملون معاً لتخمين الكلمات الصحيحة بناءً على تلميح قائد الجواسيس.</li>
-                            <li>يجب عليهم تجنب كلمات الفريق المنافس، وبطاقة الاغتيال.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🟦 أنواع البطاقات</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>يتم تعيين كل كلمة في الشبكة سرياً لواحد من أربعة أصناف:</p>
-                        <ul>
-                            <li><b>بطاقات زرقاء:</b> يجب على الفريق الأزرق العثور عليها.</li>
-                            <li><b>بطاقات حمراء:</b> يجب على الفريق الأحمر العثور عليها.</li>
-                            <li><b>المارة الأبرياء:</b> بطاقات محايدة تنهي الدور فقط.</li>
-                            <li><b>المغتال (البطاقة السوداء):</b> إذا لمستها، يخسر فريقك فوراً!</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>💬 إعطاء التلميحات</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>عندما يأتي دورك كقائد جاسوس:</p>
-                        <ol>
-                            <li>ابحث عن كلمة واحدة تربط أكبر عدد ممكن من بطاقات فريقك.</li>
-                            <li>أضف رقماً يوضح عدد الكلمات المرتبطة بهذا التلميح.</li>
-                            <li><b>تنبيه:</b> لا يصح إعطاء تلميح هو جزء من كلمة موجودة على الشبكة!</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🧠 التلميحات الصالحة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يجب أن يتعلق التلميح <b>بمعنى</b> الكلمات وليس بطريقة كتابتها أو موقعها.</li>
-                            <li>لا يجوز استخدام ترجمات للكلمات الموجودة بلغات أخرى.</li>
-                            <li>إذا لم تكن متأكداً من قانونية التلميح، اسأل القائد المنافس سرياً.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕹️ التخمين (للعملاء)</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>بعد سماع التلميح، يقوم العملاء بـ:</p>
-                        <ol>
-                            <li>مناقشة الكلمات المحتملة فيما بينهم.</li>
-                            <li>تحديد اختيارهم عن طريق الضغط على الكلمة.</li>
-                            <li>إذا كان التخمين صحيحاً، يمكنك الاستمرار بتخمين كلمة إضافية (الرقم المذكور + 1).</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔢 أرقام التلميحات الخاصة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>التلميح 0:</b> يعني أن لا توجد أي كلمة من كلمات فريقك ترتبط بالتلميح (يُستخدم لإبعاد الفريق عن خطر المغتال).</li>
-                            <li><b>التلميح لا نهائي (∞):</b> يسمح للعملاء بالتخمين بلا حدود حتى يخطئوا أو يتوقفوا.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔄 تدفق اللعبة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>تنتهي نوبة الفريق في الحالات التالية:</p>
-                        <ul>
-                            <li>اختيار بطاقة "مار بريء" أو بطاقة الفريق المنافس.</li>
-                            <li>استنفاد عدد المحاولات المسموح بها.</li>
-                            <li>اختيار الفريق التوقف طواعيةً لعدم المخاطرة.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎯 الفوز والخسارة</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>الفوز:</b> الفريق الذي ينجح في كشف جميع بطاقاته أولاً هو الفائز.</li>
-                            <li><b>الخسارة الفورية:</b> الفريق الذي يلمس بطاقة "المغتال" الأسود يخسر اللعبة فوراً مهما كانت نتيجته.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🥳 نصائح ختامية</span>
-                        <span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>كودنايمز لعبة اجتماعية؛ حافظ على روح المنافسة الممتعة.</li>
-                            <li>كقائد جاسوس، حاول الحفاظ على "وجه البوكر" ولا تعطي أي إشارات جسدية.</li>
-                            <li>استمتع بالتفكير الإبداعي والربط العجيب بين الكلمات!</li>
-                        </ul>
-                    </div>
-                </div>
-                
-            </div>
-
-            <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
-        </div>
-    </div>
-function toggleRulesModal(show) {
-    document.getElementById('rulesModal').style.display = show ? 'flex' : 'none';
-}
-function toggleAccordion(header) {
-    const content = header.nextElementSibling;
-    const isVisible = content.style.display === 'block';
-    
-    // إغلاق الكل أولاً
-    document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none');
-    document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
-    
-    // فتح المختار فقط
-    if (!isVisible) {
-        content.style.display = 'block';
-        header.classList.add('active');
-    }
-}
-
-        /* --- تصميم القواعد (Accordion) --- */
-        .rules-intro { font-size: 0.75rem; text-align: center; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
-        .accordion-item { margin-bottom: 8px; border-radius: 12px; overflow: hidden; }
-        .accordion-header {
-            background: var(--accordion-bg); padding: 12px 15px; display: flex; justify-content: space-between;
-            align-items: center; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 0.85rem;
-        }
-        .accordion-header:hover { background: #333; }
-        .accordion-header.active { background: var(--green-action); color: white; }
-        .accordion-content {
-            background: #1e1e1e; display: none; padding: 15px; font-size: 0.75rem; line-height: 1.6; color: #ddd;
-            border: 1px solid #333; border-top: none; border-radius: 0 0 12px 12px;
-        }
-        .accordion-content ul { padding-right: 20px; margin: 0; }
-        .accordion-content li { margin-bottom: 8px; }
-        .accordion-header span:last-child {
-            transition: transform 0.3s;
-        }
-        .accordion-header.active span:last-child {
-            transform: rotate(180deg);
-        }
-
-        .log-row { display: flex; width: 100%; align-items: center; gap: 5px; }
-        .row-blue { justify-content: flex-start; flex-direction: row-reverse; } 
-        .row-red { justify-content: flex-start; flex-direction: row; } 
-
-        .log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
-        .log-clue-blue { background: #3498db; flex-direction: row-reverse; }
-        .log-clue-red { background: #e74c3c; flex-direction: row; }
-        
-        .log-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; }
-        .log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 1rem;}
-        .log-num-circle { width: 30px; height: 30px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; flex-shrink: 0;}
-
-        .log-guess-item { display: flex; align-items: center; gap: 4px; }
-        .log-guess-text { padding: 1px 6px; border-radius: 4px; font-weight: bold; color: white; font-size: 0.55rem; }
-        .bg-blue { background: #3498db; } .bg-red { background: #e74c3c; } .bg-brown { background: #d2b48c; } .bg-black { background: #000; color: white !important; }

@@ -3,535 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Codenames Pro - Lobby</title>
-<style>
-        /* 1. Global & Root Styles */
+    <title>Codenames Pro - Home</title>
+    <style>
         :root {
-            --bg-dark: #000000;
-            --panel-bg: #1a1a1a;
-            --blue-team: #3498db;
-            --red-team: #e74c3c;
-            --green-action: #4caf50;
-            --text-gray: #aaaaaa;
-            --modal-bg: #2a2a2a;
+            --bg-dark: #000000; --panel-bg: #1a1a1a; --accent-gold: #f1c40f;
+            --green-action: #4caf50; --text-gray: #aaaaaa; --modal-bg: #2a2a2a; 
             --mobile-max-width: 450px;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        
         body { 
-            margin: 0; 
-            background-color: var(--bg-dark); 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            height: 100dvh;
-            overflow: hidden; 
+            margin: 0; background-color: var(--bg-dark); color: white; 
+            display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; 
         }
 
-        /* 2. Main Wrapper */
         .mobile-wrapper {
-            width: 100%; 
-            max-width: var(--mobile-max-width);
-            height: 100dvh; 
-            background: #000;
-            display: flex; 
-            flex-direction: column; 
-            border-left: 1px solid #333; 
-            border-right: 1px solid #333;
-            position: relative;
-            overflow: hidden;
+            width: 100%; max-width: var(--mobile-max-width); height: 100dvh; background: #000;
+            display: flex; flex-direction: column; border-left: 1px solid #333; border-right: 1px solid #333;
+            position: relative; padding: 20px;
         }
 
-/* --- ستايل نافذة القواعد المعدل --- */
-#rulesModal .settings-modal {
-    max-height: 80vh; /* تحديد أقصى ارتفاع للإطار بـ 80% من طول الشاشة */
-    display: flex;
-    flex-direction: column;
-    padding: 20px 15px 15px 15px;
-    width: 90%;
-    position: relative;
-}
+        /* --- Header Section --- */
+        .logo-section { text-align: center; margin-top: 20px; margin-bottom: 30px; }
+        .logo-title { font-size: 2.2rem; font-weight: 900; letter-spacing: 2px; color: var(--accent-gold); text-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
+        .logo-subtitle { color: var(--text-gray); font-size: 0.8rem; margin-top: 5px; }
 
-/* حاوية التمرير الخاصة بالمحتوى */
-#rulesAccordion {
-    flex: 1; /* يأخذ المساحة المتبقية */
-    overflow-y: auto; /* تفعيل السكرول العمودي */
-    padding-left: 5px; /* مساحة بسيطة لشريط التمرير */
-    margin-bottom: 10px;
-}
-
-/* تخصيص شكل شريط التمرير (اختياري لجمالية التصميم) */
-#rulesAccordion::-webkit-scrollbar {
-    width: 4px;
-}
-#rulesAccordion::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 10px;
-}
-
-/* بقية الستايلات الخاصة بك */
-.rules-intro { font-size: 0.75rem; text-align: center; color: #ccc; margin-bottom: 15px; line-height: 1.4; flex-shrink: 0; }
-.accordion-item { margin-bottom: 8px; border-radius: 12px; overflow: hidden; flex-shrink: 0; }
-.accordion-header {
-    background: var(--accordion-bg, #252525); padding: 12px 15px; display: flex; justify-content: space-between;
-    align-items: center; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 0.85rem;
-}
-.accordion-header:hover { background: #333; }
-.accordion-header.active { background: var(--green-action); color: white; }
-.accordion-content {
-    background: #1e1e1e; display: none; padding: 15px; font-size: 0.75rem; line-height: 1.6; color: #ddd;
-    border: 1px solid #333; border-top: none; border-radius: 0 0 12px 12px;
-}
-.accordion-content ul { padding-right: 20px; margin: 0; }
-.accordion-content li { margin-bottom: 8px; }
-.accordion-header span:last-child { transition: transform 0.3s; }
-.accordion-header.active span:last-child { transform: rotate(180deg); }
-
-.close-icon { position: absolute; top: 15px; left: 15px; font-size: 1.2rem; cursor: pointer; color: #888; z-index: 10; }
-.modal-header { flex-shrink: 0; margin-bottom: 10px; text-align: center; }
-
-.close-modal-btn { width: 100%; background: #444; color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
-
-/* ستايلات الـ Log */
-.log-row { display: flex; width: 100%; align-items: center; gap: 5px; margin-top: 10px; }
-.row-red { justify-content: flex-start; flex-direction: row; } 
-.log-clue-item { display: flex; align-items: center; gap: 4px; border-radius: 5px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.2); width: 100%; }
-.log-clue-red { background: #e74c3c; }
-.log-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; }
-.log-text-clue { font-weight: bold; color: black; background: white; border-radius: 3px; padding: 1px 4px; width: 100%; text-align: center; font-size: 1rem; }
-.log-num-circle { width: 30px; height: 30px; background: white; border-radius: 50%; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; flex-shrink: 0; } 
-/* 3. Modals & Overlays */
-        .modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .settings-modal {
-            width: 90%; max-height: 85%; background: var(--modal-bg); border-radius: 20px; padding: 20px;
-            border: 1px solid #444; position: relative;
-        }
-        /* Modal Header & Inputs */
-        #avatarContainer {
-            display: grid; /* استخدام نظام الشبكة */
-            grid-template-columns: repeat(5, 1fr); /* إنشاء 5 أعمدة متساوية */
-            gap: 10px; /* المسافة بين الصور */
-            justify-items: center; /* توسيط الصور داخل الأعمدة */
-            margin-top: 15px;
-            padding: 5px;
-        }
-        .avatar-selector { display: flex; gap: 10px; overflow-x: auto; padding: 10px 5px; }
-        .avatar-option { width: 60px; height: 60px; border-radius: 50%; border: 1.5px solid var(--text-gray); cursor: pointer; transition: 0.2s; }
-        .avatar-option.selected {border: 3px solid #7ed321; transform: scale(1.1); }
-        .nickname-input { width: 100%; background: #1a1a1a; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; font-size: 1rem; outline: none; margin-top: 10px;}
-        .save-btn { width: 100%; background: var(--green-action); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1rem; }
-        .leave-btn { width: 100%; background: #c0392b; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
+        /* --- Action Panels --- */
+        .panel { background: var(--panel-bg); border-radius: 20px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; }
+        .panel-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 12px; color: #eee; display: flex; align-items: center; gap: 8px; }
         
-        /* Timer Slider Specific */
-        .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.6rem; color: #888; }
-        .active-label { color: #7ed321; font-weight: bold; }
+        .input-group { display: flex; gap: 8px; }
+        .main-input { flex: 1; background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 12px; font-size: 0.9rem; outline: none; }
+        .main-input:focus { border-color: var(--accent-gold); }
 
-        /* 4. Top Section Layout */
-        .top-section { height: 48%; display: flex; flex-direction: column; padding-bottom: 5px; }
+        .btn { border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-gold { background: var(--accent-gold); color: black; padding: 12px 20px; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 10px; width: 100%; margin-top: 10px; }
 
-        /* Top Bar & Navigation */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
-        .top-left { display: flex; gap: 8px; align-items: center; }
-        .top-right { display: flex; gap: 8px; align-items: center; }
-        .top-timer {
-            color: white; 
-            font-size: 1.5rem; 
-            font-weight: 900;
-            font-family: 'Courier New', Courier, monospace; 
-            position: absolute;
-            left: 50%; 
-            transform: translateX(-50%);
-            text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-        }
-        .icon-circle {
-            width: 40px; 
-            height: 40px; 
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            border: 0.5px solid white; 
-            cursor: pointer; 
-            color: white;
-        }
-        .btn-pill {
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid #444;
-            padding: 6px 12px; 
-            border-radius: 20px; 
-            font-size: 0.75rem;
-            display: flex; 
-            align-items: center; 
-            gap: 5px; 
-            cursor: pointer; 
-            color: white;
-        }
+        /* --- Room List Table --- */
+        .rooms-container { flex: 1; overflow-y: auto; margin-top: 5px; }
+        .rooms-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .rooms-table th { text-align: right; color: var(--text-gray); padding: 10px; border-bottom: 1px solid #333; position: sticky; top: 0; background: #000; }
+        .rooms-table td { padding: 12px 10px; border-bottom: 1px solid #222; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .status-lobby { background: #2ecc7133; color: #2ecc71; }
+        .status-game { background: #e67e2233; color: #e67e22; }
 
-        /* Spectators */
-        .spectators-section { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 0 15px; flex-shrink: 0; }
-        .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; flex-wrap: wrap;}
+        /* --- Radio Selectors --- */
+        .radio-group { display: flex; gap: 10px; margin-top: 10px; }
+        .radio-option { flex: 1; background: #000; padding: 8px; border-radius: 8px; border: 1px solid #444; text-align: center; font-size: 0.75rem; cursor: pointer; }
+        .radio-option.active { border-color: var(--green-action); color: var(--green-action); }
 
-        /* Settings Panel */
-        .settings-panel {
-            background: #1a1a1a; margin: 5px 15px; border-radius: 15px;
-            padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-        .panel-label { text-align: center; color: #888; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; }
-        
-        /* Game Mode Selection */
-        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .mode-card {
-            background: #252525; border-radius: 10px; padding: 6px;
-            display: flex; align-items: center; gap: 8px; border: 2px solid transparent; cursor: pointer;
-            transition: 0.3s;
-        }
-        .mode-card.active { border-color: #3498db; background: #1e3a5f; }
-        .mode-img { width: 30px; height: 40px; border-radius: 4px; pointer-events: none; }
-        .mode-info { pointer-events: none; }
-        .mode-info b { font-size: 0.65rem; display: block; }
-        .mode-info span { font-size: 0.55rem; color: #aaa; }
-
-        /* Timer Setting Row */
-        .setting-row {
-            background: rgba(255,255,255,0.05); border-radius: 10px;
-            margin-top: 8px; display: flex; align-items: center;
-            padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1);
-            cursor: pointer;
-        }
-
-        /* 5. Bottom Section Layout */
-        .bottom-section { height: 52%; display: flex; flex-direction: column; border-top: 1px solid #222; overflow: hidden;}
-        
-        /* Teams Grid */
-        .teams-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 10px ; min-height: 0; }
-        .team-box { border-radius: 15px; display: flex; flex-direction: column; justify-content: space-around; align-items: center; padding: 4px; border: 1.5px solid rgba(255, 255, 255, 0.3); }
-        .blue-box { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
-        .red-box { background: linear-gradient(135deg, #7b241c 0%, #e74c3c 100%); }
-        .box-title { font-size: 0.6rem; font-weight: 800; color: white; letter-spacing: 1px; }
-
-        /* Player Slots & Buttons inside Teams */
-        .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
-        .join-btn {
-            width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold;
-            color: white; background: linear-gradient(to bottom, #7ed321, #417505);
-            border: 1.5px solid #b8e986; border-radius: 15px; cursor: pointer;
-            box-shadow: 0 2px 0 #2e5a03; user-select: none; -webkit-user-select: none;
-        }
-        .join-btn.locked {
-            background: transparent !important; border: 1.5px solid #fff !important;
-            box-shadow: none !important; cursor: not-allowed; opacity: 0.7;
-        }
-
-        /* Player Appearance */
-        .player-slot { display: flex; flex-direction: column; align-items: center; position: relative; }
-        .player-avatar-wrap { width: 40px; height: 40px; position: relative; }
-        .player-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; background: #333; }
-        .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; white-space: nowrap;}
-        .player-avatar-wrap.is-admin::after {
-            content: "👑"; position: absolute; top: -12px; left: -5px; font-size: 1.1rem; transform: rotate(-20deg);
-        }
-
-        /* 6. Footer & Start Button */
-        .footer { background: #000;
-        height: 70px; 
-        padding: 10px; 
-        display: flex; 
-        align-items: center;
-        flex-shrink: 0;
-        }
-        .start-btn {
-            width: 100%; height: 45px; font-size: 1.1rem; font-weight: 900;
-            color: white; background: linear-gradient(to bottom, #7ed321, #417505);
-            border: 2px solid #b8e986; border-radius: 30px; cursor: pointer;
-            box-shadow: 0 4px 0 #2e5a03; display: none;
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
 <body>
 
 <div class="mobile-wrapper">
-    <div class="modal-overlay" id="profileModal" style="display: flex;">
-        <div class="settings-modal">
-            <div class="modal-header" id="profileHeader" style="font-weight: bold; margin-bottom: 10px;">أهلاً بك! جهز ملفك</div>
-            <div class="avatar-selector" id="avatarContainer"></div>
-            <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
-            <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
-            <button id="leaveRoomBtn" class="leave-btn" style="display: none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
+    <div class="logo-section">
+        <div class="logo-title">CODENAMES</div>
+        <div class="logo-subtitle">النسخة الاحترافية • أونلاين</div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title"><span>🔑</span> انضمام سريع</div>
+        <div class="input-group">
+            <input type="text" id="joinIdInput" class="main-input" placeholder="أدخل رمز الغرفة أو الرابط">
+            <button class="btn btn-gold" onclick="joinRoom()">انضمام</button>
         </div>
     </div>
 
-    <div class="modal-overlay" id="timerModal">
-        <div class="settings-modal">
-            <div class="modal-header">إعدادات المؤقت</div>
-            <div style="text-align:center; font-size: 3rem; margin: 10px 0;" id="modalTimerIcon">🚫</div>
-            <div style="text-align:center; font-weight:bold;" id="modalTimerText">بدون مؤقت</div>
-            <input type="range" min="0" max="3" value="0" style="width:100%; margin-top:20px;" id="timerSlider" oninput="changeTimer(this.value)">
-            <div class="slider-labels">
-                <span id="label0" class="active-label">بدون</span>
-                <span id="label1">30ث</span>
-                <span id="label2">1د</span>
-                <span id="label3">2د</span>
-            </div>
-            <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
+    <div class="panel">
+        <div class="panel-title"><span>🆕</span> إنشاء غرفة جديدة</div>
+        <div class="radio-group">
+            <div class="radio-option active" onclick="selectType(this, 'public')">عامة (Public)</div>
+            <div class="radio-option" onclick="selectType(this, 'private')">خاصة (Private)</div>
         </div>
-    </div>
-    <div class="top-section">
-        <div class="top-bar">
-            <div class="top-left">
-                <div class="icon-circle">
-                    <span id="playerCount" style="font-size: 0.8rem; font-weight: bold; margin-left: 2px;">0</span> 👤
-                </div>
-                    <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
-                </div>
-
-            <div class="top-timer" id="lobbyDisplayTimer"></div>
-
-            <div class="top-right">
-                <div class="btn-pill" onclick="toggleRulesModal(true)">📜القواعد</div>
-                <div class="icon-circle" onclick="openProfileSettings()">⚙️</div>
-            </div>
-        </div>
-
-        <div class="spectators-section">
-            <div class="box-title">الجمهور</div>
-            <div class="spectators-list" id="spectators-list"></div>
-            <button class="join-btn" style="width:100px; margin-top:5px; background:none; border:1px solid #fff;" onclick="joinTeam('spectators-list')">انضمام</button>
-        </div>
-
-        <div class="settings-panel">
-            <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
-            <div class="mode-options">
-                <div class="mode-card" id="mode-offline" onclick="setGameMode('offline')">
-                    <img src="img/local.webp" class="mode-img">
-                    <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
-                </div>
-                <div class="mode-card active" id="mode-online" onclick="setGameMode('online')">
-                    <img src="img/online.webp" class="mode-img">
-                    <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
-                </div>
-            </div>
-            <div class="setting-row" onclick="openTimerModal()">
-                <span style="font-size: 1.2rem;" id="mainTimerIcon">🚫</span>
-                <div style="margin-right: 10px;">
-                    <b style="font-size: 0.7rem; display: block;">المؤقت</b>
-                    <span style="font-size: 0.55rem; color: #888;" id="mainTimerText">بدون</span>
-                </div>
-            </div>
-        </div>
+        <button class="btn btn-outline" onclick="createRoom()">إنشاء ودخول كآدمن</button>
     </div>
 
-    <div class="bottom-section">
-        <div class="teams-grid">
-            <div class="team-box blue-box">
-                <div class="box-title">OPERATIVE</div>
-                <div class="player-slot-container" id="blue-operative"></div>
-                <button class="join-btn" id="btn-blue-operative" onclick="joinTeam('blue-operative')">أنضمام</button>
-            </div>
-            <div class="team-box red-box">
-                <div class="box-title">OPERATIVE</div>
-                <div class="player-slot-container" id="red-operative"></div>
-                <button class="join-btn" id="btn-red-operative" onclick="joinTeam('red-operative')">أنضمام</button>
-            </div>
-            <div class="team-box blue-box">
-                <div class="box-title">SPYMASTER</div>
-                <div class="player-slot-container" id="blue-spymaster"></div>
-                <button class="join-btn" id="btn-blue-spymaster" onclick="joinTeam('blue-spymaster')">أنضمام</button>
-            </div>
-            <div class="team-box red-box">
-                <div class="box-title">SPYMASTER</div>
-                <div class="player-slot-container" id="red-spymaster"></div>
-                <button class="join-btn" id="btn-red-spymaster" onclick="joinTeam('red-spymaster')">أنضمام</button>
-            </div>
-        </div>
-        <div class="footer">
-            <button class="start-btn" id="startBtn" onclick="handleStartGame()">بدء اللعبة</button>
+    <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="panel-title"><span>🌐</span> الغرف العامة المتاحة</div>
+        <div class="rooms-container">
+            <table class="rooms-table">
+                <thead>
+                    <tr>
+                        <th>الرمز</th>
+                        <th>اللاعبين</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="roomsListBody">
+                    </tbody>
+            </table>
         </div>
     </div>
-    <div class="modal-overlay" id="rulesModal">
-    <div class="settings-modal">
-        <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
-        <div class="modal-header">كيفية اللعب</div>
-        
-        <div class="rules-intro">
-            كودنايمز هي لعبة تعتمد على ربط الكلمات والعمل الجماعي بين فريقين: <b>الأزرق</b> و <b>الأحمر</b>. يحاول كل فريق تخمين كلماتهم السرية قبل الفريق الآخر.
-        </div>
-
-        <div id="rulesAccordion">
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🎮 الإعداد والأدوار</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li>ينقسم اللاعبون إلى فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</li>
-                        <li>يجب أن يحتوي كل فريق على <b>جاسوس (Spymaster)</b> واحد على الأقل و<b>عميل (Operative)</b>.</li>
-                        <li>يتم عرض شبكة 5×5 مكونة من 25 بطاقة كودنايمز على الطاولة.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🕵️ قادة الجواسيس</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
-                        <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة</b> و <b>رقم</b> لمساعدة فريقه.</li>
-                    </ul>
-                    <div class="log-row row-red">
-                        <div class="log-clue-item log-clue-red">
-                            <img src="img/avatar/snowman.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
-                            <div class="log-text-clue">حيوان</div>
-                            <div class="log-num-circle">3</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🙋‍♂️ العملاء (Operatives)</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li>لا يعرف العملاء هويات البطاقات مسبقاً.</li>
-                        <li>يعملون معاً لتخمين الكلمات الصحيحة بناءً على تلميح قائد الجواسيس.</li>
-                        <li>يجب عليهم تجنب كلمات الفريق المنافس، وبطاقة الاغتيال.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🟦 أنواع البطاقات</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <p>يتم تعيين كل كلمة في الشبكة سرياً لواحد من أربعة أصناف:</p>
-                    <ul>
-                        <li><b>بطاقات زرقاء:</b> يجب على الفريق الأزرق العثور عليها.</li>
-                        <li><b>بطاقات حمراء:</b> يجب على الفريق الأحمر العثور عليها.</li>
-                        <li><b>المارة الأبرياء:</b> بطاقات محايدة تنهي الدور فقط.</li>
-                        <li><b>المغتال (البطاقة السوداء):</b> إذا لمستها، يخسر فريقك فوراً!</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>💬 إعطاء التلميحات</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <p>عندما يأتي دورك كقائد جاسوس:</p>
-                    <ol>
-                        <li>ابحث عن كلمة واحدة تربط أكبر عدد ممكن من بطاقات فريقك.</li>
-                        <li>أضف رقماً يوضح عدد الكلمات المرتبطة بهذا التلميح.</li>
-                        <li><b>تنبيه:</b> لا يصح إعطاء تلميح هو جزء من كلمة موجودة على الشبكة!</li>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🧠 التلميحات الصالحة</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li>يجب أن يتعلق التلميح <b>بمعنى</b> الكلمات وليس بطريقة كتابتها أو موقعها.</li>
-                        <li>لا يجوز استخدام ترجمات للكلمات الموجودة بلغات أخرى.</li>
-                        <li>إذا لم تكن متأكداً من قانونية التلميح، اسأل القائد المنافس سرياً.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🕹️ التخمين (للعملاء)</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <p>بعد سماع التلميح، يقوم العملاء بـ:</p>
-                    <ol>
-                        <li>مناقشة الكلمات المحتملة فيما بينهم.</li>
-                        <li>تحديد اختيارهم عن طريق الضغط على الكلمة.</li>
-                        <li>إذا كان التخمين صحيحاً، يمكنك الاستمرار بتخمين كلمة إضافية.</li>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🔢 أرقام التلميحات الخاصة</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li><b>التلميح 0:</b> يعني أن لا توجد أي كلمة من كلمات فريقك ترتبط بالتلميح.</li>
-                        <li><b>التلميح لا نهائي (∞):</b> يسمح للعملاء بالتخمين بلا حدود حتى يخطئوا.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🔄 تدفق اللعبة</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <p>تنتهي نوبة الفريق في الحالات التالية:</p>
-                    <ul>
-                        <li>اختيار بطاقة "مار بريء" أو بطاقة الفريق المنافس.</li>
-                        <li>استنفاد عدد المحاولات أو التوقف طواعيةً.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🎯 الفوز والخسارة</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li><b>الفوز:</b> كشف جميع بطاقات فريقك أولاً.</li>
-                        <li><b>الخسارة الفورية:</b> لمس بطاقة "المغتال" الأسود.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span>🥳 نصائح ختامية</span>
-                    <span>▼</span>
-                </div>
-                <div class="accordion-content">
-                    <ul>
-                        <li>حافظ على "وجه البوكر" ولا تعطي أي إشارات جسدية.</li>
-                        <li>استمتع بالربط الإبداعي بين الكلمات!</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
-    </div>
-</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, update, runTransaction, remove, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
@@ -542,580 +113,65 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    let selectedRoomType = 'public';
 
-    let urlParams = new URLSearchParams(window.location.search);
-    let roomId = urlParams.get('r');
-
-    if (!roomId) {
-        roomId = Math.random().toString(36).substring(2, 8);
-        window.location.href = window.location.pathname + '?r=' + roomId;
-    }
-    document.getElementById('roomDisplay').innerText = "🔗 " + roomId;
-
-    let playerId = localStorage.getItem('codenames_playerId');
-    if (!playerId) {
-        playerId = Math.random().toString(36).substring(2, 6);
-        localStorage.setItem('codenames_playerId', playerId);
-    }
-
-    sessionStorage.setItem('playerId', playerId);
-
-    const roomRef = ref(db, `rooms/${roomId}`);
-    const playersRef = ref(db, `rooms/${roomId}/players`);
-    const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
-    const settingsRef = ref(db, `rooms/${roomId}/settings`);
-
-const avatarImages = [
-"img/avatar/snowman.webp",
-"img/avatar/confused_woman.webp",
-"img/avatar/cool_girl.webp",
-"img/avatar/delivery_boy.webp",
-"img/avatar/laughing.webp",
-"img/avatar/old_man.webp",
-"img/avatar/photographer.webp",
-"img/avatar/pizza_guy.webp",
-"img/avatar/reader.webp",
-"img/avatar/surprised_man.webp",
-];
-
-async function renderAvatars() {
-    const container = document.getElementById('avatarContainer');
-    if (!container) return;
-
-    container.innerHTML = '<div style="grid-column: span 5; font-size:0.7rem; color:#888;">جاري التحميل...</div>'; 
-
-    await preloadImages(); 
-
-    container.innerHTML = ''; 
-    avatarImages.forEach((src, index) => {
-        const img = document.createElement('img');
-        img.src = src;
-        img.className = 'avatar-option';
-        
-        // إذا كانت هذه الصورة هي المختارة حالياً في بيانات اللاعب
-        if (myData.avatar === src || (index === 0 && !myData.avatar)) {
-            img.classList.add('selected');
-        }
-
-        img.onclick = function() {
-            // إزالة التحديد من البقية
-            document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
-            // إضافة التحديد لهذه الصورة
-            this.classList.add('selected');
-            // تحديث رابط الصورة في بيانات اللاعب (نأخذ المسار الفعلي)
-            myData.avatar = src; 
-        };
-        container.appendChild(img);
-    });
-}
-
-// تشغيل الدالة عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', renderAvatars);
-function areImagesCached() {
-    for (let src of avatarImages) {
-        let img = new Image();
-        img.src = src;
-        if (!img.complete) return false;
-    }
-    return true;
-}
-
-// 3. دالة التحميل المسبق (تستخدم فقط عند الحاجة)
-function preloadImages() {
-    const promises = avatarImages.map(src => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.src = src;
-            img.onload = resolve;
-            img.onerror = resolve; 
-        });
-    });
-    return Promise.all(promises);
-}
-const cardVisuals = {
-    'blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-    'red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
-    'killer': ['img/card/Black.webp'],
-    'neutral': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
-};
-
-// 2. خزانات الصور والحالة السابقة
-let shuffledPools = { 'blue': [], 'red': [], 'killer': [], 'neutral': [] };
-let lastUsedImages = { 'blue': null, 'red': null, 'killer': null, 'neutral': null };
-
-// 3. دالة الخلط (Helper Function)
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-}
-
-// 4. دالة جلب الصورة الذكية
-function getNextImageFromPool(type) {
-    if (shuffledPools[type].length === 0) {
-        let newPool = [...cardVisuals[type]];
-        shuffleArray(newPool);
-        
-        // منع التكرار المتتالي عند إعادة التعبئة
-        if (newPool.length > 1 && newPool[newPool.length - 1] === lastUsedImages[type]) {
-            [newPool[newPool.length - 1], newPool[0]] = [newPool[0], newPool[newPool.length - 1]];
-        }
-        shuffledPools[type] = newPool;
-    }
-    
-    let img = shuffledPools[type].pop();
-    lastUsedImages[type] = img;
-    return img;
-}
-
-window.copyRoomLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    showToast("✅ تم نسخ رابط الغرفة!");
-};
-
-function showToast(message) {
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 25px;
-        left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        background: rgba(20, 20, 20, 0.95);
-        color: #ddd;
-        padding: 10px 18px;
-        border-radius: 14px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: 1px solid rgba(52, 152, 219, 0.6);
-        box-shadow: 0 8px 20px rgba(0,0,0,.6);
-        opacity: 0;
-        transition: all .25s ease;
-        z-index: 9999;
-        pointer-events: none;
-        backdrop-filter: blur(6px);
-    `;
-
-    document.body.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        toast.style.opacity = "1";
-        toast.style.transform = "translateX(-50%) translateY(0)";
-    });
-
-    setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(-50%) translateY(10px)";
-        setTimeout(() => toast.remove(), 250);
-    }, 2500);
-}
-
-
-    let myData = {
-        id: playerId,
-        name: "",
-        avatar: "img/avatar/snowman.webp",
-        team: "spectators-list",
-        joinedAt: Date.now()
-    };
-    let isAdmin = false;
-    let hasJoined = false;
-
-    window.selectAvatar = (el) => {
-        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
-        el.classList.add('selected');
-        myData.avatar = "img/" + el.src.split('/').pop();
+    // --- وظائف الواجهة ---
+    window.selectType = (el, type) => {
+        document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('active'));
+        el.classList.add('active');
+        selectedRoomType = type;
     };
 
-// دالة لتحديث نشاط الغرفة عند أي تغيير (مود، مؤقت، انضمام)
-function updateRoomActivity() {
-    update(roomRef, { lastActivity: Date.now() });
-}
-window.toggleRulesModal = (show) => {
-    document.getElementById('rulesModal').style.display = show ? 'flex' : 'none';
-};
-
-window.toggleAccordion = (header) => {
-    const content = header.nextElementSibling;
-    const isVisible = content.style.display === 'block';
-    
-    // إغلاق أي تبويب مفتوح حالياً
-    document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none');
-    document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
-    
-    // فتح التبويب الذي تم النقر عليه إذا كان مغلقاً
-    if (!isVisible) {
-        content.style.display = 'block';
-        header.classList.add('active');
-    }
-};
-
-window.saveProfile = async () => {
-    const name = document.getElementById('nicknameInput').value.trim();
-    if (!name) return alert("الرجاء إدخال اسمك");
-    
-    myData.name = name;
-    hasJoined = true;
-    document.getElementById('profileModal').style.display = 'none';
-
-    const now = Date.now();
-    
-    // فحص هل الغرفة موجودة؟
-    const roomSnap = await get(roomRef);
-    if (!roomSnap.exists()) {
-        // إنشاء الغرفة لأول مرة فقط هنا
-        await set(roomRef, {
-            lastActivity: now,
-            status: "lobby",
-            settings: { mode: 'online', timer: 0 } // أصبحت صفر مباشرة
-        });
-    } else {
-        // إذا كانت موجودة، نحدث نشاطها فقط
-        updateRoomActivity();
-    }
-
-    // إضافة اللاعب
-    await set(myPlayerRef, {
-        ...myData,
-        lastActive: now
-    });
-
-    startHeartbeat(); // بدء إرسال النبضات للحفاظ على الغرفة نشطة
-};
-
-function updateServer() {
-    if (!hasJoined) return;
-    set(myPlayerRef, {
-        ...myData,
-        lastActive: Date.now()
-    });
-    updateRoomActivity(); // تحديث نشاط الغرفة عند تغيير الفريق أو البيانات
-}
-
-window.openProfileSettings = () => {
-    document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
-    const input = document.getElementById('nicknameInput');
-    input.value = myData.name;
-    document.getElementById('leaveRoomBtn').style.display = 'block';
-    document.getElementById('profileModal').style.display = 'flex';
-    
-    // سطر الفوكس المضاف
-    setTimeout(() => input.focus(), 50); 
-};
-    window.leaveLobby = () => {
-        if(confirm("هل أنت متأكد من مغادرة الغرفة؟")) {
-            remove(myPlayerRef).then(() => {
-                location.href = 'index.html';
-            });
+    window.joinRoom = () => {
+        let val = document.getElementById('joinIdInput').value.trim();
+        if (!val) return;
+        // استخراج الـ ID لو كان الرابط كاملاً
+        if (val.includes('?r=')) {
+            val = new URL(val).searchParams.get('r');
         }
+        location.href = `lobby.html?r=${val}`;
     };
 
-    window.joinTeam = (teamId) => {
-        if (!hasJoined) return;
-        if (teamId === 'spectators-list') {
-            myData.team = teamId;
-            updateServer();
+    window.createRoom = () => {
+        const newId = Math.random().toString(36).substring(2, 8);
+        // هنا نقوم بتوجيه المستخدم، والـ Lobby سيتكفل بإنشاء البيانات في Firebase
+        // لكننا سنضيف باراميتر t لتحديد النوع
+        location.href = `lobby.html?r=${newId}&type=${selectedRoomType}`;
+    };
+
+    // --- جلب الغرف العامة ---
+    const roomsRef = ref(db, 'rooms');
+    onValue(roomsRef, (snapshot) => {
+        const rooms = snapshot.val();
+        const tbody = document.getElementById('roomsListBody');
+        tbody.innerHTML = '';
+
+        if (!rooms) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#666;">لا توجد غرف عامة حالياً</td></tr>';
             return;
         }
-        runTransaction(playersRef, (players) => {
-            if (players) {
-                const isTaken = Object.values(players).some(p => p.team === teamId && p.id !== playerId);
-                if (isTaken) {
-                    return;
-                }
-            }
-            if (!players) players = {};
-            if (!players[playerId]) players[playerId] = myData;
-            players[playerId].team = teamId;
-            myData.team = teamId;
-            return players;
-        });
-    };
 
-
-window.setGameMode = (mode) => {
-    if (!isAdmin) return;
-    update(settingsRef, { mode: mode });
-    updateRoomActivity(); // سجل نشاط
-};
-    window.openTimerModal = () => {
-        if (isAdmin) document.getElementById('timerModal').style.display = 'flex';
-    };
-
-window.changeTimer = (val) => {
-    if (!isAdmin) return;
-    // تحويل القيمة من السلايدر (0-3) إلى ثواني حقيقية
-    const secondsMap = [0, 30, 60, 120]; 
-    const seconds = secondsMap[val];
-    
-    // نحدث فقط رقم الثواني في قاعدة البيانات
-    update(settingsRef, { timer: seconds });
-    updateRoomActivity();
-};
-    
-function generateBoard(startingTeam) {
-const words = [
-  "أسد","نمر","ذئب","ثعلب","حصان","نسر","غراب","سمكة","قرش","حوت",
-  "شمس","قمر","نجم","كوكب","مجرة","ظل","نور","ليل","نهار","برق",
-  "جبل","وادي","نهر","بحر","محيط","جزيرة","صحراء","غابة","كهف","بركان",
-  "كتاب","قلم","ورقة","حبر","مكتبة","دفتر","رسالة","خريطة","عنوان","كلمة",
-  "باب","نافذة","مفتاح","قفل","درج","سقف","جدار","مصباح","كرسي","طاولة",
-  "سيارة","قطار","سفينة","طائرة","دراجة","محطة","ميناء","مطار","طريق","جسر",
-  "ساعة","بوصلة","مرآة","كاميرا","هاتف","حاسوب","راديو","تلفاز","بطارية","زر",
-  "تفاحة","خبز","قهوة","شاي","عسل","سكر","ملح","زيت","ليمون","تمر",
-  "ملك","تاج","سيف","درع","قلعة","جندي","قائد","علم","راية","حدود",
-  "كرة","ملعب","هدف","شبكة","حكم","مضمار","ميدالية","كأس","فريق","جولة",
-  "قلب","عين","يد","رأس","قدم","دم","عصب","ظل","صوت","صدى",
-  "نار","ماء","هواء","تراب","جليد","دخان","رماد","شرارة","موج","ريح",
-  "مفتاح","سر","لغز","شفرة","علامة","إشارة","طريق","بوابة","حديقة","جوهرة",
-  "قمر","شهاب","مدار","مسبار","قمر صناعي","مجرة","فراغ","نفق","بوابة","بعد",
-  "طفل","معلم","طبيب","تاجر","سائق","بحار","رسام","موسيقي","قاضي","شاعر",
-  "مدينة","قرية","سوق","مقهى","مكتبة","مدرسة","مستشفى","حديقة","متحف","مسرح",
-  "صندوق","حقيبة","محفظة","خزانة","رف","درج","مخزن","برميل","سلة","علبة",
-  "ذهب","فضة","حديد","نحاس","حجر","ماس","لؤلؤ","زمرد","ياقوت","بلور"
-];
-    
-    // خلط الكلمات
-    const shuffledWords = [...words];
-    shuffleArray(shuffledWords);
-    
-    // تحديد عدد بطاقات كل فريق بناءً على الفريق البادئ
-    const redCount = (startingTeam === "red") ? 9 : 8;
-    const blueCount = (startingTeam === "blue") ? 9 : 8;
-
-    // بناء مصفوفة الأنواع
-    const types = [
-        "killer", 
-        ...Array(redCount).fill("red"), 
-        ...Array(blueCount).fill("blue"), 
-        ...Array(7).fill("neutral")
-    ];
-
-    // خلط الأنواع لتوزيعها عشوائياً على الشبكة
-    shuffleArray(types);
-
-    const board = [];
-    for (let i = 0; i < 25; i++) {
-        const currentType = types[i];
-        board.push({
-            word: shuffledWords[i],
-            type: currentType,
-            revealed: false,
-            visual: getNextImageFromPool(currentType) 
-        });
-    }
-    return board;
-}
-window.handleStartGame = async () => {
-    if (!isAdmin) return;
-
-    // 1. جلب بيانات اللاعبين للتحقق من الأعداد
-    const playersSnap = await get(playersRef);
-    const players = playersSnap.val() || {};
-    
-    // تعريف الأدوار المطلوبة
-    const requiredRoles = [
-        'blue-operative', 
-        'blue-spymaster', 
-        'red-operative', 
-        'red-spymaster'
-    ];
-
-    // التحقق من أن كل دور مسكون بلاعب واحد على الأقل
-    const activeTeams = Object.values(players).map(p => p.team);
-    const isReady = requiredRoles.every(role => activeTeams.includes(role));
-
-    if (!isReady) {
-        showToast("⚠️لا يمكن البدء! يجب تعيين لاعب في كل دور⚠️");
-        return;
-    }
-
-    const settingsSnap = await get(settingsRef);
-    const currentMode = settingsSnap.exists() ? settingsSnap.val().mode : 'online';
-
-    const gameRef = ref(db, `rooms/${roomId}/game`);
-    const snap = await get(gameRef);
-
-    if (!snap.exists()) {
-        const firstTeam = Math.random() < 0.5 ? "red" : "blue";
-        const newBoard = generateBoard(firstTeam);
-
-        await set(gameRef, {
-            board: newBoard,
-            turn: { team: firstTeam, phase: "spymaster", updatedAt: Date.now() },
-            scores: { red: 0, blue: 0 },
-            remaining: firstTeam === "red" ? { red: 9, blue: 8 } : { red: 8, blue: 9 }
-        });
-    }
-
-    await update(ref(db, `rooms/${roomId}`), { status: "started" });
-
-    if (currentMode === 'offline') {
-        window.location.href = `game.html`;
-    } else {
-        window.location.href = `game_multiplayer.html?r=${roomId}&p=${playerId}`;
-    }
-};
-
-    onValue(playersRef, (snapshot) => {
-        const players = snapshot.val();
-        if (!players) return;
-        const playerList = Object.values(players);
-        document.getElementById('playerCount').innerText = playerList.length;
-        const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
-        const adminId = sorted[0].id;
-        isAdmin = (playerId === adminId);
-        document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
-        const adminElements = document.querySelectorAll('.settings-panel');
-        adminElements.forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
-        renderLobby(players, adminId);
-    });
-
-onValue(settingsRef, (snapshot) => {
-    const s = snapshot.val();
-    if (!s || s.timer === undefined) return;
-
-    // 1. تحديث وضع اللعبة
-    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-    if (s.mode) {
-        const activeCard = document.getElementById('mode-' + s.mode);
-        if(activeCard) activeCard.classList.add('active');
-    }
-
-    // 2. تحديث واجهة المؤقت بناءً على عدد الثواني (المزامنة)
-    const seconds = s.timer;
-    const displayTimer = document.getElementById('lobbyDisplayTimer');
-    const mainTimerText = document.getElementById('mainTimerText');
-    const mainTimerIcon = document.getElementById('mainTimerIcon');
-    const modalTimerText = document.getElementById('modalTimerText');
-    const modalTimerIcon = document.getElementById('modalTimerIcon');
-
-    // تحديد النصوص والأيقونات محلياً بناءً على الثواني القادمة من السيرفر
-    let label = "بدون";
-    let icon = "🚫";
-    let displayStr = "";
-
-    if (seconds > 0) {
-        icon = seconds === 30 ? "⚡" : (seconds === 60 ? "⏱️" : "🐢");
-        label = seconds < 60 ? `${seconds} ثانية` : `${seconds / 60} دقيقة`;
-        displayStr = seconds === 30 ? "00:30" : (seconds === 60 ? "01:00" : "02:00");
-        displayTimer.style.display = 'block';
-    } else {
-        displayTimer.style.display = 'none';
-    }
-
-    // تحديث العناصر في الصفحة
-    mainTimerText.innerText = label;
-    mainTimerIcon.innerText = icon;
-    modalTimerText.innerText = label;
-    modalTimerIcon.innerText = icon;
-    displayTimer.innerText = displayStr;
-
-    // تحديث السلايدر ومكان التمييز (0, 30, 60, 120) -> (0, 1, 2, 3)
-    const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
-    const sliderVal = valMap[seconds];
-    document.getElementById('timerSlider').value = sliderVal;
-
-    for(let i=0; i<4; i++) {
-        const lbl = document.getElementById('label'+i);
-        if(lbl) lbl.className = (i == sliderVal ? 'active-label' : '');
-    }
-});
-
-    function renderLobby(players, adminId) {
-        const containers = {
-            'spectators-list': document.getElementById('spectators-list'),
-            'blue-operative': document.getElementById('blue-operative'),
-            'blue-spymaster': document.getElementById('blue-spymaster'),
-            'red-operative': document.getElementById('red-operative'),
-            'red-spymaster': document.getElementById('red-spymaster')
-        };
-        Object.values(containers).forEach(c => { if(c) c.innerHTML = ''; });
-        document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => {
-            b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false;
-        });
-        Object.values(players).forEach(p => {
-            const isMe = p.id === playerId;
-            const isPlayerAdmin = p.id === adminId;
-            const html = `
-                <div class="player-slot">
-                    <div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}">
-                        <img src="${p.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321' : ''}">
-                    </div>
-                    <div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div>
-                </div>`;
-            const target = containers[p.team];
-            if (target) {
-                target.insertAdjacentHTML('beforeend', html);
-                if (p.team !== 'spectators-list') {
-                    const btn = document.getElementById('btn-' + p.team);
-                    if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
-                }
-            }
-        });
-    }
-const statusRef = ref(db, `rooms/${roomId}/status`);
-
-onValue(ref(db, `rooms/${roomId}`), async (snap) => {
-    const data = snap.val();
-    if (data && data.status === "started") {
-        const mode = data.settings ? data.settings.mode : 'online';
-        const targetPage = (mode === 'offline') ? 'game.html' : 'game_multiplayer.html';
-        window.location.href = `${targetPage}?r=${roomId}&p=${playerId}`;
-    }
-});
-// عمل فوكس تلقائي عند تحميل الصفحة لأول مرة
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        document.getElementById('nicknameInput').focus();
-    }, 100); // تأخير بسيط لضمان استقرار العناصر في المتصفح
-});
-document.getElementById('nicknameInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        saveProfile();
-    }
-});
-
-// دالة لتنظيف الغرف المهجورة
-async function vacuumCleaner() {
-    const allRoomsRef = ref(db, `rooms`);
-    try {
-        const snapshot = await get(allRoomsRef);
-        if (!snapshot.exists()) return;
-
-        const now = Date.now();
-        const TEN_MINUTES = 10 * 60 * 1000;
-        const rooms = snapshot.val();
-
-        for (const id in rooms) {
+        for (let id in rooms) {
             const room = rooms[id];
-            
-            // إذا مر 10 دقائق على آخر نشاط (Last Activity)
-            if (room.lastActivity && (now - room.lastActivity > TEN_MINUTES)) {
-                console.log(`حذف الغرفة الخاملة: ${id}`);
-                await remove(ref(db, `rooms/${id}`));
-            } 
-            // حذف الغرف التالفة التي لا تحتوي على سجل نشاط أصلاً
-            else if (!room.lastActivity) {
-                await remove(ref(db, `rooms/${id}`));
-            }
-        }
-    } catch (e) { console.error("Vacuum failed:", e); }
-}
+            // عرض الغرف العامة فقط
+            if (room.settings?.visibility === 'private') continue;
 
-// نبضات القلب: تحديث نشاط الغرفة كل دقيقتين طالما اللاعب متواجد
-function startHeartbeat() {
-    setInterval(() => {
-        // الآدمن فقط هو المسؤول عن إرسال إشارة "الغرفة لا تزال قيد الاستخدام"
-        if (hasJoined && isAdmin) {
-            updateRoomActivity();
-        }
-    }, 300000); // إرسال إشارة كل 5 دقائق (أقل من الـ 10 دقائق)
-}
+            const playersCount = room.players ? Object.keys(room.players).length : 0;
+            const statusText = room.status === 'started' ? 'في اللعبة' : 'الردهة';
+            const statusClass = room.status === 'started' ? 'status-game' : 'status-lobby';
 
-// تشغيل المكنسة فور دخول أي شخص للرابط (حتى قبل تسجيل اسمه)
-vacuumCleaner();
+            const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
+            tr.onclick = () => location.href = `lobby.html?r=${id}`;
+            tr.innerHTML = `
+                <td style="font-family:monospace; color:var(--accent-gold); font-weight:bold;">${id}</td>
+                <td>👤 ${playersCount}/10</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
 </script>
+
 </body>
 </html>
