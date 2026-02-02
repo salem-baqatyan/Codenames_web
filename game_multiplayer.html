@@ -31,18 +31,26 @@
 
         /* --- Custom Alert --- */
         .custom-alert { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.7); 
-            background: #222; border: 2px solid #555; border-radius: 15px; padding: 25px; 
-            text-align: center; z-index: 1000; color: white; display: none; width: 85%; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.9); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); 
+            background: #1a1a1a; border: 1px solid #444; border-radius: 8px; padding: 0; 
+            text-align: center; z-index: 2000; color: white; display: none; width: 85%; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8); opacity: 0; transition: transform 0.2s ease-out, opacity 0.2s;
+            overflow: hidden; user-select: none;
         }
-        .custom-alert.show-win { 
-            display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); border-color: #7ed321; box-shadow: 0 0 30px rgba(126, 211, 33, 0.4); 
+        .alert-header { 
+            background: #333; padding: 8px 12px; display: flex; justify-content: space-between; 
+            align-items: center; cursor: move; border-bottom: 1px solid #444; font-size: 0.7rem; font-weight: bold;
         }
-        .alert-btns { display: flex; flex-direction: column; gap: 10px; justify-content: center; margin-top: 20px; }
-        .alert-btn { padding: 12px 15px; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
-        .alert-btn:active { transform: scale(0.95); }
-        .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
+        .alert-body { padding: 20px; }
+        .custom-alert.show-win { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        
+        /* ألوان تعتمد على النتيجة */
+        .alert-win { border-color: #7ed321 !important; }
+        .alert-win .alert-header { background: #2e5a03; }
+        .alert-lose { border-color: #d0021b !important; }
+        .alert-lose .alert-header { background: #600; }
+
+        .alert-btns { display: flex; flex-direction: column; gap: 8px; padding: 0 20px 20px; }        .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
         .btn-cancel { background: #333; color: #bbb; border: 1px solid #444; }
 
         /* --- Top Bar --- */
@@ -369,6 +377,36 @@ function showCustomAlert(msg, showCancel = false, onOk = null, okText = "موا�
     };
 }
 
+function makeDraggable(el) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = el.querySelector(".alert-header");
+    header.onmousedown = dragMouseDown;
+    header.ontouchstart = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        pos3 = e.clientX || e.touches[0].clientX;
+        pos4 = e.clientY || e.touches[0].clientY;
+        document.onmouseup = closeDragElement;
+        document.ontouchend = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchmove = elementDrag;
+    }
+    function elementDrag(e) {
+        e = e || window.event;
+        let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        pos1 = pos3 - x; pos2 = pos4 - y;
+        pos3 = x; pos4 = y;
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+    }
+    function closeDragElement() {
+        document.onmouseup = null; document.onmousemove = null;
+        document.ontouchend = null; document.ontouchmove = null;
+    }
+}
+
 window.copyRoomLink = () => {
     navigator.clipboard.writeText(window.location.href);
     showToast("✅ تم نسخ رابط الغرفة!");
@@ -509,22 +547,45 @@ onValue(statusRef, (snap) => {
 
 onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     const winner = snap.val();
-    if (!winner) return;
+    if (!winner || !myTeam) return;
 
-    const winnerName = winner === "blue" ? "الأزرق 🔵" : "الأحمر 🔴";
-    const msg = `<span style="font-size:1.2rem; display:block; margin-bottom:10px;">🏆 مبروووك! 🏆</span> فاز الفريق ${winnerName}`;
+    const isWinner = myTeam === winner;
+    const modal = document.getElementById('customAlert');
     
-    showCustomAlert(msg, true, 
-        async () => { 
-            await update(roomRef, { status: "waiting" });
-            await update(gameRef, null); 
-        }, 
-        "الجولة التالية 🔄", 
-        "مغادرة اللعبة 🏠", 
-        () => {
-            window.location.href = "index.html";
-        }
-    );
+    // تغيير شكل النافذة بناءً على النتيجة
+    modal.className = `custom-alert ${isWinner ? 'alert-win' : 'alert-lose'}`;
+    modal.innerHTML = `
+        <div class="alert-header"><span>GAME STATUS</span><span>✕</span></div>
+        <div class="alert-body">
+            <h2 style="margin:0; color:${isWinner ? '#7ed321' : '#ff4d4d'}">
+                ${isWinner ? '🏆 فوز مستحق!' : '💔 هارد لكم!'}
+            </h2>
+            <p id="alertMsg" style="font-size:0.8rem; margin-top:10px;">
+                ${isWinner ? 'لقد سحقتم الخصم بجدارة!' : 'الفريق الخصم كان أسرع هذه المرة.'}
+            </p>
+        </div>
+        <div class="alert-btns">
+            <button class="alert-btn btn-ok" id="nextGenBtn">الجولة التالية 🔄</button>
+            <button class="alert-btn btn-cancel" onclick="window.location.href='index.html'">مغادرة 🏠</button>
+        </div>
+    `;
+
+    modal.style.display = 'block';
+    setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
+
+    document.getElementById('nextGenBtn').onclick = async () => {
+        // 1. تحديث حالة الغرفة لـ waiting (لكي ينتقل الجميع)
+        await update(roomRef, { status: "waiting" });
+        // 2. مسح بيانات اللعبة
+        await update(gameRef, null);
+        // 3. تحويل اللاعب لجمهور مع الحفاظ على اسمه وصورته
+        const me = playersCache[playerId];
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
+            team: "spectators-list", // يعود كجمهور
+            name: me.name,           // يحفظ الاسم
+            avatar: me.avatar        // يحفظ الصورة
+        });
+    };
 });
 
 function applyGameStateToUI() {
