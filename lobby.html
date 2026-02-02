@@ -446,6 +446,22 @@ const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 
+// أضف هذا الجزء تحت تعريف myData مباشرة
+onValue(myPlayerRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.name) {
+        // إذا كان اللاعب لديه اسم وصورة (عائد من الجولة)، لا تظهر له النافذة
+        myData = data;
+        hasJoined = true;
+        document.getElementById('profileModal').style.display = 'none';
+        startHeartbeat();
+    } else {
+        // لاعب جديد تماماً
+        if (!hasJoined) {
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+    }
+}, { onlyOnce: true }); // نتحقق مرة واحدة فقط عند الدخول
 
 /* ---------- 2. State & Assets ---------- */
 let myData = {
@@ -699,7 +715,7 @@ onValue(playersRef, (snapshot) => {
     document.getElementById('playerCount').innerText = playerList.length;
     const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
     const adminId = sorted[0].id;
-    isAdmin = (playerId === adminId);
+    isAdmin = (playerId === adminId)
     document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
     document.querySelectorAll('.settings-panel').forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
     renderLobby(players, adminId);

@@ -606,7 +606,6 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     const winnerName = winner === "blue" ? "الأزرق 🔵" : "الأحمر 🔴";
     const modal = document.getElementById('customAlert');
     
-    // إعداد المحتوى بالتصميم الأنيق
     modal.className = `custom-alert ${isWinner ? 'alert-win' : 'alert-lose'}`;
     modal.innerHTML = `
         <div class="alert-drag-handle"><div class="drag-indicator"></div></div>
@@ -614,45 +613,46 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
             <span style="font-size:1.5rem; display:block; margin-bottom:10px;">
                 ${isWinner ? '🏆 مبروووك! 🏆' : '💀 حظاً أوفر!'}
             </span>
-            <p style="font-size:1rem; margin-bottom:15px;">
-                فاز الفريق ${winnerName}<br>
-                <small style="opacity:0.7">${isWinner ? 'لقد قدمتم أداءً رائعاً!' : 'تعوضونها في الجولة القادمة.'}</small>
-            </p>
+            <p style="font-size:1rem; margin-bottom:15px;">فاز الفريق ${winnerName}</p>
         </div>
         <div class="alert-btns">
             <button class="alert-btn btn-ok" id="nextGenBtn">الجولة التالية 🔄</button>
-            <button class="alert-btn btn-cancel" onclick="window.location.href='index.html'">مغادرة اللعبة 🏠</button>
+            <button class="alert-btn btn-cancel" id="leaveGameBtn">مغادرة اللعبة 🏠</button>
         </div>
     `;
 
     modal.style.display = 'block';
-    setTimeout(() => { 
-        modal.classList.add('show-win'); 
-        makeDraggable(modal); 
-    }, 10);
+    setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
 
+    // زر الجولة التالية (السيناريو: محمد ضغط الزر)
     document.getElementById('nextGenBtn').onclick = async () => {
-        // 1. جلب بيانات اللاعب الحالية
         const me = playersCache[playerId];
+        
+        // جلب قائمة اللاعبين لتحديد من هو المشرف الحالي (أقدم واحد)
         const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
         const isAdmin = (playerId === playerList[0].id);
 
-        // 2. إذا كان الضاغط هو المشرف، يقوم بتنظيف بيانات اللعبة السابقة 
-        // لكن لا يغير status الغرفة لـ waiting لكي لا يسحب الجميع
         if (isAdmin) {
-            await update(gameRef, null); // تصفير اللوحة والنتائج
-            // ملاحظة: لا نحدث room status هنا
+            // إذا كان سالم (المشرف) هو من ضغط: يصفر اللعبة ويعيد الحالة لـ lobby
+            await update(roomRef, { status: "lobby" });
+            await set(gameRef, null); 
         }
 
-        // 3. تحديث دور اللاعب الحالي ليكون جمهور (Spectator)
+        // الجميع (سواء مشرف أو لاعب) يحول نفسه لجمهور وينتقل للوبي
         await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
             team: "spectators-list",
             name: me.name,
             avatar: me.avatar
+            // لاحظ: لا نلمس joinedAt لكي يحافظ سالم على أقدميته وإشرافه
         });
 
-        // 4. الانتقال الفردي فقط لهذا اللاعب
         window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
+    };
+
+    // زر مغادرة اللعبة (حذف نهائي)
+    document.getElementById('leaveGameBtn').onclick = async () => {
+        await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
+        window.location.href = 'index.html';
     };
 });
 
