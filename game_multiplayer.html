@@ -588,15 +588,15 @@ onValue(logRef, (snap) => {
     }
 });
 
-onValue(statusRef, (snap) => {
-    const status = snap.val();
-    if (status === "waiting" && isPageLoaded) {
-        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
-    }
-    if (status === "ended") {
-        window.location.href = "index.html";
-    }
-});
+// onValue(statusRef, (snap) => {
+//     const status = snap.val();
+//     if (status === "waiting" && isPageLoaded) {
+//         window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
+//     }
+//     if (status === "ended") {
+//         window.location.href = "index.html";
+//     }
+// });
 
 onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     const winner = snap.val();
@@ -632,16 +632,27 @@ onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
     }, 10);
 
     document.getElementById('nextGenBtn').onclick = async () => {
-        // العودة للوبي كجمهور مع الحفاظ على البيانات
-        await update(roomRef, { status: "waiting" });
-        await update(gameRef, null); 
-        
+        // 1. جلب بيانات اللاعب الحالية
         const me = playersCache[playerId];
+        const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
+        const isAdmin = (playerId === playerList[0].id);
+
+        // 2. إذا كان الضاغط هو المشرف، يقوم بتنظيف بيانات اللعبة السابقة 
+        // لكن لا يغير status الغرفة لـ waiting لكي لا يسحب الجميع
+        if (isAdmin) {
+            await update(gameRef, null); // تصفير اللوحة والنتائج
+            // ملاحظة: لا نحدث room status هنا
+        }
+
+        // 3. تحديث دور اللاعب الحالي ليكون جمهور (Spectator)
         await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
             team: "spectators-list",
             name: me.name,
             avatar: me.avatar
         });
+
+        // 4. الانتقال الفردي فقط لهذا اللاعب
+        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
     };
 });
 
