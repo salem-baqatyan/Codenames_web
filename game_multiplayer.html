@@ -30,35 +30,55 @@
         }
 
         /* --- Custom Alert --- */
-        .custom-alert { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.7); 
-            background: #222; border: 2px solid #555; border-radius: 20px; padding: 0; /* الصفر لضمان التحكم في الهيدر */
-            text-align: center; z-index: 2000; color: white; display: none; width: 85%; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.9); opacity: 0; 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            overflow: hidden;
-        }
-        
-        /* منطقة السحب: مدمجة وغير مرئية بشكل يزعج التصميم */
-        .alert-drag-handle {
-            height: 30px; width: 100%; cursor: move; display: flex; align-items: center; 
-            justify-content: center; background: rgba(255,255,255,0.03);
-        }
-        .drag-indicator { width: 40px; height: 4px; background: #555; border-radius: 2px; }
+.custom-alert { 
+    position: fixed; /* تغيير من absolute إلى fixed لثبات أفضل */
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) scale(0.7); 
+    background: #1a1a1a; /* أغمق قليلاً ليتناسب مع الثيم */
+    border: 2px solid #555; 
+    border-radius: 20px; 
+    padding: 0; 
+    text-align: center; 
+    z-index: 10000; /* أعلى من كل شيء */
+    color: white; 
+    display: none; 
+    /* تصغير الحجم */
+    width: 75%; 
+    max-width: 320px; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+    opacity: 0; 
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    overflow: hidden;
+    /* منع تحديد النصوص نهائياً أثناء السحب */
+    user-select: none; 
+    -webkit-user-select: none;
+}
 
-        .custom-alert.show-win { 
-            display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); 
-        }
+.custom-alert.show-win { 
+    display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); 
+}
 
-        /* ألوان الحدود حسب النتيجة دون تغيير الهيدر */
-        .alert-win { border-color: #7ed321 !important; box-shadow: 0 0 30px rgba(126, 211, 33, 0.3); }
-        .alert-lose { border-color: #d0021b !important; box-shadow: 0 0 30px rgba(208, 2, 27, 0.3); }
+/* منطقة السحب محسنة */
+.alert-drag-handle {
+    height: 35px; width: 100%; cursor: move; 
+    display: flex; align-items: center; justify-content: center; 
+    background: rgba(255,255,255,0.02);
+    /* خاصية مهمة للموبايل لمنع التعارض مع سحب الصفحة */
+    touch-action: none; 
+}
+.drag-indicator { width: 35px; height: 4px; background: #444; border-radius: 10px; }
 
-        .alert-body { padding: 10px 25px 25px 25px; }
-        .alert-btns { display: flex; flex-direction: column; gap: 10px; justify-content: center; padding: 0 25px 25px 25px; }
-        
-        .alert-btn { padding: 12px 15px; border-radius: 12px; cursor: pointer; border: none; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
-        .alert-btn:active { transform: scale(0.95); }
+/* ألوان الحدود */
+.alert-win { border-color: #7ed321 !important; }
+.alert-lose { border-color: #e74c3c !important; }
+
+.alert-body { padding: 10px 20px 20px 20px; font-size: 0.95rem; line-height: 1.5; }
+.alert-btns { display: flex; flex-direction: column; gap: 8px; padding: 0 20px 20px 20px; }
+
+.alert-btn { 
+    padding: 10px; border-radius: 12px; cursor: pointer; border: none; 
+    font-weight: bold; font-size: 0.85rem; transition: 0.2s; 
+}        .alert-btn:active { transform: scale(0.95); }
         .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
         .btn-cancel { background: #333; color: #bbb; border: 1px solid #444; }
 
@@ -389,32 +409,54 @@ function showCustomAlert(msg, showCancel = false, onOk = null, okText = "موا�
 function makeDraggable(el) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     const handle = el.querySelector(".alert-drag-handle");
-    handle.onmousedown = dragMouseDown;
-    handle.ontouchstart = dragMouseDown;
+    let isDragging = false;
 
-    function dragMouseDown(e) {
-        e = e || window.event;
-        pos3 = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        pos4 = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        document.onmouseup = closeDragElement;
-        document.ontouchend = closeDragElement;
-        document.onmousemove = elementDrag;
-        document.ontouchmove = elementDrag;
+    handle.onmousedown = dragStart;
+    handle.addEventListener('touchstart', dragStart, { passive: false });
+
+    function dragStart(e) {
+        isDragging = true;
+        // منع السلوك الافتراضي للمتصفح (مثل سحب الصور أو تحديد النص)
+        if (e.type === "mousedown") e.preventDefault();
+        
+        pos3 = e.clientX || e.touches[0].clientX;
+        pos4 = e.clientY || e.touches[0].clientY;
+
+        document.onmouseup = dragEnd;
+        document.addEventListener('touchend', dragEnd);
+        
+        document.onmousemove = dragMove;
+        document.addEventListener('touchmove', dragMove, { passive: false });
     }
 
-    function elementDrag(e) {
-        e = e || window.event;
-        let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        pos1 = pos3 - x; pos2 = pos4 - y;
-        pos3 = x; pos4 = y;
-        el.style.top = (el.offsetTop - pos2) + "px";
-        el.style.left = (el.offsetLeft - pos1) + "px";
+    function dragMove(e) {
+        if (!isDragging) return;
+        if (e.type === "touchmove") e.preventDefault(); // منع سحب الصفحة خلف الديالوق
+
+        // استخدام requestAnimationFrame لتحسين الأداء
+        requestAnimationFrame(() => {
+            let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            
+            pos1 = pos3 - x;
+            pos2 = pos4 - y;
+            pos3 = x;
+            pos4 = y;
+
+            // تحديث الموقع مع حذف الـ Translate لتجنب تداخل الحسابات
+            el.style.transform = "none"; 
+            el.style.margin = "0"; // تصفير المارجن لضمان دقة الحساب
+            el.style.top = (el.offsetTop - pos2) + "px";
+            el.style.left = (el.offsetLeft - pos1) + "px";
+        });
     }
 
-    function closeDragElement() {
-        document.onmouseup = null; document.onmousemove = null;
-        document.ontouchend = null; document.ontouchmove = null;
+    function dragEnd() {
+        isDragging = false;
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.removeEventListener('touchend', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
     }
 }
 
