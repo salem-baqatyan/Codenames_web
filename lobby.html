@@ -782,7 +782,9 @@ window.handleStartGame = async () => {
 
     const settingsSnap = await get(settingsRef);
     const mode = settingsSnap.exists() ? settingsSnap.val().mode : 'online';
-    const firstTeam = Math.random() < 0.5 ? "red" : "blue";
+    // const firstTeam = Math.random() < 0.5 ? "red" : "blue";
+    const firstTeam = "red";
+
     await set(ref(db, `rooms/${roomId}/game`), {
         board: generateBoard(firstTeam),
         turn: { team: firstTeam, phase: "spymaster", updatedAt: Date.now() },
