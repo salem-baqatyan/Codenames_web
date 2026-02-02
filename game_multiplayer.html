@@ -785,35 +785,46 @@ window.confirmSelection = async function(i) {
     const card = gameState.board[i];
     const me = playersCache[playerId];
     const enemy = myTeam === "blue" ? "red" : "blue";
-    let nextTurn = null;
-    let winner = null;
     
+    // 1. تجهيز التحديثات
     const updates = {};
     updates[`board/${i}/revealed`] = true;
-    
-    let remaining = { ...gameState.remaining };
 
-    if (card.type === myTeam) {
-        remaining[myTeam]--;
-    } else if (card.type === enemy) {
-        remaining[enemy]--;
-        nextTurn = enemy;
-    } else if (card.type === "neutral") {
-        nextTurn = enemy;
-    } else if (card.type === "killer") {
-        winner = enemy;
-    }
+    // 2. حساب المتبقي الحقيقي بناءً على اللوحة الحالية بعد كشف البطاقة i
+    // نقوم بفلترة البطاقات غير المكشوفة وحساب عددها لكل فريق
+    const currentBoard = gameState.board;
+    let redRemaining = 0;
+    let blueRemaining = 0;
 
+    Object.entries(currentBoard).forEach(([index, c]) => {
+        // البطاقة الحالية التي اخترناها (i) نعتبرها مكشوفة يدوياً الآن
+        const isRevealed = (Number(index) === i) ? true : c.revealed;
+        
+        if (!isRevealed) {
+            if (c.type === 'red') redRemaining++;
+            if (c.type === 'blue') blueRemaining++;
+        }
+    });
+
+    const remaining = { red: redRemaining, blue: blueRemaining };
     updates.remaining = remaining;
 
-    if (!winner) {
-        if (remaining.blue === 0) {
-            winner = "blue";
-        } else if (remaining.red === 0) {
-            winner = "red";
-        }
+    // 3. تحديد المنطقTurn والـ Winner
+    let nextTurn = null;
+    let winner = null;
+
+    if (card.type === "killer") {
+        winner = enemy;
+    } else if (card.type === enemy || card.type === "neutral") {
+        nextTurn = enemy;
     }
 
+    if (!winner) {
+        if (remaining.blue === 0) winner = "blue";
+        else if (remaining.red === 0) winner = "red";
+    }
+
+    // 4. إرسال السجل (Log)
     await push(ref(db, `rooms/${roomId}/game/log`), { 
         type: "guess", 
         team: myTeam, 
@@ -828,19 +839,15 @@ window.confirmSelection = async function(i) {
 
     if (winner) {
         updates.winner = winner;
-        await update(gameRef, updates);
-        return;
-    }
-
-    if (nextTurn) {
+    } else if (nextTurn) {
         updates.turn = { team: nextTurn, phase: "spymaster", ready: false, updatedAt: null };
         updates.clue = { word: null, count: null };
         guessesThisTurn = 0;
         selectedCards.clear();
     }
 
+    // إرسال جميع التحديثات في أمر واحد لضمان التزامن
     await update(gameRef, updates);
-    renderGrid();
 };
 
 async function endTurn() {
