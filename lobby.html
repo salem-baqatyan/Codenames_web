@@ -315,7 +315,7 @@ let lastUsedImages = { blue: null, red: null, killer: null, neutral: null };
 async function renderAvatars() {
     const container = document.getElementById('avatarContainer');
     if (!container) return;
-    container.innerHTML = '<div style="grid-column: span 5; font-size:0.7rem; color:#888;">جاري التحميل...</div>';
+    container.innerHTML = '<div style="grid-column: span 5; font-size:0.7rem; color:#888;"></div>';
     await preloadImages();
     container.innerHTML = '';
 
