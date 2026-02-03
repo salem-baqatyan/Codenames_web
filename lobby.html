@@ -552,50 +552,47 @@ async function renderAvatars() {
 window.saveProfile = async (isAutoJoin = false) => {
     let nameInput = document.getElementById('nicknameInput');
     
-    if (isAutoJoin) {
-        // البيانات موجودة مسبقاً في myData (تم جلبها من checkIdentityAndJoin)
-    } else {
+    if (!isAutoJoin) {
         const name = nameInput.value.trim();
         if (!name) return showToast("الرجاء إدخال اسمك");
         myData.name = name;
-        hasJoined = true;
     }
 
-    // إغلاق أي نوافذ
+    // إغلاق النافذة
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
-
-    // تحديث الهوية في قاعدة البيانات في مكانين:
-    // أولاً: السجل العام (ليعرفك في أي غرفة تدخلها مستقبلاً)
-    const globalPlayerRef = ref(db, `global_players/${playerId}`);
-    await update(globalPlayerRef, {
+    const playerUpdate = {
         name: myData.name,
         avatar: myData.avatar,
-        lastSeen: now
-    });
+        lastSeen: now,
+        id: playerId
+    };
 
-    // ثانياً: داخل الغرفة الحالية (ليظهر اسمك للبقية في اللوبي)
-    await set(myPlayerRef, { 
-        ...myData, 
-        lastActive: now,
-        id: playerId 
-    });
+    try {
+        // 1. التخزين في السجل العالمي (Global)
+        const globalPlayerRef = ref(db, `global_players/${playerId}`);
+        await set(globalPlayerRef, playerUpdate);
 
-    // تحديث حالة الغرفة (إذا كانت جديدة)
-    const roomSnap = await get(roomRef);
-    if (!roomSnap.exists()) {
-        await set(roomRef, { 
-            lastActivity: now, 
-            status: "lobby", 
-            settings: { mode: 'online', timer: 0, visibility: urlParams.get('type') || 'public' } 
-        });     
+        // 2. التخزين داخل الغرفة الحالية (Lobby)
+        // ندمج بيانات الهوية مع بيانات الفريق الحالية
+        await set(myPlayerRef, { 
+            ...myData, 
+            ...playerUpdate,
+            lastActive: now 
+        });
+
+        hasJoined = true;
+        startHeartbeat();
+        showToast(`أهلاً بك مجدداً ${myData.name}!`);
+    } catch (e) {
+        console.error("Save failed:", e);
+        showToast("حدث خطأ أثناء الحفظ");
     }
-    
-    startHeartbeat();
+    // عند انقطاع الاتصال، حدث آخر ظهور في السجل العالمي
+onDisconnect(ref(db, `global_players/${playerId}/online`)).set(false);
+update(ref(db, `global_players/${playerId}`), { online: true });
 };
-
-
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
     const input = document.getElementById('nicknameInput');
