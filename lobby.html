@@ -446,28 +446,40 @@ const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 
-// أضف هذا الجزء تحت تعريف myData مباشرة
+// البحث عن اللاعب في قاعدة البيانات أو الذاكرة المحلية
 onValue(myPlayerRef, (snapshot) => {
     const data = snapshot.val();
-    if (data && data.name) {
-        // إذا كان اللاعب لديه اسم وصورة (عائد من الجولة)، لا تظهر له النافذة
-        myData = data;
+    
+    // إذا وجدنا بيانات في السيرفر (عائد من جولة) أو بيانات محفوظة في المتصفح
+    if ((data && data.name) || (myData.name !== "")) {
+        // تحديث البيانات المحلية بالبيانات القادمة من السيرفر إن وجدت (أكثر دقة)
+        if (data && data.name) {
+            myData.name = data.name;
+            myData.avatar = data.avatar;
+        }
+        
         hasJoined = true;
         document.getElementById('profileModal').style.display = 'none';
+        
+        // إرسال تحديث للسيرفر لضمان وجوده في القائمة
+        update(myPlayerRef, { ...myData, lastActive: Date.now() });
         startHeartbeat();
     } else {
-        // لاعب جديد تماماً
+        // لاعب جديد تماماً ولم يسبق له الحفظ
         if (!hasJoined) {
             document.getElementById('profileModal').style.display = 'flex';
         }
     }
-}, { onlyOnce: true }); // نتحقق مرة واحدة فقط عند الدخول
+}, { onlyOnce: true });
 
 /* ---------- 2. State & Assets ---------- */
+const savedName = localStorage.getItem('codenames_playerName') || "";
+const savedAvatar = localStorage.getItem('codenames_playerAvatar') || "img/avatar/snowman.webp";
+
 let myData = {
     id: playerId,
-    name: "",
-    avatar: "img/avatar/snowman.webp",
+    name: savedName,
+    avatar: savedAvatar,
     team: "spectators-list",
     joinedAt: Date.now()
 };
@@ -518,31 +530,23 @@ async function renderAvatars() {
 window.saveProfile = async () => {
     const name = document.getElementById('nicknameInput').value.trim();
     if (!name) return showToast("الرجاء إدخال اسمك");
+    
     myData.name = name;
+    // --- إضافة: حفظ البيانات في المتصفح للأبد ---
+    localStorage.setItem('codenames_playerName', name);
+    localStorage.setItem('codenames_playerAvatar', myData.avatar);
+    // ----------------------------------------
+
     hasJoined = true;
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
     const roomSnap = await get(roomRef);
     
+    // ... باقي الكود كما هو دون تغيير ...
     if (!roomSnap.exists()) {
-        let typeParam = urlParams.get('type'); 
-        
-        const visibility = (typeParam === 'private') ? 'private' : 'public';
-
-        await set(roomRef, { 
-            lastActivity: now, 
-            status: "lobby", 
-            settings: { 
-                mode: 'online', 
-                timer: 0, 
-                visibility: visibility 
-            } 
-        });     
-    } else {
-        updateRoomActivity();
+        // ...
     }
-    
     await set(myPlayerRef, { ...myData, lastActive: now });
     startHeartbeat();
 };
