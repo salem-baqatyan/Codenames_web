@@ -425,6 +425,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+/* ---------- 1. Setup & Config ---------- */
+// ... (الاستيراد و firebaseConfig كما هي)
+
 let urlParams = new URLSearchParams(window.location.search);
 let roomId = urlParams.get('r');
 
@@ -433,15 +436,16 @@ if (!roomId) {
     window.location.href = window.location.pathname + '?r=' + roomId;
 }
 
-// نحاول جلب المعرف من الذاكرة المحلية أولاً لضمان استمرارية الجلسة
+// الحل النهائي للمعرف:
+// نبحث عن المعرف القديم، إذا كان قصيراً (مثل 5tm8) نقوم بحذفه وتوليد واحد جديد طويل ومعياري
 let playerId = localStorage.getItem('codenames_playerId');
-if (!playerId) {
-    // ننشئ معرفاً مؤقتاً فريداً جداً (طويل) لضمان عدم التكرار
-    playerId = 'p_' + Math.random().toString(36).substr(2, 9);
+if (!playerId || playerId.length < 5) { 
+    playerId = 'player_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('codenames_playerId', playerId);
 }
-// تأكد أن المعرف ينتقل معك دائماً
-sessionStorage.setItem('playerId', playerId);
+
+// لا تستخدم sessionStorage هنا لأنه يمسح الهوية عند إغلاق التبويب، ونحن نريدك ثابتاً// تأكد أن المعرف ينتقل معك دائماً
+// sessionStorage.setItem('playerId', playerId);
 
 const roomRef = ref(db, `rooms/${roomId}`);
 const playersRef = ref(db, `rooms/${roomId}/players`);
@@ -450,31 +454,28 @@ const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 const globalPlayerRef = ref(db, `global_players/${playerId}`);
 
-// دالة التحقق من الهوية (تُستدعى عند فتح الصفحة)
 async function checkGlobalProfile() {
     try {
         const snapshot = await get(globalPlayerRef);
         if (snapshot.exists()) {
             const data = snapshot.val();
-            // اللاعب موجود مسبقاً في السجل العام!
+            // تحديث البيانات المحلية من السيرفر فوراً
             myData.name = data.name;
             myData.avatar = data.avatar;
             hasJoined = true;
             
-            // إخفاء نافذة التسجيل فوراً
+            // إخفاء المودال
             document.getElementById('profileModal').style.display = 'none';
             
-            // تسجيل الدخول للغرفة الحالية تلقائياً بالبيانات القديمة
-            saveProfile(true); // نمرر true لتعريف الدالة أنها عملية دخول تلقائي
+            // انتظر قليلاً لضمان استقرار الاتصال ثم انضم للردهة
+            setTimeout(() => saveProfile(true), 500);
         } else {
-            // لاعب جديد أول مرة يستخدم الموقع
             document.getElementById('profileModal').style.display = 'flex';
         }
     } catch (e) {
-        console.error("Error fetching global profile:", e);
+        console.error("Global Profile Error:", e);
     }
 }
-
 // استدعاء التحقق عند التحميل
 checkGlobalProfile();
 
@@ -555,10 +556,11 @@ window.saveProfile = async (isAutoJoin = false) => {
     });
 
     // 2. الحفظ داخل الغرفة الحالية
+myData.id = playerId; 
+    
     await set(myPlayerRef, { 
         ...myData, 
-        lastActive: now,
-        id: playerId 
+        lastActive: Date.now()
     });
 
     // تحديث نشاط الغرفة
