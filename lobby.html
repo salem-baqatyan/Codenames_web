@@ -126,11 +126,16 @@
 <body>
 <!-- HTML Section -->
 
+<!-- Loading Screen -->
+<div id="loading-screen">
+    <div class="loader"></div>
+    <div>جاري التحميل...</div>
+</div>
  <!-- App Wrapper -->
 <div class="mobile-wrapper">
 
     <!-- Profile Modal -->
-    <div class="modal-overlay" id="profileModal" style="display:flex;">
+    <div class="modal-overlay" id="profileModal" style="display:none;">
         <div class="settings-modal">
             <div class="modal-header" id="profileHeader" style="font-weight:bold;margin-bottom:10px;">أهلاً بك! جهز ملفك</div>
             <div class="avatar-selector" id="avatarContainer"></div>
@@ -454,30 +459,43 @@ const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 const globalPlayerRef = ref(db, `global_players/${playerId}`);
 
-async function checkGlobalProfile() {
+/* ---------- التحقق من الهوية والدخول التلقائي ---------- */
+
+async function checkIdentityAndJoin() {
+    const loadingScreen = document.getElementById('loading-screen');
+    const profileModal = document.getElementById('profileModal');
+
     try {
+        // 1. ابحث عن اللاعب في السجل العام (خارج الغرفة)
+        const globalPlayerRef = ref(db, `global_players/${playerId}`);
         const snapshot = await get(globalPlayerRef);
+
         if (snapshot.exists()) {
+            // 2. إذا وجدناه: حدث بياناتنا المحلية
             const data = snapshot.val();
-            // تحديث البيانات المحلية من السيرفر فوراً
             myData.name = data.name;
             myData.avatar = data.avatar;
             hasJoined = true;
+
+            // 3. انضم للغرفة الحالية تلقائياً
+            await saveProfile(true); 
             
-            // إخفاء المودال
-            document.getElementById('profileModal').style.display = 'none';
-            
-            // انتظر قليلاً لضمان استقرار الاتصال ثم انضم للردهة
-            setTimeout(() => saveProfile(true), 500);
+            // 4. أخفِ شاشة التحميل واظهر اللوبي
+            loadingScreen.style.display = 'none';
         } else {
-            document.getElementById('profileModal').style.display = 'flex';
+            // 5. إذا لم نجد بياناته: اظهر نافذة تسجيل البروفايل
+            loadingScreen.style.display = 'none';
+            profileModal.style.display = 'flex';
         }
     } catch (e) {
-        console.error("Global Profile Error:", e);
+        console.error("Error during identity check:", e);
+        loadingScreen.style.display = 'none';
+        profileModal.style.display = 'flex'; // احتياطاً في حال حدوث خطأ
     }
 }
-// استدعاء التحقق عند التحميل
-checkGlobalProfile();
+
+// استدعاء الدالة فور تشغيل الصفحة
+checkIdentityAndJoin();
 
 /* ---------- 2. State & Assets ---------- */
 let myData = {
@@ -531,39 +549,40 @@ async function renderAvatars() {
     });
 }
 
-
 window.saveProfile = async (isAutoJoin = false) => {
-    let name;
+    let nameInput = document.getElementById('nicknameInput');
     
     if (isAutoJoin) {
-        name = myData.name;
+        // البيانات موجودة مسبقاً في myData (تم جلبها من checkIdentityAndJoin)
     } else {
-        name = document.getElementById('nicknameInput').value.trim();
+        const name = nameInput.value.trim();
         if (!name) return showToast("الرجاء إدخال اسمك");
         myData.name = name;
+        hasJoined = true;
     }
 
-    hasJoined = true;
+    // إغلاق أي نوافذ
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
 
-    // 1. الحفظ في السجل العام (ليتذكرك المتصفح في أي غرفة)
+    // تحديث الهوية في قاعدة البيانات في مكانين:
+    // أولاً: السجل العام (ليعرفك في أي غرفة تدخلها مستقبلاً)
+    const globalPlayerRef = ref(db, `global_players/${playerId}`);
     await update(globalPlayerRef, {
         name: myData.name,
         avatar: myData.avatar,
         lastSeen: now
     });
 
-    // 2. الحفظ داخل الغرفة الحالية
-myData.id = playerId; 
-    
+    // ثانياً: داخل الغرفة الحالية (ليظهر اسمك للبقية في اللوبي)
     await set(myPlayerRef, { 
         ...myData, 
-        lastActive: Date.now()
+        lastActive: now,
+        id: playerId 
     });
 
-    // تحديث نشاط الغرفة
+    // تحديث حالة الغرفة (إذا كانت جديدة)
     const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
         await set(roomRef, { 
@@ -571,12 +590,11 @@ myData.id = playerId;
             status: "lobby", 
             settings: { mode: 'online', timer: 0, visibility: urlParams.get('type') || 'public' } 
         });     
-    } else {
-        updateRoomActivity();
     }
     
     startHeartbeat();
 };
+
 
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
