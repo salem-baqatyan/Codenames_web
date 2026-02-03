@@ -339,20 +339,24 @@ window.saveProfile = async () => {
     if (!name) return showToast("الرجاء إدخال اسمك");
     
     myData.name = name;
-    hasJoined = true;
-    document.getElementById('profileModal').style.display = 'none';
-
-    const now = Date.now();
-    
-    // 1. الحفظ في القائمة العالمية ليتذكرك النظام لاحقاً
+    // حفظ في global_players للأبد
     await set(globalPlayersRef, {
         id: playerId,
         name: myData.name,
         avatar: myData.avatar
     });
+    
+    await finalizeJoin();
+};
 
-    // 2. التحقق من وجود الغرفة وإنشاؤها إذا لزم الأمر
+// وظيفة نهائية لإدخال اللاعب في الردهة المحددة
+async function finalizeJoin() {
+    hasJoined = true;
+    document.getElementById('profileModal').style.display = 'none';
+
+    const now = Date.now();
     const roomSnap = await get(roomRef);
+    
     if (!roomSnap.exists()) {
         let typeParam = urlParams.get('type'); 
         const visibility = (typeParam === 'private') ? 'private' : 'public';
@@ -361,12 +365,18 @@ window.saveProfile = async () => {
             status: "lobby", 
             settings: { mode: 'online', timer: 0, visibility: visibility } 
         });     
+    } else {
+        updateRoomActivity();
     }
-
-    // 3. الانضمام للاعبين داخل الغرفة
-    await set(myPlayerRef, { ...myData, lastActive: now });
+    
+    // إضافة اللاعب لقائمة الردهة الحالية
+    await set(myPlayerRef, { 
+        ...myData, 
+        lastActive: now,
+        joinedAt: now // لضمان ترتيب الأدمين
+    });
     startHeartbeat();
-};
+}
 
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
@@ -640,35 +650,36 @@ onValue(roomRef, (snap) => {
 
 
 /* ---------- Final: Bootstrapping ---------- */
-document.addEventListener('DOMContentLoaded', async () => {
-    await renderAvatars();
-    
-    // التحقق هل اللاعب مسجل مسبقاً في السيرفر؟
+/* ---------- التحقق من وجود ملف شخصي مسبقاً ---------- */
+async function checkExistingProfile() {
     try {
-        const globalSnap = await get(globalPlayersRef);
-        if (globalSnap.exists()) {
-            const savedData = globalSnap.val();
-            myData.name = savedData.name;
-            myData.avatar = savedData.avatar;
+        const snapshot = await get(globalPlayersRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            // تحديث البيانات المحلية ببيانات السيرفر
+            myData.name = data.name;
+            myData.avatar = data.avatar;
             
-            // إذا كان موجوداً، انضم تلقائياً للردهة كجمهور
-            hasJoined = true;
+            // إخفاء المودال فوراً لأن اللاعب معروف
             document.getElementById('profileModal').style.display = 'none';
             
-            const now = Date.now();
-            // تحديث حالته داخل الغرفة الحالية فقط
-            await update(myPlayerRef, { ...myData, lastActive: now, joinedAt: now });
-            startHeartbeat();
+            // الانضمام التلقائي للردهة
+            await finalizeJoin();
         } else {
-            // لاعب جديد تماماً، أظهر له النافذة
+            // لاعب جديد: نظهر له الخيارات ونحمل الصور
+            renderAvatars();
             document.getElementById('profileModal').style.display = 'flex';
             setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
         }
     } catch (e) {
-        console.error("Error checking global player:", e);
-        document.getElementById('profileModal').style.display = 'flex';
+        console.error("Error checking profile:", e);
+        renderAvatars(); // احتياطاً في حال فشل الاتصال
     }
-});
+}
+
+// استدعاء الوظيفة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', checkExistingProfile);
+
 document.getElementById('nicknameInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') saveProfile(); });
 
 vacuumCleaner();
