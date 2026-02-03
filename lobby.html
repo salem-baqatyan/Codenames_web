@@ -279,7 +279,9 @@ const playersRef = ref(db, `rooms/${roomId}/players`);
 const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
-const globalPlayersRef = ref(db, `global_players/${playerId}`);
+// أضف هذا السطر مع مراجع Firebase الأخرى
+const globalPlayersRef = ref(db, `global_players`);
+const myGlobalRef = ref(db, `global_players/${playerId}`);
 
 
 /* ---------- 2. State & Assets ---------- */
@@ -344,66 +346,29 @@ window.saveProfile = async () => {
 
     const now = Date.now();
     
-    // 1. الحفظ في المسار العالمي (للأبد)
-    await set(globalPlayersRef, {
+    // 1. حفظ في المسار العالمي (ليتذكره السيرفر دائماً)
+    await set(myGlobalRef, {
         name: myData.name,
         avatar: myData.avatar,
-        id: playerId
+        lastSeen: now
     });
 
-    // 2. التحقق من الغرفة وإنشاؤها إذا لم تكن موجودة
+    // 2. التحقق من الغرفة وإنشاؤها إذا لم توجد
     const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
-        let typeParam = urlParams.get('type') || 'public';
+        let typeParam = urlParams.get('type'); 
+        const visibility = (typeParam === 'private') ? 'private' : 'public';
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
-            settings: { mode: 'online', timer: 0, visibility: typeParam } 
+            settings: { mode: 'online', timer: 0, visibility: visibility } 
         });     
     }
-
-    // 3. الانضمام للردهة الحالية
+    
+    // 3. إضافة اللاعب للغرفة الحالية
     await set(myPlayerRef, { ...myData, lastActive: now });
     startHeartbeat();
 };
-async function checkGlobalProfile() {
-    try {
-        const snapshot = await get(globalPlayersRef);
-        if (snapshot.exists()) {
-            const globalData = snapshot.val();
-            
-            // تحديث بيانات اللاعب الحالية من السيرفر
-            myData.name = globalData.name;
-            myData.avatar = globalData.avatar;
-            
-            // إخفاء المودال فوراً لأننا نملك البيانات
-            document.getElementById('profileModal').style.display = 'none';
-            
-            // تنفيذ عملية الانضمام تلقائياً كجمهور
-            hasJoined = true;
-            const now = Date.now();
-            
-            // التأكد من وجود الغرفة
-            const roomSnap = await get(roomRef);
-            if (!roomSnap.exists()) {
-                await set(roomRef, { 
-                    lastActivity: now, 
-                    status: "lobby", 
-                    settings: { mode: 'online', timer: 0, visibility: 'public' } 
-                });
-            }
-            
-            await set(myPlayerRef, { ...myData, lastActive: now });
-            startHeartbeat();
-            showToast(`مرحباً بعودتك يا ${myData.name}!`);
-        } else {
-            // إذا لم يوجد بروفايل، نظهر المودال كالمعتاد
-            document.getElementById('profileModal').style.display = 'flex';
-        }
-    } catch (e) {
-        console.error("Error checking global profile:", e);
-    }
-}
 
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
@@ -677,11 +642,52 @@ onValue(roomRef, (snap) => {
 
 
 /* ---------- Final: Bootstrapping ---------- */
-document.addEventListener('DOMContentLoaded', () => {
-    renderAvatars();
-    // فحص البروفايل العالمي أولاً
-    checkGlobalProfile(); 
+// استبدل قسم "Final: Bootstrapping" في نهاية الكود بهذا:
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. محاولة جلب بيانات اللاعب من السيرفر
+    try {
+        const snapshot = await get(myGlobalRef);
+        if (snapshot.exists()) {
+            // اللاعب موجود مسبقاً، خذ بياناته
+            const savedData = snapshot.val();
+            myData.name = savedData.name;
+            myData.avatar = savedData.avatar;
+            
+            // إخفاء المودال فوراً والدخول للغرفة
+            document.getElementById('profileModal').style.display = 'none';
+            hasJoined = true;
+            
+            // ربط اللاعب بالغرفة الحالية (الجمهور تلقائياً)
+            await joinRoomAutomatically();
+        } else {
+            // لاعب جديد، نجهز له اختيار الصور
+            renderAvatars();
+            setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
+        }
+    } catch (e) {
+        console.error("Error fetching global profile:", e);
+        renderAvatars();
+    }
 });
+
+// وظيفة للانضمام التلقائي للغرفة إذا كان البروفايل موجود
+async function joinRoomAutomatically() {
+    const now = Date.now();
+    const roomSnap = await get(roomRef);
+    
+    if (!roomSnap.exists()) {
+        const typeParam = urlParams.get('type'); 
+        const visibility = (typeParam === 'private') ? 'private' : 'public';
+        await set(roomRef, { 
+            lastActivity: now, 
+            status: "lobby", 
+            settings: { mode: 'online', timer: 0, visibility: visibility } 
+        });     
+    }
+    
+    await set(myPlayerRef, { ...myData, lastActive: now });
+    startHeartbeat();
+}
 
 document.getElementById('nicknameInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') saveProfile(); });
 
