@@ -279,6 +279,7 @@ const playersRef = ref(db, `rooms/${roomId}/players`);
 const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
+const globalPlayersRef = ref(db, `global_players/${playerId}`);
 
 
 /* ---------- 2. State & Assets ---------- */
@@ -343,60 +344,66 @@ window.saveProfile = async () => {
 
     const now = Date.now();
     
-    // 1. تحديث بيانات الغرفة الحالية (الردهة)
+    // 1. الحفظ في المسار العالمي (للأبد)
+    await set(globalPlayersRef, {
+        name: myData.name,
+        avatar: myData.avatar,
+        id: playerId
+    });
+
+    // 2. التحقق من الغرفة وإنشاؤها إذا لم تكن موجودة
     const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
-        let typeParam = urlParams.get('type'); 
-        const visibility = (typeParam === 'private') ? 'private' : 'public';
+        let typeParam = urlParams.get('type') || 'public';
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
-            settings: { mode: 'online', timer: 0, visibility: visibility } 
+            settings: { mode: 'online', timer: 0, visibility: typeParam } 
         });     
-    } else {
-        updateRoomActivity();
     }
-    
-    // 2. الحفظ في مسار الردهة
+
+    // 3. الانضمام للردهة الحالية
     await set(myPlayerRef, { ...myData, lastActive: now });
-
-    // 3. الحفظ في المسار العالمي (global_players) - الإضافة الجديدة هنا
-    const globalPlayerRef = ref(db, `global_players/${playerId}`);
-    await set(globalPlayerRef, {
-        name: myData.name,
-        avatar: myData.avatar,
-        lastSeen: now
-    });
-
     startHeartbeat();
 };
-
-// وظيفة لجلب البيانات العالمية وتعبئة الواجهة
 async function checkGlobalProfile() {
-    const globalPlayerRef = ref(db, `global_players/${playerId}`);
     try {
-        const snapshot = await get(globalPlayerRef);
+        const snapshot = await get(globalPlayersRef);
         if (snapshot.exists()) {
             const globalData = snapshot.val();
-            // تحديث البيانات المحلية
+            
+            // تحديث بيانات اللاعب الحالية من السيرفر
             myData.name = globalData.name;
             myData.avatar = globalData.avatar;
             
-            // تحديث واجهة المستخدم (المدخلات والأفاتار)
-            document.getElementById('nicknameInput').value = globalData.name;
-            renderAvatars(); // سيقوم بتحديد الأفاتار الصحيح بناءً على myData.avatar
+            // إخفاء المودال فوراً لأننا نملك البيانات
+            document.getElementById('profileModal').style.display = 'none';
+            
+            // تنفيذ عملية الانضمام تلقائياً كجمهور
+            hasJoined = true;
+            const now = Date.now();
+            
+            // التأكد من وجود الغرفة
+            const roomSnap = await get(roomRef);
+            if (!roomSnap.exists()) {
+                await set(roomRef, { 
+                    lastActivity: now, 
+                    status: "lobby", 
+                    settings: { mode: 'online', timer: 0, visibility: 'public' } 
+                });
+            }
+            
+            await set(myPlayerRef, { ...myData, lastActive: now });
+            startHeartbeat();
+            showToast(`مرحباً بعودتك يا ${myData.name}!`);
+        } else {
+            // إذا لم يوجد بروفايل، نظهر المودال كالمعتاد
+            document.getElementById('profileModal').style.display = 'flex';
         }
     } catch (e) {
-        console.error("Error fetching global profile:", e);
+        console.error("Error checking global profile:", e);
     }
 }
-
-// استدعاء الوظيفة عند التشغيل
-document.addEventListener('DOMContentLoaded', () => {
-    checkGlobalProfile(); // جلب البيانات القديمة إن وجدت
-    renderAvatars();
-    setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
-});
 
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
@@ -672,7 +679,8 @@ onValue(roomRef, (snap) => {
 /* ---------- Final: Bootstrapping ---------- */
 document.addEventListener('DOMContentLoaded', () => {
     renderAvatars();
-    setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
+    // فحص البروفايل العالمي أولاً
+    checkGlobalProfile(); 
 });
 
 document.getElementById('nicknameInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') saveProfile(); });
