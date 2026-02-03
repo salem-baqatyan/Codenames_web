@@ -336,34 +336,67 @@ async function renderAvatars() {
 window.saveProfile = async () => {
     const name = document.getElementById('nicknameInput').value.trim();
     if (!name) return showToast("الرجاء إدخال اسمك");
+    
     myData.name = name;
     hasJoined = true;
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
-    const roomSnap = await get(roomRef);
     
+    // 1. تحديث بيانات الغرفة الحالية (الردهة)
+    const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
         let typeParam = urlParams.get('type'); 
-        
         const visibility = (typeParam === 'private') ? 'private' : 'public';
-
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
-            settings: { 
-                mode: 'online', 
-                timer: 0, 
-                visibility: visibility 
-            } 
+            settings: { mode: 'online', timer: 0, visibility: visibility } 
         });     
     } else {
         updateRoomActivity();
     }
     
+    // 2. الحفظ في مسار الردهة
     await set(myPlayerRef, { ...myData, lastActive: now });
+
+    // 3. الحفظ في المسار العالمي (global_players) - الإضافة الجديدة هنا
+    const globalPlayerRef = ref(db, `global_players/${playerId}`);
+    await set(globalPlayerRef, {
+        name: myData.name,
+        avatar: myData.avatar,
+        lastSeen: now
+    });
+
     startHeartbeat();
 };
+
+// وظيفة لجلب البيانات العالمية وتعبئة الواجهة
+async function checkGlobalProfile() {
+    const globalPlayerRef = ref(db, `global_players/${playerId}`);
+    try {
+        const snapshot = await get(globalPlayerRef);
+        if (snapshot.exists()) {
+            const globalData = snapshot.val();
+            // تحديث البيانات المحلية
+            myData.name = globalData.name;
+            myData.avatar = globalData.avatar;
+            
+            // تحديث واجهة المستخدم (المدخلات والأفاتار)
+            document.getElementById('nicknameInput').value = globalData.name;
+            renderAvatars(); // سيقوم بتحديد الأفاتار الصحيح بناءً على myData.avatar
+        }
+    } catch (e) {
+        console.error("Error fetching global profile:", e);
+    }
+}
+
+// استدعاء الوظيفة عند التشغيل
+document.addEventListener('DOMContentLoaded', () => {
+    checkGlobalProfile(); // جلب البيانات القديمة إن وجدت
+    renderAvatars();
+    setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
+});
 
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
