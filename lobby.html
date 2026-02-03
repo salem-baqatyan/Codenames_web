@@ -433,11 +433,14 @@ if (!roomId) {
     window.location.href = window.location.pathname + '?r=' + roomId;
 }
 
+// نحاول جلب المعرف من الذاكرة المحلية أولاً لضمان استمرارية الجلسة
 let playerId = localStorage.getItem('codenames_playerId');
 if (!playerId) {
-    playerId = Math.random().toString(36).substring(2, 6);
+    // ننشئ معرفاً مؤقتاً فريداً جداً (طويل) لضمان عدم التكرار
+    playerId = 'p_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('codenames_playerId', playerId);
 }
+// تأكد أن المعرف ينتقل معك دائماً
 sessionStorage.setItem('playerId', playerId);
 
 const roomRef = ref(db, `rooms/${roomId}`);
@@ -446,40 +449,28 @@ const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 
-// البحث عن اللاعب في قاعدة البيانات أو الذاكرة المحلية
+// أضف هذا الجزء تحت تعريف myData مباشرة
 onValue(myPlayerRef, (snapshot) => {
     const data = snapshot.val();
-    
-    // إذا وجدنا بيانات في السيرفر (عائد من جولة) أو بيانات محفوظة في المتصفح
-    if ((data && data.name) || (myData.name !== "")) {
-        // تحديث البيانات المحلية بالبيانات القادمة من السيرفر إن وجدت (أكثر دقة)
-        if (data && data.name) {
-            myData.name = data.name;
-            myData.avatar = data.avatar;
-        }
-        
+    if (data && data.name) {
+        // إذا كان اللاعب لديه اسم وصورة (عائد من الجولة)، لا تظهر له النافذة
+        myData = data;
         hasJoined = true;
         document.getElementById('profileModal').style.display = 'none';
-        
-        // إرسال تحديث للسيرفر لضمان وجوده في القائمة
-        update(myPlayerRef, { ...myData, lastActive: Date.now() });
         startHeartbeat();
     } else {
-        // لاعب جديد تماماً ولم يسبق له الحفظ
+        // لاعب جديد تماماً
         if (!hasJoined) {
             document.getElementById('profileModal').style.display = 'flex';
         }
     }
-}, { onlyOnce: true });
+}, { onlyOnce: true }); // نتحقق مرة واحدة فقط عند الدخول
 
 /* ---------- 2. State & Assets ---------- */
-const savedName = localStorage.getItem('codenames_playerName') || "";
-const savedAvatar = localStorage.getItem('codenames_playerAvatar') || "img/avatar/snowman.webp";
-
 let myData = {
     id: playerId,
-    name: savedName,
-    avatar: savedAvatar,
+    name: "",
+    avatar: "img/avatar/snowman.webp",
     team: "spectators-list",
     joinedAt: Date.now()
 };
@@ -532,25 +523,35 @@ window.saveProfile = async () => {
     if (!name) return showToast("الرجاء إدخال اسمك");
     
     myData.name = name;
-    // --- إضافة: حفظ البيانات في المتصفح للأبد ---
-    localStorage.setItem('codenames_playerName', name);
-    localStorage.setItem('codenames_playerAvatar', myData.avatar);
-    // ----------------------------------------
-
     hasJoined = true;
+    
+    // إخفاء المودال
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
-    const roomSnap = await get(roomRef);
     
-    // ... باقي الكود كما هو دون تغيير ...
+    // تحديث البيانات في المسار الخاص باللاعب داخل الغرفة
+    // هذا يضمن أن اللاعب "1" سيبقى "1" في هذه الغرفة
+    await set(myPlayerRef, { 
+        ...myData, 
+        lastActive: now,
+        id: playerId // نؤكد ربط المعرف بالاسم
+    });
+
+    // تحديث الغرفة
+    const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
-        // ...
+        await set(roomRef, { 
+            lastActivity: now, 
+            status: "lobby", 
+            settings: { mode: 'online', timer: 0, visibility: urlParams.get('type') || 'public' } 
+        });     
+    } else {
+        updateRoomActivity();
     }
-    await set(myPlayerRef, { ...myData, lastActive: now });
+    
     startHeartbeat();
 };
-
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
     const input = document.getElementById('nicknameInput');
@@ -715,16 +716,25 @@ function renderLobby(players, adminId) {
 onValue(playersRef, (snapshot) => {
     const players = snapshot.val();
     if (!players) return;
+    
     const playerList = Object.values(players);
     document.getElementById('playerCount').innerText = playerList.length;
-    const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
-    const adminId = sorted[0].id;
-    isAdmin = (playerId === adminId)
-    document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
-    document.querySelectorAll('.settings-panel').forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
-    renderLobby(players, adminId);
-});
 
+    // ترتيب اللاعبين حسب وقت الانضمام الأصلي لضمان ثبات الآدمين
+    const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
+    
+    // الآدمين هو دائماً أول شخص أنشأ الغرفة (صاحب أقدم JoinedAt)
+    const currentAdminId = sorted[0].id;
+    isAdmin = (playerId === currentAdminId);
+
+    // تحديث واجهة المستخدم بناءً على الصلاحية
+    const startBtn = document.getElementById('startBtn');
+    if(startBtn) startBtn.style.display = isAdmin ? 'block' : 'none';
+    
+    document.querySelectorAll('.settings-panel').forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
+    
+    renderLobby(players, currentAdminId);
+});
 
 /* ---------- 6. Admin & Game Settings ---------- */
 window.setGameMode = (mode) => { if (!isAdmin) return; update(settingsRef, { mode }); updateRoomActivity(); };
