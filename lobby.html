@@ -448,23 +448,35 @@ const playersRef = ref(db, `rooms/${roomId}/players`);
 const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
 const settingsRef = ref(db, `rooms/${roomId}/settings`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
+const globalPlayerRef = ref(db, `global_players/${playerId}`);
 
-// أضف هذا الجزء تحت تعريف myData مباشرة
-onValue(myPlayerRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data && data.name) {
-        // إذا كان اللاعب لديه اسم وصورة (عائد من الجولة)، لا تظهر له النافذة
-        myData = data;
-        hasJoined = true;
-        document.getElementById('profileModal').style.display = 'none';
-        startHeartbeat();
-    } else {
-        // لاعب جديد تماماً
-        if (!hasJoined) {
+// دالة التحقق من الهوية (تُستدعى عند فتح الصفحة)
+async function checkGlobalProfile() {
+    try {
+        const snapshot = await get(globalPlayerRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            // اللاعب موجود مسبقاً في السجل العام!
+            myData.name = data.name;
+            myData.avatar = data.avatar;
+            hasJoined = true;
+            
+            // إخفاء نافذة التسجيل فوراً
+            document.getElementById('profileModal').style.display = 'none';
+            
+            // تسجيل الدخول للغرفة الحالية تلقائياً بالبيانات القديمة
+            saveProfile(true); // نمرر true لتعريف الدالة أنها عملية دخول تلقائي
+        } else {
+            // لاعب جديد أول مرة يستخدم الموقع
             document.getElementById('profileModal').style.display = 'flex';
         }
+    } catch (e) {
+        console.error("Error fetching global profile:", e);
     }
-}, { onlyOnce: true }); // نتحقق مرة واحدة فقط عند الدخول
+}
+
+// استدعاء التحقق عند التحميل
+checkGlobalProfile();
 
 /* ---------- 2. State & Assets ---------- */
 let myData = {
@@ -518,27 +530,38 @@ async function renderAvatars() {
     });
 }
 
-window.saveProfile = async () => {
-    const name = document.getElementById('nicknameInput').value.trim();
-    if (!name) return showToast("الرجاء إدخال اسمك");
+
+window.saveProfile = async (isAutoJoin = false) => {
+    let name;
     
-    myData.name = name;
+    if (isAutoJoin) {
+        name = myData.name;
+    } else {
+        name = document.getElementById('nicknameInput').value.trim();
+        if (!name) return showToast("الرجاء إدخال اسمك");
+        myData.name = name;
+    }
+
     hasJoined = true;
-    
-    // إخفاء المودال
     document.getElementById('profileModal').style.display = 'none';
 
     const now = Date.now();
-    
-    // تحديث البيانات في المسار الخاص باللاعب داخل الغرفة
-    // هذا يضمن أن اللاعب "1" سيبقى "1" في هذه الغرفة
+
+    // 1. الحفظ في السجل العام (ليتذكرك المتصفح في أي غرفة)
+    await update(globalPlayerRef, {
+        name: myData.name,
+        avatar: myData.avatar,
+        lastSeen: now
+    });
+
+    // 2. الحفظ داخل الغرفة الحالية
     await set(myPlayerRef, { 
         ...myData, 
         lastActive: now,
-        id: playerId // نؤكد ربط المعرف بالاسم
+        id: playerId 
     });
 
-    // تحديث الغرفة
+    // تحديث نشاط الغرفة
     const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
         await set(roomRef, { 
@@ -552,6 +575,7 @@ window.saveProfile = async () => {
     
     startHeartbeat();
 };
+
 window.openProfileSettings = () => {
     document.getElementById('profileHeader').innerText = "تعديل الملف الشخصي";
     const input = document.getElementById('nicknameInput');
