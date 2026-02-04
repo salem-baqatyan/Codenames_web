@@ -171,14 +171,6 @@
 
 <!-- App Wrapper -->
 <div class="mobile-wrapper">
-<div class="modal-overlay" id="profileModal" style="display:none;">
-    <div class="settings-modal">
-        <div class="modal-header" style="font-weight:bold;margin-bottom:10px;">أهلاً بك! جهز ملفك للمتابعة</div>
-        <div class="avatar-selector" id="avatarContainer"></div>
-        <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
-        <button class="save-btn" onclick="saveProfileAndJoin()">حفظ ومتابعة اللعب</button>
-    </div>
-</div>
 
     <!-- Custom Alert Modal -->
     <div id="customAlert" class="custom-alert">
@@ -266,70 +258,6 @@
 </div>
 
 <script type="module">
-    // مراجع قاعدة البيانات
-const globalPlayersRef = ref(db, `global_players/${playerId}`);
-const myPlayerRef = ref(db, `rooms/${roomId}/players/${playerId}`);
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // إخفاء المودال في البداية
-    document.getElementById('profileModal').style.display = 'none';
-    
-    // فحص هل اللاعب مسجل عالمياً
-    const globalSnap = await get(globalPlayersRef);
-
-    if (globalSnap.exists()) {
-        const savedData = globalSnap.val();
-        myData.name = savedData.name;
-        myData.avatar = savedData.avatar;
-        myData.team = "spectators-list"; // ينضم كجمهور افتراضياً عند دخول لعبة بدأت بالفعل
-        
-        await enterGameDirectly();
-    } else {
-        // لاعب جديد تماماً دخل برابط اللعبة
-        await renderAvatars(); // تأكد من وجود هذه الدالة لديك في ملف اللعبة أيضاً
-        document.getElementById('profileModal').style.display = 'flex';
-        hideGameLoading(); // إخفاء لودينق الصفحة السوداء لإظهار المودال
-    }
-});
-
-async function enterGameDirectly() {
-    const now = Date.now();
-    // تسجيل اللاعب في قائمة لاعبي الغرفة الحالية
-    await update(myPlayerRef, { 
-        ...myData, 
-        lastActive: now, 
-        joinedAt: now 
-    });
-    
-    startHeartbeat(); // دالة تحديث النشاط
-    hideGameLoading(); // الآن نرفع الستار الأسود عن اللعبة
-}
-
-// دالة الحفظ للاعب الجديد الذي دخل رابط اللعبة مباشرة
-window.saveProfileAndJoin = async () => {
-    const name = document.getElementById('nicknameInput').value.trim();
-    if (!name) return showToast("الرجاء إدخال اسمك");
-    
-    myData.name = name;
-    myData.team = "spectators-list";
-    document.getElementById('profileModal').style.display = 'none';
-
-    // 1. حفظ عالمي
-    await set(globalPlayersRef, {
-        id: playerId, name: myData.name, avatar: myData.avatar
-    });
-
-    // 2. دخول اللعبة
-    await enterGameDirectly();
-};
-
-function hideGameLoading() {
-    const loader = document.getElementById('loading-screen');
-    if(loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 400);
-    }
-}
 // <!-- JS Section -->
 
 /* ---------- 1. Setup & Config ---------- */
