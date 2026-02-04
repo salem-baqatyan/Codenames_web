@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Codenames Pro - الرئيسية</title>
+    <title>Codenames Pro</title>
     <style>
         :root {
             --bg-dark: #000000; --panel-bg: #1a1a1a; 
@@ -161,9 +161,15 @@
         }
 
         Object.entries(rooms).forEach(([id, room]) => {
+            // 1. فلترة الغرف الخاصة
             if (room.settings?.visibility === 'private') return;
 
+            // 2. حساب عدد اللاعبين
             const playersCount = room.players ? Object.keys(room.players).length : 0;
+
+            // 3. (الإضافة الجديدة) تخطي الغرف الفارغة التي لا تحتوي على لاعبين
+            if (playersCount === 0) return;
+
             const inGame = room.status === 'started';
             
             const tr = document.createElement('tr');
@@ -180,6 +186,11 @@
             `;
             tbody.appendChild(tr);
         });
+
+        // 4. عرض رسالة إذا كانت كل الغرف فارغة أو خاصة بعد الفلترة
+        if (tbody.innerHTML === '') {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#555;">لا توجد غرف نشطة حالياً</td></tr>';
+        }
     });
 </script>
 </body>
