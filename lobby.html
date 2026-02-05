@@ -522,7 +522,6 @@ async function renderAvatars() {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. تأكد من أن المودال مخفي في البداية برمجياً لتجنب الوميض
     document.getElementById('profileModal').style.display = 'none';
     
     await renderAvatars(); 
@@ -531,23 +530,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const globalSnap = await get(globalPlayersRef);
 
     if (globalSnap.exists()) {
-        // لاعب قديم: حدث البيانات محلياً وانضم للردهة
         const savedData = globalSnap.val();
         myData.name = savedData.name;
         myData.avatar = savedData.avatar;
         
         await autoJoinRoom(); 
-        // نغلق اللودينق بعد إتمام الانضمام للردهة
         hideLoading();
     } else {
-        // لاعب جديد: أظهر المودال وأغلق اللودينق
         document.getElementById('profileModal').style.display = 'flex';
         hideLoading();
         setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
     }
 });
 
-// وظيفة مساعدة لإخفاء شاشة التحميل بسلاسة
 function hideLoading() {
     const loader = document.getElementById('loadingScreen');
     loader.style.opacity = '0';
@@ -571,12 +566,10 @@ async function autoJoinRoom() {
         updateRoomActivity();
     }
     
-    // ملاحظة: نستخدم update هنا لعدم مسح أي بيانات أخرى قد تكون موجودة
     await update(myPlayerRef, { ...myData, lastActive: now, joinedAt: now });
     startHeartbeat();
 }
 
-// تعديل بسيط على saveProfile لضمان المزامنة العالمية
 window.saveProfile = async () => {
     const name = document.getElementById('nicknameInput').value.trim();
     if (!name) return showToast("الرجاء إدخال اسمك");
@@ -587,7 +580,6 @@ window.saveProfile = async () => {
 
     const now = Date.now();
     
-    // حفظ عالمي ومحلي
     await set(ref(db, `global_players/${playerId}`), {
         id: playerId, name: myData.name, avatar: myData.avatar
     });
@@ -756,7 +748,6 @@ function renderLobby(players, adminId) {
     });
 }
 
-// Real-time Listener for Players (The Engine)
 onValue(playersRef, (snapshot) => {
     const players = snapshot.val();
     if (!players) return;
