@@ -526,17 +526,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await renderAvatars(); 
 
-    const globalPlayersRef = ref(db, `global_players/${playerId}`);
-    const globalSnap = await get(globalPlayersRef);
+    // جلب بيانات الغرفة واللاعب في آن واحد للسرعة
+    const [globalSnap, roomSnap] = await Promise.all([
+        get(globalPlayersRef),
+        get(roomRef)
+    ]);
+
+    const isGameStarted = roomSnap.exists() && roomSnap.val().status === "started";
 
     if (globalSnap.exists()) {
         const savedData = globalSnap.val();
         myData.name = savedData.name;
         myData.avatar = savedData.avatar;
         
-        await autoJoinRoom(); 
-        hideLoading();
+        if (isGameStarted) {
+            // الحالة: اللعبة بدأت واللاعب مسجل مسبقاً -> ادخل كجمهور فوراً
+            myData.team = "spectators-list";
+            await autoJoinRoom(); 
+            // سيقوم الـ onValue(roomRef) بالتحويل التلقائي لصفحة اللعبة لاحقاً
+        } else {
+            // الحالة: اللعبة في اللوبي واللاعب مسجل -> ادخل للردهة
+            await autoJoinRoom(); 
+            hideLoading();
+        }
     } else {
+        // الحالة: لاعب جديد تماماً
         document.getElementById('profileModal').style.display = 'flex';
         hideLoading();
         setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
@@ -576,15 +590,23 @@ window.saveProfile = async () => {
     
     myData.name = name;
     hasJoined = true;
-    document.getElementById('profileModal').style.display = 'none';
+    
+    // فحص سريع لحالة الغرفة قبل الحفظ
+    const roomSnap = await get(roomRef);
+    if (roomSnap.exists() && roomSnap.val().status === "started") {
+        myData.team = "spectators-list";
+    }
 
+    document.getElementById('profileModal').style.display = 'none';
     const now = Date.now();
     
+    // حفظ في البيانات العالمية
     await set(ref(db, `global_players/${playerId}`), {
         id: playerId, name: myData.name, avatar: myData.avatar
     });
 
     await autoJoinRoom();
+    // التحويل سيتم تلقائياً عبر مراقب onValue
 };
 
 window.openProfileSettings = () => {
@@ -852,8 +874,12 @@ window.handleStartGame = async () => {
 onValue(roomRef, (snap) => {
     const data = snap.val();
     if (data?.status === "started") {
-        const mode = data.settings?.mode || 'online';
-        window.location.href = `${mode === 'offline' ? 'game.html' : 'game_multiplayer.html'}?r=${roomId}&p=${playerId}`;
+        // إذا كان اللاعب قد أتم عملية الـ Join (سواء آلياً أو يدوياً)
+        if (hasJoined) {
+            const mode = data.settings?.mode || 'online';
+            const targetPage = mode === 'offline' ? 'game.html' : 'game_multiplayer.html';
+            window.location.href = `${targetPage}?r=${roomId}&p=${playerId}`;
+        }
     }
 });
 

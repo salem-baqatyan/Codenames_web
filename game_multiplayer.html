@@ -441,8 +441,17 @@ function makeDraggable(el) {
 }
 
 window.copyRoomLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    showToast("✅ تم نسخ رابط الغرفة!");
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('r');
+
+    if (roomCode) {
+        const lobbyLink = `${window.location.origin}/lobby.html?r=${roomCode}`;
+        
+        navigator.clipboard.writeText(lobbyLink);
+        showToast("✅ تم نسخ رابط الغرفة!");
+    } else {
+        showToast("❌ عذراً، لم يتم العثور على رمز الغرفة");
+    }
 };
 
 function showToast(message) {
