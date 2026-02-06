@@ -65,6 +65,31 @@
         .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
         .btn-cancel { background: #333; color: #bbb; border: 1px solid #444; }
 
+        /* --- Players List Modal & Mini Cards --- */
+        #playersListModal {
+            position: absolute; top: 60px; right: 15px; left: auto; width: 280px; height: auto;
+            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px; padding: 12px; z-index: 1100; display: none; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform-origin: top right; animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .players-modal-title { font-size: 0.7rem; font-weight: bold; color: #fff; text-align: right; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        .horizontal-players-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 5px 2px 10px 2px; scrollbar-width: none; }
+        .player-card-mini { display: flex; flex-direction: column; align-items: center; min-width: 50px; position: relative; user-select: none; }
+        .player-avatar-mini-wrap { position: relative; width: 44px; height: 44px; }
+
+        .is-admin-mini::after { content: "👑"; position: absolute; top: -10px; left: -5px; font-size: 1.1rem; transform: rotate(-20deg); z-index: 10; }
+        .avatar-frame { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 2px; border: 2px solid #fff; background: #333; overflow: hidden; }
+        .mini-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .mini-name-tag { margin-top: -6px; font-size: 0.55rem; padding: 1px 7px; border-radius: 5px; color: white; background: rgba(0,0,0,0.8); z-index: 5; white-space: nowrap; border: 1px solid transparent; }
+
+        .player-blue .avatar-frame { background: #1e3a5f !important; }
+        .player-red .avatar-frame { background: #7b241c !important; }
+        .player-red .avatar-frame { border-color: #e74c3c !important; background: #7b241c !important; }
+        .player-spec .avatar-frame { border-color: rgba(255,255,255,0.4) !important; background: #222 !important; }
+        .is-me-mini .mini-name-tag { border: 1.5px solid #7ed321 !important; box-shadow: 0 0 5px rgba(126, 211, 33, 0.5); }
+
         /* --- Top Bar --- */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
         .top-left, .top-right { display: flex; gap: 8px; align-items: center; }
@@ -154,7 +179,11 @@
 
 <!-- App Wrapper -->
 <div class="mobile-wrapper">
-
+            <!-- Players List Modal -->
+        <div id="playersListModal">
+            <div class="players-modal-title">اللاعبين</div>
+            <div class="horizontal-players-scroll" id="playersListContainer"> </div>
+        </div>
     <!-- Custom Alert Modal -->
     <div id="customAlert" class="custom-alert">
         <p id="alertMsg"></p>
@@ -167,9 +196,9 @@
     <!-- App Bar -->
     <div class="top-bar">
         <div class="top-left">
-            <div class="icon-circle">
+            <div class="icon-circle" onclick="openPlayersModal()">
                 <span id="playerCount" style="font-size:0.8rem;font-weight:bold;margin-left:2px;">0</span> 👤
-            </div>
+            </div> 
             <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
         </div>
 
@@ -239,6 +268,7 @@
     </div>
 
 </div>
+
 
 <script type="module">
 // <!-- JS Section -->
@@ -910,6 +940,41 @@ async function endTurn() {
     const input = document.getElementById('clueInput');
     if(input) input.value = '';
 }
+
+window.openPlayersModal = async () => {
+    const modal = document.getElementById('playersListModal');
+    if (modal.style.display === 'flex') { modal.style.display = 'none'; return; }
+    const playersSnap = await get(playersRef);
+    if (!playersSnap.exists()) return;
+    const playerList = Object.values(playersSnap.val());
+    const adminId = [...playerList].sort((a, b) => a.joinedAt - b.joinedAt)[0]?.id;
+    const teamOrder = ['blue-spymaster', 'blue-operative', 'red-spymaster', 'red-operative', 'spectators-list'];
+    const sortedPlayers = playerList.sort((a, b) => teamOrder.indexOf(a.team) - teamOrder.indexOf(b.team));
+    const container = document.getElementById('playersListContainer');
+    container.innerHTML = '';
+    sortedPlayers.forEach(p => {
+        let teamClass = p.team.includes('blue') ? 'player-blue' : (p.team.includes('red') ? 'player-red' : 'player-spec');
+        const isMe = (p.id === playerId), isPlayerAdmin = (p.id === adminId);
+        container.insertAdjacentHTML('beforeend', `
+            <div class="player-card-mini ${teamClass} ${isMe ? 'is-me-mini' : ''}">
+                <div class="player-avatar-mini-wrap ${isPlayerAdmin ? 'is-admin-mini' : ''}">
+                    <div class="avatar-frame"><img src="${p.avatar}" class="mini-img"></div>
+                </div>
+                <div class="mini-name-tag">${p.name} ${isMe ? '(أنت)' : ''}</div>
+            </div>`);
+    });
+    modal.style.display = 'flex';
+    modal.onclick = (e) => e.stopPropagation();
+};
+
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('playersListModal');
+    const playerCountBtn = document.getElementById('playerCount')?.parentElement;
+    if (modal && modal.style.display === 'flex' && !modal.contains(e.target) && !playerCountBtn?.contains(e.target)) {
+        modal.style.display = 'none';
+    }
+});
+
 
 
 /* ---------- Final: Bootstrap ---------- */

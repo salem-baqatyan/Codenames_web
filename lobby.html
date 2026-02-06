@@ -6,6 +6,7 @@
     <title>Codenames Pro - Lobby</title>
     <style>
         /* <!-- CSS Section --> */
+
         /* --- Global & Root --- */
         :root {
             --bg-dark: #000000; --panel-bg: #1a1a1a; --blue-team: #3498db; --red-team: #e74c3c;
@@ -95,16 +96,35 @@
         .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
         .join-btn { width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold; color: white; background: linear-gradient(to bottom, #7ed321, #417505); border: 1.5px solid #b8e986; border-radius: 15px; cursor: pointer; box-shadow: 0 2px 0 #2e5a03; user-select: none; }
         .join-btn.locked { background: transparent !important; border: 1.5px solid #fff !important; box-shadow: none !important; cursor: not-allowed; opacity: 0.7; }
-        .player-slot { display: flex; flex-direction: column; align-items: center; position: relative; }
-        .player-avatar-wrap { width: 40px; height: 40px; position: relative; }
-        .player-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; background: #333; }
-        .player-name { background: rgba(0,0,0,0.7); font-size: 0.6rem; padding: 1px 6px; border-radius: 5px; margin-top: -5px; z-index: 2; white-space: nowrap; }
-        .player-avatar-wrap.is-admin::after { content: "👑"; position: absolute; top: -12px; left: -5px; font-size: 1.1rem; transform: rotate(-20deg); }
 
         /* --- Footer --- */
         .footer { background: #000; height: 70px; padding: 10px; display: flex; align-items: center; flex-shrink: 0; }
         .start-btn { width: 100%; height: 45px; font-size: 1.1rem; font-weight: 900; color: white; background: linear-gradient(to bottom, #7ed321, #417505); border: 2px solid #b8e986; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 0 #2e5a03; display: none; }
+        
+        /* --- Players List Modal & Mini Cards --- */
+        #playersListModal {
+            position: absolute; top: 60px; right: 15px; left: auto; width: 280px; height: auto;
+            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px; padding: 12px; z-index: 1100; display: none; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform-origin: top right; animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+        .players-modal-title { font-size: 0.7rem; font-weight: bold; color: #fff; text-align: right; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        .horizontal-players-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 5px 2px 10px 2px; scrollbar-width: none; }
+        .player-card-mini { display: flex; flex-direction: column; align-items: center; min-width: 50px; position: relative; user-select: none; }
+        .player-avatar-mini-wrap { position: relative; width: 44px; height: 44px; }
+
+        .is-admin-mini::after { content: "👑"; position: absolute; top: -10px; left: -5px; font-size: 1.1rem; transform: rotate(-20deg); z-index: 10; }
+        .avatar-frame { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 2px; border: 2px solid #fff; background: #333; overflow: hidden; }
+        .mini-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .mini-name-tag { margin-top: -6px; font-size: 0.55rem; padding: 1px 7px; border-radius: 5px; color: white; background: rgba(0,0,0,0.8); z-index: 5; white-space: nowrap; border: 1px solid transparent; }
+
+        .player-blue .avatar-frame { background: #1e3a5f !important; }
+        .player-red .avatar-frame { background: #7b241c !important; }
+        .player-spec .avatar-frame { border-color: rgba(255,255,255,0.4) !important; background: #222 !important; }
+        .is-me-mini .mini-name-tag { border: 1.5px solid #7ed321 !important; box-shadow: 0 0 5px rgba(126, 211, 33, 0.5); }
+        
         /* --- Rules Modal --- */
         #rulesModal .settings-modal { max-height: 80vh; display: flex; flex-direction: column; padding: 20px 15px 15px 15px; width: 90%; position: relative; }
         #rulesAccordion { flex: 1; overflow-y: auto; padding-left: 5px; margin-bottom: 10px; }
@@ -181,7 +201,9 @@
         <!-- App Bar -->
         <div class="top-bar">
             <div class="top-left">
-                <div class="icon-circle"><span id="playerCount" style="font-size:0.8rem;font-weight:bold;margin-left:2px;">0</span> 👤</div>
+                <div class="icon-circle" onclick="openPlayersModal()">
+                    <span id="playerCount" style="font-size:0.8rem;font-weight:bold;margin-left:2px;">0</span> 👤
+                </div> 
                 <div class="btn-pill" id="roomDisplay" onclick="copyRoomLink()">🔗 الغرفة</div>
             </div>
             <div class="top-timer" id="lobbyDisplayTimer"></div>
@@ -253,9 +275,15 @@
         <div class="footer">
             <button class="start-btn" id="startBtn" onclick="handleStartGame()">بدء اللعبة</button>
         </div>
+        <!-- Players List Modal -->
+        <div id="playersListModal">
+            <div class="players-modal-title">اللاعبين</div>
+            <div class="horizontal-players-scroll" id="playersListContainer"> </div>
+        </div>
 
     </div>
-    
+
+
     <!-- Rules Modal -->
     <div class="modal-overlay" id="rulesModal">
         <div class="settings-modal">
@@ -283,12 +311,12 @@
 
                 <div class="accordion-item">
                     <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕵️ قادة الجواسيس</span><span>▼</span>
+                        <span>🕵️ قادة الجواسيس (Spymaster)</span><span>▼</span>
                     </div>
                     <div class="accordion-content">
                         <ul>
                             <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
-                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة</b>ان امكن و <b>رقم</b>لعدد الكلمات المرتبطة بهذه التلميح لمساعدة فريقه.</li>
+                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة </b>ان امكن و <b>رقم </b>لعدد الكلمات المرتبطة بهذه التلميح لمساعدة فريقه.</li>
                         </ul>
                         <div class="log-row row-red">
                             <div class="log-clue-item log-clue-red">
@@ -526,7 +554,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await renderAvatars(); 
 
-    // جلب بيانات الغرفة واللاعب في آن واحد للسرعة
     const [globalSnap, roomSnap] = await Promise.all([
         get(globalPlayersRef),
         get(roomRef)
@@ -540,17 +567,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         myData.avatar = savedData.avatar;
         
         if (isGameStarted) {
-            // الحالة: اللعبة بدأت واللاعب مسجل مسبقاً -> ادخل كجمهور فوراً
             myData.team = "spectators-list";
             await autoJoinRoom(); 
-            // سيقوم الـ onValue(roomRef) بالتحويل التلقائي لصفحة اللعبة لاحقاً
         } else {
-            // الحالة: اللعبة في اللوبي واللاعب مسجل -> ادخل للردهة
             await autoJoinRoom(); 
             hideLoading();
         }
     } else {
-        // الحالة: لاعب جديد تماماً
         document.getElementById('profileModal').style.display = 'flex';
         hideLoading();
         setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
@@ -749,26 +772,91 @@ window.joinTeam = (teamId) => {
 function renderLobby(players, adminId) {
     const containers = {
         'spectators-list': document.getElementById('spectators-list'),
-        'blue-operative': document.getElementById('blue-operative'), 'blue-spymaster': document.getElementById('blue-spymaster'),
-        'red-operative': document.getElementById('red-operative'), 'red-spymaster': document.getElementById('red-spymaster')
+        'blue-operative': document.getElementById('blue-operative'), 
+        'blue-spymaster': document.getElementById('blue-spymaster'),
+        'red-operative': document.getElementById('red-operative'), 
+        'red-spymaster': document.getElementById('red-spymaster')
     };
+
     Object.values(containers).forEach(c => { if (c) c.innerHTML = ''; });
-    document.querySelectorAll('.join-btn:not([onclick*="spectators"])').forEach(b => { b.innerText = "انضمام"; b.className = "join-btn"; b.disabled = false; });
+
+    document.querySelectorAll('.join-btn').forEach(b => {
+        if (!b.onclick.toString().includes('spectators-list')) {
+            b.innerText = "انضمام";
+            b.className = "join-btn";
+            b.disabled = false;
+        }
+    });
 
     Object.values(players).forEach(p => {
         const isMe = p.id === playerId;
         const isPlayerAdmin = p.id === adminId;
-        const html = `<div class="player-slot"><div class="player-avatar-wrap ${isPlayerAdmin ? 'is-admin' : ''}"><img src="${p.avatar}" class="player-img" style="${isMe ? 'border: 2px solid #7ed321' : ''}"></div><div class="player-name">${p.name} ${isMe ? '(أنت)' : ''}</div></div>`;
+
+        let teamClass = 'player-spec';
+        if (p.team.includes('blue')) teamClass = 'player-blue';
+        else if (p.team.includes('red')) teamClass = 'player-red';
+
+        const html = `
+            <div class="player-card-mini ${teamClass} ${isMe ? 'is-me-mini' : ''}">
+                <div class="player-avatar-mini-wrap ${isPlayerAdmin ? 'is-admin-mini' : ''}">
+                    <div class="avatar-frame">
+                        <img src="${p.avatar}" class="mini-img">
+                    </div>
+                </div>
+                <div class="mini-name-tag">
+                    ${p.name} ${isMe ? '(أنت)' : ''}
+                </div>
+            </div>
+        `;
+
         const target = containers[p.team];
         if (target) {
             target.insertAdjacentHTML('beforeend', html);
             if (p.team !== 'spectators-list') {
                 const btn = document.getElementById('btn-' + p.team);
-                if (btn) { btn.innerText = "منضم"; btn.classList.add('locked'); btn.disabled = true; }
+                if (btn) { 
+                    btn.innerText = "منضم"; 
+                    btn.classList.add('locked'); 
+                    btn.disabled = true; 
+                }
             }
         }
     });
 }
+
+window.openPlayersModal = async () => {
+    const modal = document.getElementById('playersListModal');
+    if (modal.style.display === 'flex') { modal.style.display = 'none'; return; }
+    const playersSnap = await get(playersRef);
+    if (!playersSnap.exists()) return;
+    const playerList = Object.values(playersSnap.val());
+    const adminId = [...playerList].sort((a, b) => a.joinedAt - b.joinedAt)[0]?.id;
+    const teamOrder = ['blue-spymaster', 'blue-operative', 'red-spymaster', 'red-operative', 'spectators-list'];
+    const sortedPlayers = playerList.sort((a, b) => teamOrder.indexOf(a.team) - teamOrder.indexOf(b.team));
+    const container = document.getElementById('playersListContainer');
+    container.innerHTML = '';
+    sortedPlayers.forEach(p => {
+        let teamClass = p.team.includes('blue') ? 'player-blue' : (p.team.includes('red') ? 'player-red' : 'player-spec');
+        const isMe = (p.id === playerId), isPlayerAdmin = (p.id === adminId);
+        container.insertAdjacentHTML('beforeend', `
+            <div class="player-card-mini ${teamClass} ${isMe ? 'is-me-mini' : ''}">
+                <div class="player-avatar-mini-wrap ${isPlayerAdmin ? 'is-admin-mini' : ''}">
+                    <div class="avatar-frame"><img src="${p.avatar}" class="mini-img"></div>
+                </div>
+                <div class="mini-name-tag">${p.name} ${isMe ? '(أنت)' : ''}</div>
+            </div>`);
+    });
+    modal.style.display = 'flex';
+    modal.onclick = (e) => e.stopPropagation();
+};
+
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('playersListModal');
+    const playerCountBtn = document.getElementById('playerCount')?.parentElement;
+    if (modal && modal.style.display === 'flex' && !modal.contains(e.target) && !playerCountBtn?.contains(e.target)) {
+        modal.style.display = 'none';
+    }
+});
 
 onValue(playersRef, (snapshot) => {
     const players = snapshot.val();
