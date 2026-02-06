@@ -76,14 +76,30 @@
         /* --- Settings Panel --- */
         .settings-panel { background: #1a1a1a; margin: 5px 15px; border-radius: 15px; padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
         .panel-label { text-align: center; color: #888; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; }
-        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .mode-card { background: #252525; border-radius: 10px; padding: 6px; display: flex; align-items: center; gap: 8px; border: 2px solid transparent; cursor: pointer; transition: 0.3s; }
-        .mode-card.active { border-color: #3498db; background: #1e3a5f; }
-        .mode-img { width: 30px; height: 40px; border-radius: 4px; pointer-events: none; }
-        .mode-info b { font-size: 0.65rem; display: block; }
-        .mode-info span { font-size: 0.55rem; color: #aaa; }
-        .setting-row { background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 8px; display: flex; align-items: center; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
-
+        
+        /* --- Settings Panel --- */
+        .settings-panel { 
+            background: #1a1a1a; margin: 5px 15px; border-radius: 15px; padding: 10px; flex: 1; 
+            display: flex; flex-direction: column; justify-content: center; border: 1px solid #333; 
+        }
+        .panel-label { text-align: center; color: var(--text-gray); font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; }
+        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mode-card { 
+            border-radius: 12px; padding: 8px; display: flex; align-items: center; gap: 8px; 
+            border: 1px solid #444; cursor: pointer; transition: all 0.3s ease; 
+        }
+        .mode-card.active { border-color: var(--green-action); background: rgba(126, 211, 33, 0.1); box-shadow: 0 0 15px rgba(126, 211, 33, 0.2); }
+        .mode-card.active .mode-info b { color: var(--green-action); }
+        .mode-img { width: 32px; height: 42px; border-radius: 6px; pointer-events: none; filter: grayscale(0.4); transition: 0.3s; }
+        .mode-card.active .mode-img { filter: grayscale(0); border: 1px solid rgba(126, 211, 33, 0.5); }
+        .mode-info b { font-size: 0.75rem; display: block; color: #eee; transition: 0.3s; }
+        .mode-info span { font-size: 0.6rem; color: #666; }
+        .setting-row { 
+            border-radius: 10px; margin-top: 10px; display: flex; align-items: center; 
+            padding: 8px 12px; border: 1px solid #333; cursor: pointer; transition: 0.2s; 
+        }
+        .setting-row:active { transform: scale(0.98); background: rgba(255,255,255,0.02); }
+        
         /* --- Bottom Section --- */
         .bottom-section { height: 52%; display: flex; flex-direction: column; border-top: 1px solid #222; overflow: hidden; }
 
@@ -614,7 +630,6 @@ window.saveProfile = async () => {
     myData.name = name;
     hasJoined = true;
     
-    // فحص سريع لحالة الغرفة قبل الحفظ
     const roomSnap = await get(roomRef);
     if (roomSnap.exists() && roomSnap.val().status === "started") {
         myData.team = "spectators-list";
@@ -623,13 +638,11 @@ window.saveProfile = async () => {
     document.getElementById('profileModal').style.display = 'none';
     const now = Date.now();
     
-    // حفظ في البيانات العالمية
     await set(ref(db, `global_players/${playerId}`), {
         id: playerId, name: myData.name, avatar: myData.avatar
     });
 
     await autoJoinRoom();
-    // التحويل سيتم تلقائياً عبر مراقب onValue
 };
 
 window.openProfileSettings = () => {
@@ -944,12 +957,12 @@ window.handleStartGame = async () => {
     const players = playersSnap.val() || {};
     const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
     const activeTeams = Object.values(players).map(p => p.team);
-    // if (!requiredRoles.every(role => activeTeams.includes(role))) return showToast("⚠️لا يمكن البدء! يجب تعيين لاعب في كل دور⚠️");
+    if (!requiredRoles.every(role => activeTeams.includes(role))) return showToast("⚠️لا يمكن البدء! يجب تعيين لاعب في كل دور⚠️");
 
     const settingsSnap = await get(settingsRef);
     const mode = settingsSnap.exists() ? settingsSnap.val().mode : 'online';
-    // const firstTeam = Math.random() < 0.5 ? "red" : "blue";
-    const firstTeam = "red"
+    const firstTeam = Math.random() < 0.5 ? "red" : "blue";
+    // const firstTeam = "red"
 
     await set(ref(db, `rooms/${roomId}/game`), {
         board: generateBoard(firstTeam),
@@ -962,7 +975,6 @@ window.handleStartGame = async () => {
 onValue(roomRef, (snap) => {
     const data = snap.val();
     if (data?.status === "started") {
-        // إذا كان اللاعب قد أتم عملية الـ Join (سواء آلياً أو يدوياً)
         if (hasJoined) {
             const mode = data.settings?.mode || 'online';
             const targetPage = mode === 'offline' ? 'game.html' : 'game_multiplayer.html';

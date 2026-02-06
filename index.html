@@ -51,7 +51,7 @@
         .radio-item { flex: 1; position: relative; }
         .radio-item input { position: absolute; opacity: 0; cursor: pointer; }
         .radio-label { 
-            display: block; background: #000; border: 1px solid #444; padding: 10px; 
+            display: block; border: 1px solid #444; padding: 10px; 
             border-radius: 10px; text-align: center; font-size: 0.8rem; cursor: pointer; transition: 0.3s;
         }
         .radio-item input:checked + .radio-label { 
@@ -165,13 +165,10 @@
         }
 
         Object.entries(rooms).forEach(([id, room]) => {
-            // 1. فلترة الغرف الخاصة
             if (room.settings?.visibility === 'private') return;
 
-            // 2. حساب عدد اللاعبين
             const playersCount = room.players ? Object.keys(room.players).length : 0;
 
-            // 3. (الإضافة الجديدة) تخطي الغرف الفارغة التي لا تحتوي على لاعبين
             if (playersCount === 0) return;
 
             const inGame = room.status === 'started';
@@ -191,7 +188,6 @@
             tbody.appendChild(tr);
         });
 
-        // 4. عرض رسالة إذا كانت كل الغرف فارغة أو خاصة بعد الفلترة
         if (tbody.innerHTML === '') {
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#555;">لا توجد غرف نشطة حالياً</td></tr>';
         }

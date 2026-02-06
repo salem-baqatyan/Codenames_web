@@ -91,14 +91,34 @@
         .is-me-mini .mini-name-tag { border: 1.5px solid #7ed321 !important; box-shadow: 0 0 5px rgba(126, 211, 33, 0.5); }
 
         /* --- Top Bar --- */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 10px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
         .top-left, .top-right { display: flex; gap: 8px; align-items: center; }
         .top-timer { color: white; font-size: 1.5rem; font-weight: 900; font-family: 'Courier New', Courier, monospace; position: absolute; left: 50%; transform: translateX(-50%); text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
         .icon-circle { width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 0.5px solid white; cursor: pointer; color: white; }
         .btn-pill { background: rgba(255,255,255,0.1); border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; cursor: pointer; color: white; }
 
         /* --- Dashboard & Teams --- */
-        .dashboard { height: 30%; min-height: 160px; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; padding: 0px 10px 10px 10px; flex-shrink: 0; }
+        .dashboard { 
+            height: 30%; min-height: 160px; display: grid; grid-template-columns: 1fr 1.2fr 1fr; 
+            gap: 5px; padding: 0px 10px 10px 10px; flex-shrink: 0; position: relative; 
+            transition: background 0.8s ease; background: #0d1117;
+        }
+
+        .turn-blue-operative {
+            background: radial-gradient(circle at top right, rgba(52, 152, 219, 0.4) 0%, transparent 70%);
+        }
+
+        .turn-blue-spymaster {
+            background: radial-gradient(circle at bottom right, rgba(52, 152, 219, 0.4) 0%, transparent 70%);
+        }
+
+        .turn-red-operative {
+            background: radial-gradient(circle at top left, rgba(231, 76, 60, 0.4) 0%, transparent 70%);
+        }
+
+        .turn-red-spymaster {
+            background: radial-gradient(circle at bottom left, rgba(231, 76, 60, 0.4) 0%, transparent 70%);
+        }
         .team-side { display: flex; flex-direction: column; gap: 4px; }
         .player-card { flex: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); background: #222; transition: 0.3s; position: relative; }
         .blue-team .player-card { background: linear-gradient(135deg, #1e3a5f 0%, #3498db 100%); }
@@ -137,7 +157,7 @@
 
         /* --- Card Visuals & Reveal --- */
         .card-main-body { flex: 1; border-radius: 3px; display: flex; flex-direction: column; border: 1px solid; overflow: hidden; pointer-events: none; position: relative; }
-        .bottom-box { margin-top: auto; height: 45%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; font-weight: bold; border-top: 1px solid; color: white; }
+        .bottom-box { margin-top: auto; height: 45%; display: flex; justify-content: center; align-items: center; font-size: 1rem; font-weight: normal; border-top: 1px solid; color: white; }
         .card-blue { background: #3ec1f3; } .card-blue .card-main-body { background: #19a8ff; border-color: #0b4d9b; } .card-blue .bottom-box { background: #0b4d9b; border-color: #3ec1f3; }
         .card-red { background: #ff8e7a; } .card-red .card-main-body { background: #ff6a4c; border-color: #8c2b1e; } .card-red .bottom-box { background: #8c2b1e; border-color: #ff8e7a; }
         .card-black { background: #7a7a7a; } .card-black .card-main-body { background: #444; border-color: #222; } .card-black .bottom-box { background: #1a1a1a; border-color: #7a7a7a; }
@@ -750,12 +770,19 @@ window.togglePeek = function(i, event) {
 
 function updateUI() {
     if (!gameState) return;
+    
+    const dashboard = document.querySelector('.dashboard');
+    dashboard.classList.remove('turn-blue-operative', 'turn-blue-spymaster', 'turn-red-operative', 'turn-red-spymaster');
+    
+    const turnClass = `turn-${gameState.turn.team}-${gameState.turn.phase}`;
+    dashboard.classList.add(turnClass);
+
     document.getElementById('blue-score').innerText = gameState.remaining.blue;
     document.getElementById('red-score').innerText = gameState.remaining.red;
+    
     document.querySelectorAll('.player-card').forEach(c => c.classList.remove('active-blue', 'active-red'));
     const activeId = `${gameState.turn.team}-${gameState.turn.phase}`;
-    document.getElementById(activeId)?.classList.add(gameState.turn.team === 'blue' ? 'active-blue' : 'active-red');
-    const controlArea = document.querySelector('.control-area');
+    document.getElementById(activeId)?.classList.add(gameState.turn.team === 'blue' ? 'active-blue' : 'active-red');    const controlArea = document.querySelector('.control-area');
     const clueUI = document.getElementById('clue-ui');
     const btn = document.getElementById('action-btn');
     const icon = document.getElementById('btn-icon');
