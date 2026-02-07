@@ -112,6 +112,16 @@
         .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
         .join-btn { width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold; color: white; background: linear-gradient(to bottom, #7ed321, #417505); border: 1.5px solid #b8e986; border-radius: 15px; cursor: pointer; box-shadow: 0 2px 0 #2e5a03; user-select: none; }
         .join-btn.locked { background: transparent !important; border: 1.5px solid #fff !important; box-shadow: none !important; cursor: not-allowed; opacity: 0.7; }
+/* عندما يكون الأب يحمل كلاس co-op-active */
+.teams-grid.co-op-active {
+    grid-template-rows: 1fr; /* سطر واحد فقط */
+}
+
+/* إخفاء المربعات التي لا نحتاجها في وضع التعاون */
+.teams-grid.co-op-active .blue-box:nth-child(3), 
+.teams-grid.co-op-active .red-box:nth-child(4) {
+    display: none;
+}
 
         /* --- Footer --- */
         .footer { background: #000; height: 70px; padding: 10px; display: flex; align-items: center; flex-shrink: 0; }
@@ -240,13 +250,13 @@
         <div class="settings-panel">
             <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
             <div class="mode-options">
-                <div class="mode-card" id="mode-offline" onclick="setGameMode('offline')">
-                    <img src="img/local.webp" class="mode-img">
-                    <div class="mode-info"><b>أوفلاين</b><span>جهاز واحد</span></div>
+                <div class="mode-card" id="mode-Co_Op" onclick="setGameMode('Co_Op')">
+                    <img src="img/Co_Op.png" class="mode-img">
+                    <div class="mode-info"><b>تعاونية</b><span>2+ لاعبين</span></div>
                 </div>
-                <div class="mode-card active" id="mode-online" onclick="setGameMode('online')">
-                    <img src="img/online.webp" class="mode-img">
-                    <div class="mode-info"><b>أونلاين</b><span>عدة أجهزة</span></div>
+                <div class="mode-card active" id="mode-PvP" onclick="setGameMode('PvP')">
+                    <img src="img/PvP.png" class="mode-img">
+                    <div class="mode-info"><b>تنافسية</b><span>4+ لاعبين</span></div>
                 </div>
             </div>
             <div class="setting-row" onclick="openTimerModal()">
@@ -299,178 +309,8 @@
 
     </div>
 
-
-    <!-- Rules Modal -->
-    <div class="modal-overlay" id="rulesModal">
-        <div class="settings-modal">
-            <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
-            <div class="modal-header">كيفية اللعب</div>
-            <div class="rules-intro">
-                <p><b>كودنايمز (Codenames):</b> هي لعبة تعتمد على ربط الكلمات والعمل الجماعي بين فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</p>
-                <p> الفائز هو أول فريق يجد جميع كلماته السرية.</p>
-                
-               
-            </div>
-            <div id="rulesAccordion">
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎮 الإعداد والأدوار</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>ينقسم اللاعبون إلى فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</li>
-                            <li>يجب أن يحتوي كل فريق على <b>قائد الجواسيس (Spymaster)</b> و<b>عميل (Operative)</b>.</li>
-                            <li>يتم عرض شبكة 5×5 مكونة من 25 بطاقة بها كلمات رمزية.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕵️ قادة الجواسيس (Spymaster)</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
-                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة </b>ان امكن و <b>رقم </b>لعدد الكلمات المرتبطة بهذه التلميح لمساعدة فريقه.</li>
-                        </ul>
-                        <div class="log-row row-red">
-                            <div class="log-clue-item log-clue-red">
-                                <img src="img/avatar/snowman.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
-                                <div class="log-text-clue">حيوان</div>
-                                <div class="log-num-circle">3</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🙋‍♂️ العملاء (Operatives)</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>(بلا الوان)لا يعرف العملاء هويات البطاقات مسبقاً.</li>
-                            <li>يحاول تخمين الكلمات الصحيحة بناءً على تلميح قائد الجواسيس.</li>
-                            <li>يجب عليهم تجنب كلمات الفريق المنافس، وبطاقة الاغتيال(السوداء).</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🟦 أنواع البطاقات</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>يتم تعيين كل كلمة في الشبكة سرياً لواحد من أربعة أصناف:</p>
-                        <ul>
-                            <li><b>بطاقات زرقاء:</b> يجب على الفريق الأزرق العثور عليها.</li>
-                            <li><b>بطاقات حمراء:</b> يجب على الفريق الأحمر العثور عليها.</li>
-                            <li><b>المارة الأبرياء:</b> بطاقات محايدة تنهي الدور فقط.</li>
-                            <li><b>بطاقة المغتال (السوداء):</b> إذا لمستها، يخسر فريقك فوراً!</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>💬 إعطاء التلميحات</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>عندما يأتي دورك كقائد جاسوس:</p>
-                        <ol>
-                            <li>ابحث عن كلمة واحدة تربط أكبر عدد ممكن من بطاقات فريقك.</li>
-                            <li>أضف رقماً يوضح عدد الكلمات المرتبطة بهذا التلميح.</li>
-                            <li><b>تنبيه:</b> لا يصح إعطاء تلميح هو جزء من كلمة موجودة على الشبكة!</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🧠 التلميحات الصالحة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يجب أن يتعلق التلميح <b>بمعنى</b> الكلمات وليس بطريقة كتابتها أو موقعها.</li>
-                            <li>لا يجوز استخدام ترجمات للكلمات الموجودة بلغات أخرى.</li>
-                            <li>إذا لم تكن متأكداً من قانونية التلميح، اسأل القائد المنافس سرياً.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕹️ التخمين (للعملاء)</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>بعد رؤية التلميح، يقوم العميل بـ:</p>
-                        <ol>
-                            <li>البحث عن رابط بين التلميح والكلمات الموجودة</li>
-                            <li>تحديد اختيارهم عن طريق الضغط على الكلمات التي يشكوا بها.</li>
-                            <li>أكد الكلمات التي طابقت التلميح.</li>
-                            <li>إذا كان التخمين صحيحاً، يمكنك الاستمرار بتخمين كلمة إضافية.</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔢 أرقام التلميحات الخاصة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>التلميح 0:</b> يعني أن لا توجد أي كلمة من كلمات فريقك ترتبط بالتلميح.</li>
-                            <li><b>التلميح لا نهائي (∞):</b> يسمح للعملاء بالتخمين بلا حدود حتى يخطئوا.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔄 تدفق اللعبة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>تنتهي نوبة الفريق في الحالات التالية:</p>
-                        <ul>
-                            <li>اختيار بطاقة "مار بريء"(بطاقة محايدة) أو بطاقة الفريق المنافس.</li>
-                            <li>أو الضغط على زر انهاء الدور</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎯 الفوز والخسارة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>الفوز:</b> كشف جميع بطاقات فريقك أولاً.</li>
-                            <li><b>الخسارة الفورية:</b> لمس بطاقة "المغتال" البطاقة السوداء.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🥳 نصائح ختامية</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>ضروري يكون بينك وبين فريقك تفاهم وتناغم عالي.</li>
-                            <li>استمتع بالربط الإبداعي بين الكلمات وفك شفرة التلميح!</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
-        </div>
-    </div>
-
-
-
 </div>
-
+<script src="words.js"></script>
 <script type="module">
 // <!-- JS Section -->
 
@@ -613,7 +453,7 @@ async function autoJoinRoom() {
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
-            settings: { mode: 'online', timer: 0, visibility: typeParam } 
+            settings: { mode: 'PvP', timer: 0, visibility: typeParam } 
         });
     } else {
         updateRoomActivity();
@@ -783,6 +623,22 @@ window.joinTeam = (teamId) => {
 };
 
 function renderLobby(players, adminId) {
+    const grid = document.querySelector('.teams-grid');
+    const isCoOp = document.getElementById('mode-Co_Op').classList.contains('active');
+
+    if (isCoOp) {
+        grid.classList.add('co-op-active');
+        // تغيير العناوين لـ Side A و Side B (أو RED و BLUE كما طلبت)
+        document.querySelectorAll('.blue-box .box-title')[0].innerText = "BLUE SIDE";
+        document.querySelectorAll('.red-box .box-title')[0].innerText = "RED SIDE";
+    } else {
+        grid.classList.remove('co-op-active');
+        // إعادة العناوين الأصلية لوضع التنافس
+        document.querySelectorAll('.blue-box .box-title')[0].innerText = "OPERATIVE";
+        document.querySelectorAll('.blue-box .box-title')[1].innerText = "SPYMASTER";
+        document.querySelectorAll('.red-box .box-title')[0].innerText = "OPERATIVE";
+        document.querySelectorAll('.red-box .box-title')[1].innerText = "SPYMASTER";
+    }
     const containers = {
         'spectators-list': document.getElementById('spectators-list'),
         'blue-operative': document.getElementById('blue-operative'), 
@@ -876,17 +732,52 @@ onValue(playersRef, (snapshot) => {
     if (!players) return;
     const playerList = Object.values(players);
     document.getElementById('playerCount').innerText = playerList.length;
+    
+    // ترتيب اللاعبين حسب وقت الانضمام لتحديد الآدمن (أول من دخل)
     const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
     const adminId = sorted[0].id;
-    isAdmin = (playerId === adminId);
+    
+    isAdmin = (playerId === adminId); // تحديث المتغير العالمي
+
+    // تحديث الواجهة بناءً على الصلاحية
     document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
-    document.querySelectorAll('.settings-panel').forEach(el => el.style.opacity = isAdmin ? "1" : "0.5");
+    
+    // تأكد أن لوحة الإعدادات تستجيب للنقرات إذا كان آدمن
+    const settingsPanel = document.querySelector('.settings-panel');
+    if (settingsPanel) {
+        settingsPanel.style.opacity = isAdmin ? "1" : "0.5";
+        settingsPanel.style.pointerEvents = isAdmin ? "auto" : "none"; // إضافة هذا السطر لمنع الضغط لغير الآدمن
+    }
+    
     renderLobby(players, adminId);
 });
 
 
 /* ---------- 6. Admin & Game Settings ---------- */
-window.setGameMode = (mode) => { if (!isAdmin) return; update(settingsRef, { mode }); updateRoomActivity(); };
+window.setGameMode = (mode) => { 
+    if (!isAdmin) {
+        showToast("عذراً، الآدمن فقط يمكنه تغيير المود");
+        return; 
+    }
+    
+    // 1. تحديث المود في الإعدادات
+    update(settingsRef, { mode: mode });
+
+    // 2. نقل جميع اللاعبين إلى الجمهور
+    // نستخدم transaction على مرجع اللاعبين لضمان تحديث الجميع
+    runTransaction(playersRef, (players) => {
+        if (players) {
+            Object.keys(players).forEach(id => {
+                players[id].team = 'spectators-list'; // تعيين الفريق كجمهور للكل
+            });
+        }
+        return players;
+    }).then(() => {
+        updateRoomActivity();
+    }).catch(err => {
+        console.error("خطأ أثناء نقل اللاعبين:", err);
+    });
+};
 window.openTimerModal = () => { if (isAdmin) document.getElementById('timerModal').style.display = 'flex'; };
 window.changeTimer = (val) => {
     if (!isAdmin) return;
@@ -895,12 +786,31 @@ window.changeTimer = (val) => {
     updateRoomActivity();
 };
 
+let lastMode = null; // متغير خارج المستمع لمراقبة التغيير
+
 onValue(settingsRef, (snapshot) => {
     const s = snapshot.val();
-    if (!s || s.timer === undefined) return;
-    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-    if (s.mode) { const activeCard = document.getElementById('mode-' + s.mode); if (activeCard) activeCard.classList.add('active'); }
+    if (!s || !s.mode) return;
+
+    // 2. منطق الإشعار (يظهر فقط عند التغيير الحقيقي وليس أول دخول)
+    if (lastMode !== null && s.mode !== lastMode) {
+        const modeName = s.mode === 'Co_Op' ? 'الوضع التعاوني' : 'الوضع التنافسي';
+        showToast(`🔄 تم تغيير النمط إلى: ${modeName}`);
+    }
+
+    // 3. التحديثات البصرية (تنفذ دائماً لضمان المزامنة)
     
+    // تحديث بطاقات المود
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+    const activeCard = document.getElementById('mode-' + s.mode);
+    if (activeCard) activeCard.classList.add('active');
+
+    // تحديث العناوين وشبكة الفرق
+    renderLobbyHeaders(s.mode);
+
+    // 4. حفظ الحالة الحالية للمرة القادمة
+    lastMode = s.mode;
+
     const seconds = s.timer;
     const displayTimer = document.getElementById('lobbyDisplayTimer');
     let label = "بدون", icon = "🚫", displayStr = "";
@@ -920,54 +830,126 @@ onValue(settingsRef, (snapshot) => {
     document.getElementById('timerSlider').value = valMap[seconds];
 });
 
+function renderLobbyHeaders(mode) {
+    const grid = document.querySelector('.teams-grid');
+    const isCoOp = (mode === 'Co_Op');
+
+    if (isCoOp) {
+        // 1. إضافة فئة التصميم التعاوني
+        grid.classList.add('co-op-active');
+
+        // 2. تحديث العناوين لتناسب المود التعاوني
+        // نختار أول صندوقين فقط لأن البقية سيتم إخفاؤهم بالـ CSS
+        const blueTitle = document.querySelectorAll('.blue-box .box-title')[0];
+        const redTitle = document.querySelectorAll('.red-box .box-title')[0];
+        
+        if(blueTitle) blueTitle.innerText = "BLUE SIDE";
+        if(redTitle) redTitle.innerText = "RED SIDE";
+    } else {
+        // 1. إزالة فئة التصميم التعاوني (العودة للتنافسي)
+        grid.classList.remove('co-op-active');
+
+        // 2. إعادة العناوين الأصلية الأربعة
+        const blueTitles = document.querySelectorAll('.blue-box .box-title');
+        const redTitles = document.querySelectorAll('.red-box .box-title');
+
+        if(blueTitles[0]) blueTitles[0].innerText = "OPERATIVE";
+        if(blueTitles[1]) blueTitles[1].innerText = "SPYMASTER";
+        if(redTitles[0]) redTitles[0].innerText = "OPERATIVE";
+        if(redTitles[1]) redTitles[1].innerText = "SPYMASTER";
+    }
+}
 
 /* ---------- 7. Game Engine & Start ---------- */
 function generateBoard(startingTeam) {
-    const words = [
-        "أسد","نمر","ذئب","ثعلب","حصان","نسر","غراب","سمكة","قرش","حوت",
-        "شمس","قمر","نجم","كوكب","مجرة","ظل","نور","ليل","نهار","برق",
-        "جبل","وادي","نهر","بحر","محيط","جزيرة","صحراء","غابة","كهف","بركان",
-        "كتاب","قلم","ورقة","حبر","مكتبة","دفتر","رسالة","خريطة","عنوان","كلمة",
-        "باب","نافذة","مفتاح","قفل","درج","سقف","جدار","مصباح","كرسي","طاولة",
-        "سيارة","قطار","سفينة","طائرة","دراجة","محطة","ميناء","مطار","طريق","جسر",
-        "ساعة","بوصلة","مرآة","كاميرا","هاتف","حاسوب","راديو","تلفاز","بطارية","زر",
-        "تفاحة","خبز","قهوة","شاي","عسل","سكر","ملح","زيت","ليمون","تمر",
-        "ملك","تاج","سيف","درع","قلعة","جندي","قائد","علم","راية","حدود",
-        "كرة","ملعب","هدف","شبكة","حكم","مضمار","ميدالية","كأس","فريق","جولة",
-        "قلب","عين","يد","رأس","قدم","دم","عصب","غيمة","صوت","صدى",
-        "نار","ماء","هواء","تراب","جليد","دخان","رماد","شرارة","موج","ريح",
-        "منظار","سر","لغز","شفرة","علامة","إشارة","مسار","بوابة","بستان","جوهرة",
-        "نيزك","شهاب","مدار","مسبار","أقمار","ثقب","فراغ","نفق","رعد","بعد",
-        "طفل","معلم","طبيب","تاجر","سائق","بحار","رسام","موسيقي","قاضي","شاعر",
-        "مدينة","قرية","سوق","مقهى","صيدلية","مدرسة","مستشفى","منتزه","متحف","مسرح",
-        "صندوق","حقيبة","محفظة","خزانة","رف","خيمة","مخزن","برميل","سلة","علبة",
-        "ذهب","فضة","حديد","نحاس","حجر","ماس","لؤلؤ","زمرد","ياقوت","بلور"
-    ];
-    const shuffledWords = [...words]; shuffleArray(shuffledWords);
+    // لم نعد بحاجة لتعريف المصفوفة الطويلة هنا
+    const shuffledWords = [...words]; 
+    shuffleArray(shuffledWords);
+
     const redCount = (startingTeam === "red") ? 9 : 8;
     const blueCount = (startingTeam === "blue") ? 9 : 8;
-    const types = ["killer", ...Array(redCount).fill("red"), ...Array(blueCount).fill("blue"), ...Array(7).fill("neutral")];
+
+    const types = [
+        "killer", 
+        ...Array(redCount).fill("red"), 
+        ...Array(blueCount).fill("blue"), 
+        ...Array(7).fill("neutral")
+    ];
+
     shuffleArray(types);
-    return types.map((type, i) => ({ word: shuffledWords[i], type, revealed: false, visual: getNextImageFromPool(type) }));
+
+    return types.map((type, i) => ({ 
+        word: shuffledWords[i], 
+        type, 
+        revealed: false, 
+        visual: getNextImageFromPool(type) 
+    }));
+}
+function generateDuetBoard() {
+    const shuffledWords = [...words]; 
+    shuffleArray(shuffledWords);
+    
+    // تعريف الـ 25 كرت بناءً على منطق Dust الذي طلبته
+    let cards = [];
+    
+    // 3 كلمات: (A احمر B ازرق)
+    for(let i=0; i<3; i++) cards.push({ sideA: 'red', sideB: 'blue' });
+    // 1 كلمة: (أسود للطرفين)
+    cards.push({ sideA: 'killer', sideB: 'killer' });
+    // 1 كلمة: (احمر لـ A، أسود لـ B)
+    cards.push({ sideA: 'red', sideB: 'killer' });
+    // 1 كلمة: (أسود لـ A، ازرق لـ B)
+    cards.push({ sideA: 'killer', sideB: 'blue' });
+    // 5 كلمات: (احمر لـ A، أبيض لـ B)
+    for(let i=0; i<5; i++) cards.push({ sideA: 'red', sideB: 'neutral' });
+    // 5 كلمات: (أبيض لـ A، ازرق لـ B)
+    for(let i=0; i<5; i++) cards.push({ sideA: 'neutral', sideB: 'blue' });
+    // البقية (9 كلمات): (أبيض للطرفين)
+    while(cards.length < 25) cards.push({ sideA: 'neutral', sideB: 'neutral' });
+
+    shuffleArray(cards);
+
+    return cards.map((card, i) => ({
+        word: shuffledWords[i],
+        sideA: card.sideA,
+        sideB: card.sideB,
+        revealed: false,
+        // هنا يمكنك اختيار صورة افتراضية للكرت
+        visual: getNextImageFromPool(card.sideA === 'red' ? 'red' : (card.sideB === 'blue' ? 'blue' : 'neutral'))
+    }));
 }
 
 window.handleStartGame = async () => {
     if (!isAdmin) return;
+    
+    const settingsSnap = await get(settingsRef);
+    const mode = settingsSnap.exists() ? settingsSnap.val().mode : 'PvP';
+    
     const playersSnap = await get(playersRef);
     const players = playersSnap.val() || {};
-    const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
-    const activeTeams = Object.values(players).map(p => p.team);
-    if (!requiredRoles.every(role => activeTeams.includes(role))) return showToast("⚠️لا يمكن البدء! يجب تعيين لاعب في كل دور⚠️");
+    const playerList = Object.values(players);
+    const activeTeams = playerList.map(p => p.team);
 
-    const settingsSnap = await get(settingsRef);
-    const mode = settingsSnap.exists() ? settingsSnap.val().mode : 'online';
-    const firstTeam = Math.random() < 0.5 ? "red" : "blue";
-    // const firstTeam = "red"
+    if (mode === 'PvP') {
+        const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
+        if (!requiredRoles.every(role => activeTeams.includes(role))) 
+            return showToast("⚠️ يجب تعيين لاعب في كل دور لوضع التنافس");
+    } else {
+        // في التعاوني: يجب أن يكون هناك لاعب في Blue Side ولاعب في Red Side
+        const hasBlue = activeTeams.includes('blue-operative');
+        const hasRed = activeTeams.includes('red-operative');
+        if (!hasBlue || !hasRed) 
+            return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
+    }
+
+    // تشغيل الدالة المناسبة حسب المود
+    const boardData = (mode === 'Co_Op') ? generateDuetBoard() : generateBoard(Math.random() < 0.5 ? "red" : "blue");
 
     await set(ref(db, `rooms/${roomId}/game`), {
-        board: generateBoard(firstTeam),
-        turn: { team: firstTeam, phase: "spymaster", updatedAt: Date.now() },
-        remaining: firstTeam === "red" ? { red: 9, blue: 8 } : { red: 8, blue: 9 }
+        board: boardData,
+        mode: mode,
+        turn: mode === 'Co_Op' ? {side: 'blue', phase: 'clue'} : { team: "red", phase: "spymaster" },
+        // أضف أي بيانات إضافية للتعاوني هنا
     });
     await update(roomRef, { status: "started" });
 };
@@ -976,8 +958,8 @@ onValue(roomRef, (snap) => {
     const data = snap.val();
     if (data?.status === "started") {
         if (hasJoined) {
-            const mode = data.settings?.mode || 'online';
-            const targetPage = mode === 'offline' ? 'game.html' : 'game_multiplayer.html';
+            const mode = data.settings?.mode || 'PvP';
+            const targetPage = mode === 'Co_Op' ? 'game_Co_Op.html' : 'game_PvP.html';
             window.location.href = `${targetPage}?r=${roomId}&p=${playerId}`;
         }
     }
