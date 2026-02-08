@@ -940,8 +940,7 @@ window.handleStartGame = async () => {
     }
 
     // --- منطق البداية العشوائية ---
-    const startingSide = red;
-    // const startingSide = Math.random() < 0.5 ? "red" : "blue";
+    const startingSide = Math.random() < 0.5 ? "red" : "blue";
 
     // توليد البيانات بناءً على المود
     let boardData;
