@@ -786,71 +786,73 @@ window.changeTimer = (val) => {
     updateRoomActivity();
 };
 
-let lastMode = null; 
+let lastMode = null; // متغير خارج المستمع لمراقبة التغيير
 
 onValue(settingsRef, (snapshot) => {
     const s = snapshot.val();
     if (!s || !s.mode) return;
 
-    // 1. تحديث التنبيهات عند التغيير
+    // 2. منطق الإشعار (يظهر فقط عند التغيير الحقيقي وليس أول دخول)
     if (lastMode !== null && s.mode !== lastMode) {
         const modeName = s.mode === 'Co_Op' ? 'الوضع التعاوني' : 'الوضع التنافسي';
         showToast(`🔄 تم تغيير النمط إلى: ${modeName}`);
     }
 
-    // 2. تحديث الشكل البصري للبطاقات (Active State)
+    // 3. التحديثات البصرية (تنفذ دائماً لضمان المزامنة)
+    
+    // تحديث بطاقات المود
     document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
     const activeCard = document.getElementById('mode-' + s.mode);
     if (activeCard) activeCard.classList.add('active');
 
-    // 3. تحديث العناوين في اللوبي فوراً لجميع اللاعبين
+    // تحديث العناوين وشبكة الفرق
     renderLobbyHeaders(s.mode);
 
-    // 4. تحديث مؤقت الوقت (Timer)
-    const seconds = s.timer || 0;
+    // 4. حفظ الحالة الحالية للمرة القادمة
+    lastMode = s.mode;
+
+    const seconds = s.timer;
     const displayTimer = document.getElementById('lobbyDisplayTimer');
     let label = "بدون", icon = "🚫", displayStr = "";
-    
     if (seconds > 0) {
         icon = seconds === 30 ? "⚡" : (seconds === 60 ? "⏱️" : "🐢");
         label = seconds < 60 ? `${seconds} ثانية` : `${seconds / 60} دقيقة`;
         displayStr = seconds === 30 ? "00:30" : (seconds === 60 ? "01:00" : "02:00");
-        if(displayTimer) displayTimer.style.display = 'block';
-    } else { 
-        if(displayTimer) displayTimer.style.display = 'none'; 
-    }
+        displayTimer.style.display = 'block';
+    } else { displayTimer.style.display = 'none'; }
 
     document.getElementById('mainTimerText').innerText = label;
     document.getElementById('mainTimerIcon').innerText = icon;
     document.getElementById('modalTimerText').innerText = label;
     document.getElementById('modalTimerIcon').innerText = icon;
-    if(displayTimer) displayTimer.innerText = displayStr;
-
-    // تحديث قيمة السلايدر للمشرف فقط لضمان المزامنة
-    const timerSlider = document.getElementById('timerSlider');
+    displayTimer.innerText = displayStr;
     const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
-    if(timerSlider) timerSlider.value = valMap[seconds] || 0;
-
-    // حفظ الحالة الأخيرة
-    lastMode = s.mode;
+    document.getElementById('timerSlider').value = valMap[seconds];
 });
 
 function renderLobbyHeaders(mode) {
     const grid = document.querySelector('.teams-grid');
-    if (!grid) return;
-
     const isCoOp = (mode === 'Co_Op');
-    const blueTitles = document.querySelectorAll('.blue-box .box-title');
-    const redTitles = document.querySelectorAll('.red-box .box-title');
 
     if (isCoOp) {
+        // 1. إضافة فئة التصميم التعاوني
         grid.classList.add('co-op-active');
-        // في التعاوني، نظهر فقط العنوان الأول لكل فريق
-        if(blueTitles[0]) blueTitles[0].innerText = "BLUE SIDE";
-        if(redTitles[0]) redTitles[0].innerText = "RED SIDE";
+
+        // 2. تحديث العناوين لتناسب المود التعاوني
+        // نختار أول صندوقين فقط لأن البقية سيتم إخفاؤهم بالـ CSS
+        const blueTitle = document.querySelectorAll('.blue-box .box-title')[0];
+        const redTitle = document.querySelectorAll('.red-box .box-title')[0];
+        
+        if(blueTitle) blueTitle.innerText = "BLUE SIDE";
+        if(redTitle) redTitle.innerText = "RED SIDE";
     } else {
+        // 1. إزالة فئة التصميم التعاوني (العودة للتنافسي)
         grid.classList.remove('co-op-active');
-        // في التنافسي، نعيد المسميات الأربعة
+
+        // 2. إعادة العناوين الأصلية الأربعة
+        const blueTitles = document.querySelectorAll('.blue-box .box-title');
+        const redTitles = document.querySelectorAll('.red-box .box-title');
+
         if(blueTitles[0]) blueTitles[0].innerText = "OPERATIVE";
         if(blueTitles[1]) blueTitles[1].innerText = "SPYMASTER";
         if(redTitles[0]) redTitles[0].innerText = "OPERATIVE";
@@ -935,8 +937,8 @@ window.handleStartGame = async () => {
     } else {
         const hasBlue = activeTeams.includes('blue-operative');
         const hasRed = activeTeams.includes('red-operative');
-        // if (!hasBlue || !hasRed) 
-        //     return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
+        if (!hasBlue || !hasRed) 
+            return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
     }
 
     // --- منطق البداية العشوائية ---
