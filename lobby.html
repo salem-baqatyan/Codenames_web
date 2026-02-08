@@ -889,7 +889,6 @@ function generateDuetBoard() {
     const shuffledWords = [...words]; 
     shuffleArray(shuffledWords);
     
-    // تعريف الـ 25 كرت بناءً على منطق Dust الذي طلبته
     let cards = [];
     
     // 3 كلمات: (A احمر B ازرق)
@@ -914,7 +913,7 @@ function generateDuetBoard() {
         sideA: card.sideA,
         sideB: card.sideB,
         revealed: false,
-        // هنا يمكنك اختيار صورة افتراضية للكرت
+        // اختيار الصورة بناءً على حالة الكرت لـ SideA أو SideB أو محايد
         visual: getNextImageFromPool(card.sideA === 'red' ? 'red' : (card.sideB === 'blue' ? 'blue' : 'neutral'))
     }));
 }
@@ -930,27 +929,42 @@ window.handleStartGame = async () => {
     const playerList = Object.values(players);
     const activeTeams = playerList.map(p => p.team);
 
+    // التحقق من الجاهزية
     if (mode === 'PvP') {
         const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
         if (!requiredRoles.every(role => activeTeams.includes(role))) 
             return showToast("⚠️ يجب تعيين لاعب في كل دور لوضع التنافس");
     } else {
-        // في التعاوني: يجب أن يكون هناك لاعب في Blue Side ولاعب في Red Side
         const hasBlue = activeTeams.includes('blue-operative');
         const hasRed = activeTeams.includes('red-operative');
-        if (!hasBlue || !hasRed) 
-            return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
+        // if (!hasBlue || !hasRed) 
+        //     return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
     }
 
-    // تشغيل الدالة المناسبة حسب المود
-    const boardData = (mode === 'Co_Op') ? generateDuetBoard() : generateBoard(Math.random() < 0.5 ? "red" : "blue");
+    // --- منطق البداية العشوائية ---
+    const startingSide = Math.random() < 0.5 ? "red" : "blue";
 
+    // توليد البيانات بناءً على المود
+    let boardData;
+    let turnUpdate;
+
+    if (mode === 'Co_Op') {
+        boardData = generateDuetBoard();
+        // في التعاوني الـ side المختار يبدأ بإعطاء Clue
+        turnUpdate = { side: startingSide, phase: 'clue' };
+    } else {
+        // في التنافسي الـ team المختار يؤثر على عدد الكلمات (9 ضد 8) ويبدأ spymaster
+        boardData = generateBoard(startingSide);
+        turnUpdate = { team: startingSide, phase: "spymaster" };
+    }
+
+    // تحديث قاعدة البيانات
     await set(ref(db, `rooms/${roomId}/game`), {
         board: boardData,
         mode: mode,
-        turn: mode === 'Co_Op' ? {side: 'blue', phase: 'clue'} : { team: "red", phase: "spymaster" },
-        // أضف أي بيانات إضافية للتعاوني هنا
+        turn: turnUpdate
     });
+
     await update(roomRef, { status: "started" });
 };
 
