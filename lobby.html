@@ -930,13 +930,13 @@ window.handleStartGame = async () => {
     // التحقق من الجاهزية
     if (mode === 'PvP') {
         const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
-        if (!requiredRoles.every(role => activeTeams.includes(role))) 
-            return showToast("⚠️ يجب تعيين لاعب في كل دور لوضع التنافس");
+        // if (!requiredRoles.every(role => activeTeams.includes(role))) 
+        //     return showToast("⚠️ يجب تعيين لاعب في كل دور لوضع التنافس");
     } else {
         const hasBlue = activeTeams.includes('blue-operative');
         const hasRed = activeTeams.includes('red-operative');
-        if (!hasBlue || !hasRed) 
-            return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
+        // if (!hasBlue || !hasRed) 
+        //     return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
     }
 
     // --- منطق البداية العشوائية ---
