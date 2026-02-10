@@ -925,45 +925,52 @@ window.handleStartGame = async () => {
     const playersSnap = await get(playersRef);
     const players = playersSnap.val() || {};
     const playerList = Object.values(players);
-    const activeTeams = playerList.map(p => p.team);
+    
+    // استخراج كافة الأدوار التي اختارها اللاعبون الموجودون حالياً
+    const activeRoles = playerList.map(p => p.team);
 
-    // التحقق من الجاهزية
     if (mode === 'PvP') {
+        // الأدوار المطلوبة لبدء وضع التنافس
         const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
-        if (!requiredRoles.every(role => activeTeams.includes(role))) 
-            return showToast("⚠️ يجب تعيين لاعب في كل دور لوضع التنافس");
+        
+        // التحقق: هل كل دور من الأدوار المطلوبة موجود في قائمة الأدوار النشطة؟
+        const isReady = requiredRoles.every(role => activeRoles.includes(role));
+        
+        if (!isReady) {
+            return showToast("⚠️ يجب تعيين لاعب في كل دور (جاسوس وقائد لكل فريق)");
+        }
     } else {
-        const hasBlue = activeTeams.includes('blue-operative');
-        const hasRed = activeTeams.includes('red-operative');
+        // وضع Co_Op (التعاوني)
+        const hasBlue = activeRoles.includes('blue-operative');
+        const hasRed = activeRoles.includes('red-operative');
         if (!hasBlue || !hasRed) 
             return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
     }
 
-    // --- منطق البداية العشوائية ---
+    // تحديد الفريق البادئ عشوائياً
     // const startingSide = Math.random() < 0.5 ? "red" : "blue";
     const startingSide = "red";
 
-    // توليد البيانات بناءً على المود
     let boardData;
     let turnUpdate;
 
     if (mode === 'Co_Op') {
         boardData = generateDuetBoard();
-        // في التعاوني الـ side المختار يبدأ بإعطاء Clue
         turnUpdate = { side: startingSide, phase: 'clue' };
     } else {
-        // في التنافسي الـ team المختار يؤثر على عدد الكلمات (9 ضد 8) ويبدأ spymaster
+        // في PvP: الفريق البادئ يأخذ 9 كلمات والآخر 8
         boardData = generateBoard(startingSide);
         turnUpdate = { team: startingSide, phase: "spymaster" };
     }
 
-    // تحديث قاعدة البيانات
+    // 1. تحديث بيانات اللعبة أولاً
     await set(ref(db, `rooms/${roomId}/game`), {
         board: boardData,
         mode: mode,
         turn: turnUpdate
     });
 
+    // 2. تغيير حالة الغرفة إلى "started" وهذا سيؤدي لتوجيه الجميع تلقائياً
     await update(roomRef, { status: "started" });
 };
 
