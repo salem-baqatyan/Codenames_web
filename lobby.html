@@ -922,10 +922,10 @@ window.handleStartGame = async () => {
     const settingsSnap = await get(settingsRef);
     const mode = settingsSnap.exists() ? settingsSnap.val().mode : 'PvP';
     
-    const playersSnap = await get(playersRef);
-    const players = playersSnap.val() || {};
-    const playerList = Object.values(players);
-    const activeTeams = playerList.map(p => p.team);
+    // const playersSnap = await get(playersRef);
+    // const players = playersSnap.val() || {};
+    // const playerList = Object.values(players);
+    // const activeTeams = playerList.map(p => p.team);
 
     // التحقق من الجاهزية
     // if (mode === 'PvP') {
@@ -939,10 +939,9 @@ window.handleStartGame = async () => {
     //         return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
     // }
 
-    // --- منطق البداية العشوائية ---
-    const startingSide = Math.random() < 0.5 ? "red" : "blue";
+    // const startingSide = Math.random() < 0.5 ? "red" : "blue";
+    const startingSide = "red";
 
-    // توليد البيانات بناءً على المود
     let boardData;
     let turnUpdate;
 
@@ -969,11 +968,15 @@ window.handleStartGame = async () => {
 onValue(roomRef, (snap) => {
     const data = snap.val();
     if (data?.status === "started") {
-        if (hasJoined) {
             const mode = data.settings?.mode || 'PvP';
             const targetPage = mode === 'Co_Op' ? 'game_Co_Op.html' : 'game_PvP.html';
             window.location.href = `${targetPage}?r=${roomId}&p=${playerId}`;
-        }
+
+        // if (hasJoined) {
+        //     const mode = data.settings?.mode || 'PvP';
+        //     const targetPage = mode === 'Co_Op' ? 'game_Co_Op.html' : 'game_PvP.html';
+        //     window.location.href = `${targetPage}?r=${roomId}&p=${playerId}`;
+        // }
     }
 });
 
