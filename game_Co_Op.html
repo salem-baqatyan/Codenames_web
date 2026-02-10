@@ -230,39 +230,28 @@
     </div>
 
     <!-- Teams Dashboard -->
-<div class="dashboard" id="mainDashboard"> 
+<div class="dashboard" id="gameDashboard"> 
     <div class="team-side red-team">
         <div class="player-card" id="red-operative">
             <span class="role-title">RED SIDE</span>
-            <div class="avatar-box">
-                </div>
+            <div class="avatar-box"></div>
             <div class="player-name">—</div>
         </div>
-        <div class="score-box">
-            <div class="score" id="red-score">15</div>
-            <div style="font-size: 0.5rem; color: #aaa; text-align: center;">المتبقي لـ 15</div>
-        </div>
+        <div class="score" id="red-score">15</div>
     </div>
 
     <div class="game-log-container">
         <div style="text-align:center;font-size:0.4rem;color:#aaa;margin-bottom:2px;">CO-OP LOG</div>
         <div id="log-content"></div>
-        <div style="text-align:center; font-size: 0.5rem; color: #7ed321; margin-top: 2px; font-weight: bold;">
-            الهدف: كشف 15 بطاقة
-        </div>
     </div>
 
     <div class="team-side blue-team">
         <div class="player-card" id="blue-operative">
             <span class="role-title">BLUE SIDE</span>
-            <div class="avatar-box">
-                </div>
+            <div class="avatar-box"></div>
             <div class="player-name">—</div>
         </div>
-        <div class="score-box">
-            <div class="score" id="blue-score">0</div>
-            <div style="font-size: 0.5rem; color: #aaa; text-align: center;">كشف المشترك</div>
-        </div>
+        <div class="score" id="blue-score">15</div>
     </div>
 </div>
 
@@ -568,21 +557,30 @@ onValue(playersRef, (snap) => {
 });
 
 function renderPlayersPanel() {
-    const roleIds = ["blue-operative","blue-spymaster","red-operative","red-spymaster"];
+    // في النظام التعاوني نركز على Operative لكل جانب
+    const roleIds = ["red-operative", "blue-operative"];
     roleIds.forEach(r => {
         const card = document.getElementById(r);
         const box = card.querySelector(".avatar-box");
         const nameBox = card.querySelector(".player-name");
+        
+        // البحث عن اللاعب المرتبط بهذا الجانب
         const player = Object.values(playersCache).find(p => p.team === r);
+        
         if (player) {
             box.innerHTML = `<img src="${player.avatar}" class="avatar-img">`;
             nameBox.textContent = player.name || "Player";
         } else {
             box.innerHTML = "";
-            nameBox.textContent = "—";
+            nameBox.textContent = "بانتظار الصديق...";
         }
     });
-    document.getElementById("playerCount").textContent = Object.keys(playersCache).length;
+
+    // تحديث عدد اللاعبين الفعلي في الغرفة
+    const countElement = document.getElementById("playerCount");
+    if (countElement) {
+        countElement.textContent = Object.keys(playersCache).length;
+    }
 }
 
 
@@ -741,41 +739,29 @@ function renderGrid() {
         i = Number(i);
         const div = document.createElement('div');
         
-        // منطق المرئيات المختلفة:
-        // إذا كنت اللاعب الأحمر (A) سترى sideA، وإذا كنت الأزرق (B) سترى sideB
-        let myVisualType = (myTeam === 'red') ? card.sideA : card.sideB;
+        // الخريطة المرئية: الجانب الأحمر يرى sideA والأزرق يرى sideB
+        const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
 
-        // إذا كُشفت البطاقة، يظهر لونها الحقيقي (الذي تم اختياره) للطرفين
-        // ولكن في البطاقات الـ 3 المشتركة، إذا كُشفت تظهر "حمراء" كما طلبت
-        let visualClass = "";
-        if (card.revealed) {
-            // البطاقات الـ 3 المشتركة (تظهر حمراء عند الكشف للطرفين)
-            if (card.isShared) {
-                visualClass = "card-red"; 
-            } else {
-                // بقية البطاقات تظهر بلونها الذي تسبب في كشفها
-                visualClass = (card.type === "blue") ? "card-blue" : 
-                              (card.type === "red") ? "card-red" : 
-                              (card.type === "killer") ? "card-black" : "card-brown";
-            }
-        } else {
-            // إذا لم تكشف بعد، كل لاعب يرى "خريطته" الخاصة
-            visualClass = (myVisualType === "blue") ? "card-blue" :
-                          (myVisualType === "red") ? "card-red" :
-                          (myVisualType === "killer") ? "card-black" : "card-brown";
-        }
+        const visualClass =
+            myMapColor === "blue" ? "card-blue" :
+            myMapColor === "red" ? "card-red" :
+            myMapColor === "killer" ? "card-black" : "card-brown";
 
-        const isSelected = selectedCards.has(i);
         div.id = `card-${i}`;
-        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed already-revealed' : ''} ${isSelected ? 'card-selected' : ''}`;
+        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed already-revealed' : ''} ${selectedCards.has(i) ? 'card-selected' : ''}`;
+
+        // إذا كُشفت البطاقة، نستخدم الصورة الأصلية لنوعها الفعلي (للتوحيد)
+        const displayImg = card.revealed ? card.visual : '';
 
         div.innerHTML = `
-            <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
+            <div class="confirm-btn" style="display: ${selectedCards.has(i) ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
-            <img src="${card.visual}" class="card-reveal-img">
-            <div class="card-main-body"><div class="bottom-box">${card.word}</div></div>`;
-        
+            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img">` : ''}
+            <div class="card-main-body">
+                <div class="bottom-box">${card.word}</div>
+            </div>`;
+
         div.onclick = () => handleCardSelection(i);
         grid.appendChild(div);
     });
@@ -792,52 +778,51 @@ window.togglePeek = function(i, event) {
 function updateUI() {
     if (!gameState) return;
     
-    const dashboard = document.getElementById('mainDashboard');
+    const dashboard = document.getElementById('gameDashboard');
     const redCard = document.getElementById('red-operative');
     const blueCard = document.getElementById('blue-operative');
-    
+
     // إزالة التوهج السابق
     redCard.classList.remove('active-red');
     blueCard.classList.remove('active-blue');
-    dashboard.classList.remove('turn-red-operative', 'turn-blue-operative');
 
-    // تحديد من عليه الدور الآن
-    const currentTurnSide = gameState.turn.side; // 'red' or 'blue'
-    const isMyTurn = (myTeam === currentTurnSide);
-
-    // إضافة التوهج والشعاع للجانب الذي عليه الدور
-    if (currentTurnSide === 'red') {
-        redCard.classList.add('active-red');
-        dashboard.classList.add('turn-red-operative');
+    // تحديد من عليه الدور بناءً على side و phase
+    // في التعاوني: إذا كان side='red' و phase='clue' -> الأحمر يعطي تلميح (توهج أحمر)
+    // إذا كان side='red' و phase='guess' -> الأزرق يخمن (توهج أزرق)
+    
+    if (gameState.turn.phase === 'clue') {
+        if (gameState.turn.side === 'red') redCard.classList.add('active-red');
+        else blueCard.classList.add('active-blue');
     } else {
-        blueCard.classList.add('active-blue');
-        dashboard.classList.add('turn-blue-operative');
+        // في مرحلة التخمين، التوهج يكون عند الطرف "المستقبل" للتلميح
+        if (gameState.turn.side === 'red') blueCard.classList.add('active-blue');
+        else redCard.classList.add('active-red');
     }
 
-    // تحديث عداد الـ 15 المشترك
+    // تحديث النقاط (المتبقي لـ 15 من الإجمالي)
     const revealedCount = Object.values(gameState.board).filter(c => c.revealed).length;
-    document.getElementById('blue-score').innerText = revealedCount; // كم كشفنا
-    document.getElementById('red-score').innerText = Math.max(0, 15 - revealedCount); // المتبقي
+    const remainingTo15 = Math.max(0, 15 - revealedCount);
+    
+    document.getElementById('red-score').innerText = remainingTo15;
+    document.getElementById('blue-score').innerText = remainingTo15;
 
-    // منطق إظهار أزرار التحكم (التلميح أو التخمين)
+    // منطق أزرار التحكم (إظهار Clue UI أو End Turn)
+    const controlArea = document.querySelector('.control-area');
     const clueUI = document.getElementById('clue-ui');
-    const actionBtn = document.getElementById('action-btn');
-    const phase = gameState.turn.phase;
+    const btn = document.getElementById('action-btn');
+    
+    const isMyTurnToClue = (myTeam === gameState.turn.side && gameState.turn.phase === 'clue');
+    const isMyTurnToGuess = (myTeam !== gameState.turn.side && gameState.turn.phase === 'guess');
 
-    if (isMyTurn) {
-        if (phase === 'clue') {
-            clueUI.style.display = 'flex';
-            actionBtn.style.display = 'flex';
-            actionBtn.classList.remove('end-turn-btn');
-        } else {
-            // مرحلة التخمين (صديقي ينتظرني)
-            clueUI.style.display = 'none';
-            actionBtn.style.display = 'flex';
-            actionBtn.classList.add('end-turn-btn');
-        }
+    clueUI.style.display = isMyTurnToClue ? 'flex' : 'none';
+    btn.style.display = (isMyTurnToClue || isMyTurnToGuess) ? 'flex' : 'none';
+    
+    if (isMyTurnToGuess) {
+        btn.classList.add('end-turn-btn');
+        document.getElementById('btn-icon').innerHTML = '✕';
     } else {
-        clueUI.style.display = 'none';
-        actionBtn.style.display = 'none';
+        btn.classList.remove('end-turn-btn');
+        document.getElementById('btn-icon').innerHTML = '<div class="arrow-icon"></div>';
     }
 }
 
@@ -847,7 +832,7 @@ function showTurnInfo(container, turn) {
     div.style.textAlign = 'center';
     div.style.width = '100%';
     div.style.opacity = '0.8';
-    div.innerHTML = `<div style="font-size: 0.8rem; color: white; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">الدور الآن عند <b>${turn.team === 'blue' ? 'الجانب الأزرق🔵' : 'الجانب الأحمر🔴'}</b></div>`;
+    div.innerHTML = `<div style="font-size: 0.8rem; color: white; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">الدور الآن عند <b>${turn.team === 'blue' ? 'الفريق الأزرق🔵' : 'الفريق الأحمر🔴'}</b><br>(${turn.phase === 'spymaster' ? 'القائد 👨🏻‍✈️' : 'العميل 🕵️'})</div>`;
     container.appendChild(div);
 }
 
