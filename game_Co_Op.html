@@ -558,30 +558,29 @@ onValue(playersRef, (snap) => {
 });
 
 function renderPlayersPanel() {
-    // في النظام التعاوني نركز على Operative لكل جانب
-    const roleIds = ["red-operative", "blue-operative"];
+    // في التعاوني نعرض فقط العميلين
+    const roleIds = ["blue-operative", "red-operative"];
+    
     roleIds.forEach(r => {
         const card = document.getElementById(r);
+        if(!card) return; // حماية
+        
         const box = card.querySelector(".avatar-box");
         const nameBox = card.querySelector(".player-name");
         
-        // البحث عن اللاعب المرتبط بهذا الجانب
         const player = Object.values(playersCache).find(p => p.team === r);
         
         if (player) {
             box.innerHTML = `<img src="${player.avatar}" class="avatar-img">`;
-            nameBox.textContent = player.name || "Player";
+            nameBox.textContent = player.name;
         } else {
             box.innerHTML = "";
-            nameBox.textContent = "بانتظار الصديق...";
+            nameBox.textContent = "—";
         }
     });
 
-    // تحديث عدد اللاعبين الفعلي في الغرفة
-    const countElement = document.getElementById("playerCount");
-    if (countElement) {
-        countElement.textContent = Object.keys(playersCache).length;
-    }
+    const countEl = document.getElementById("playerCount");
+    if (countEl) countEl.textContent = Object.keys(playersCache).length;
 }
 
 
@@ -734,29 +733,39 @@ function applyGameStateToUI() {
 function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
+    // للحصول على قائمة البطاقات المكشوفة سابقاً لتأثير الأنيميشن (اختياري)
+    const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
+    
     grid.innerHTML = '';
 
     Object.entries(gameState.board).forEach(([i, card]) => {
         i = Number(i);
         const div = document.createElement('div');
-        
-        // القاعدة: كل لاعب يرى خريطته الخاصة فقط (الأحمر يرى sideA والأزرق يرى sideB)
-        const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
+        const cardId = `card-${i}`;
 
+        // --- منطق التعاوني: تحديد اللون بناءً على الفريق ---
+        const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
+        
         const visualClass =
             myMapColor === "blue" ? "card-blue" :
             myMapColor === "red" ? "card-red" :
             myMapColor === "killer" ? "card-black" : "card-brown";
+        // ------------------------------------------------
 
-        div.id = `card-${i}`;
-        // ملاحظة: تم إضافة card-selected هنا لتفعيل التحديد عند النقر
-        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${selectedCards.has(i) ? 'card-selected' : ''}`;
+        const isSelected = selectedCards.has(i);
+        const isPeeking = peekingCards.has(i); // ميزة التنافسي
 
+        div.id = cardId;
+        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
+        
+        if (card.revealed && existingRevealed.includes(cardId)) div.classList.add('already-revealed');
+
+        // الهيكل مطابق للتنافسي (مع إضافة togglePeek للصورة)
         div.innerHTML = `
-            <div class="confirm-btn" style="display: ${selectedCards.has(i) ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
+            <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
-            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img">` : ''}
+            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">` : ''}
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;
@@ -768,55 +777,86 @@ function renderGrid() {
 
 window.togglePeek = function(i, event) {
     event.stopPropagation();
+    // يسمح برفع البطاقة فقط إذا كانت مكشوفة
     if (!gameState.board[i].revealed) return;
+    
     if (peekingCards.has(i)) peekingCards.delete(i);
     else peekingCards.add(i);
+    
     renderGrid();
 };
 
 function updateUI() {
     if (!gameState) return;
     
+    const dashboard = document.getElementById('gameDashboard');
     const redCard = document.getElementById('red-operative');
     const blueCard = document.getElementById('blue-operative');
+    
+    const controlArea = document.querySelector('.control-area');
     const clueUI = document.getElementById('clue-ui');
     const actionBtn = document.getElementById('action-btn');
     const btnIcon = document.getElementById('btn-icon');
+    const input = document.getElementById('clueInput');
+    const select = document.getElementById('clueNum');
 
+    // 1. تنظيف الكلاسات القديمة
     redCard.classList.remove('active-red');
     blueCard.classList.remove('active-blue');
+    if (controlArea.querySelector('.turn-info')) controlArea.querySelector('.turn-info').remove();
 
-    // تحديد حالة الدور
+    // 2. منطق من "النشط" في التعاوني
     const isCluePhase = (gameState.turn.phase === 'clue');
-    const isMyTurnToClue = (isCluePhase && myTeam === gameState.turn.side);
-    const isMyTurnToGuess = (!isCluePhase && myTeam !== gameState.turn.side);
+    // في مرحلة التلميح: النشط هو صاحب الدور (side)
+    // في مرحلة التخمين: النشط هو شريك صاحب الدور (عكس side)
+    const activeTeam = isCluePhase ? gameState.turn.side : (gameState.turn.side === 'red' ? 'blue' : 'red');
+    
+    // تطبيق التوهج
+    if (activeTeam === 'red') redCard.classList.add('active-red');
+    else blueCard.classList.add('active-blue');
 
-    // توهج الفريق الذي عليه "الفعل" (إما تلميح أو تخمين)
+    // تحديث السكور (المتبقي للوصول لـ 15)
+    const revealedCount = Object.values(gameState.board).filter(c => c.revealed).length;
+    const remainingToWin = 15 - revealedCount;
+    document.getElementById('blue-score').innerText = Math.max(0, remainingToWin);
+    document.getElementById('red-score').innerText = Math.max(0, remainingToWin);
+
+    // 3. إدارة لوحة التحكم (Control Panel)
+    const isMyTurn = (myTeam === activeTeam);
+
+    // إخفاء الكل مبدئياً
+    clueUI.style.display = 'none';
+    actionBtn.style.display = 'none';
+    actionBtn.classList.remove('end-turn-btn', 'disabled-area');
+    clueUI.classList.remove('disabled-area');
+
     if (isCluePhase) {
-        if (gameState.turn.side === 'red') redCard.classList.add('active-red');
-        else blueCard.classList.add('active-blue');
-    } else {
-        if (gameState.turn.side === 'red') blueCard.classList.add('active-blue');
-        else redCard.classList.add('active-red');
-    }
-
-    // إظهار واجهة التلميح فقط لصاحب التلميح في وقت التلميح
-    clueUI.style.display = isMyTurnToClue ? 'flex' : 'none';
-
-    // إظهار زر الإجراء (إرسال أو إنهاء)
-    if (isMyTurnToClue || isMyTurnToGuess) {
-        actionBtn.style.display = 'flex';
-        if (isMyTurnToGuess) {
-            actionBtn.classList.add('end-turn-btn'); // CSS لجعله أحمر أو عليه X
-            btnIcon.innerHTML = '✕';
-            btnIcon.className = ''; 
-        } else {
-            actionBtn.classList.remove('end-turn-btn');
-            btnIcon.innerHTML = '';
+        // --- مرحلة التلميح ---
+        if (isMyTurn) {
+            clueUI.style.display = 'flex';
+            actionBtn.style.display = 'flex';
+            input.disabled = false;
+            select.disabled = false;
             btnIcon.className = 'arrow-icon';
+            btnIcon.innerHTML = '';
+        } else {
+            showTurnInfo(controlArea, { team: activeTeam, phase: 'spymaster' }); // نعرض أنه دور القائد
         }
     } else {
-        actionBtn.style.display = 'none';
+        // --- مرحلة التخمين ---
+        if (isMyTurn) {
+            clueUI.style.display = 'flex'; // نعرض التلميح السابق
+            clueUI.classList.add('disabled-area'); // لكن نجعله غير قابل للتعديل
+            input.value = gameState.clue.word; // نملأ البيانات
+            select.value = gameState.clue.count;
+            
+            actionBtn.style.display = 'flex';
+            actionBtn.classList.add('end-turn-btn'); // زر إنهاء الدور
+            btnIcon.className = '';
+            btnIcon.innerHTML = '✕';
+        } else {
+            showTurnInfo(controlArea, { team: activeTeam, phase: 'operative' });
+        }
     }
 }
 
@@ -853,12 +893,24 @@ function renderLog() {
 window.handleAction = function() {
     if (!gameState) return;
     
-    if (gameState.turn.phase === 'clue') {
-        // إذا كان دوري كصاحب تلميح
-        if (myTeam === gameState.turn.side) sendClue();
+    const isCluePhase = (gameState.turn.phase === 'clue');
+    const isMyTurn = (myTeam === gameState.turn.side); // في التلميح، أنا نفس الـ side
+
+    if (isCluePhase) {
+        if (!isMyTurn) return;
+        sendClue();
     } else {
-        // إذا كان دوري كمخمن
-        if (myTeam !== gameState.turn.side) endTurn();
+        // مرحلة التخمين: أنا لست الـ side
+        if (myTeam === gameState.turn.side) return; 
+
+        // تنبيهات التنافسي
+        if (guessesThisTurn === 0) {
+            showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
+        } else if (gameState.clue.count !== '∞' && guessesThisTurn < parseInt(gameState.clue.count)) {
+            showCustomAlert(`لم تنهِ محاولاتك بعد (${guessesThisTurn}/${gameState.clue.count}). هل أنت متأكد؟`, true, endTurn);
+        } else {
+            endTurn();
+        }
     }
 };
 
@@ -874,6 +926,17 @@ async function sendClue() {
         return;
     }
 
+    // منطق التنافسي: منع كتابة كلمة موجودة
+    const onTableWords = Object.values(gameState.board)
+        .filter(c => !c.revealed)
+        .map(c => c.word.trim().toLowerCase());
+        
+    const clueWords = clueValue.toLowerCase().split(/\s+/);
+    if (clueWords.some(w => onTableWords.includes(w))) {
+        showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات.");
+        return;
+    }
+
     if (select.value === '-') {
         select.classList.add('error-border');
         setTimeout(() => select.classList.remove('error-border'), 1000);
@@ -883,13 +946,11 @@ async function sendClue() {
     const count = select.value === "∞" ? 25 : parseInt(select.value);
     const me = playersCache[playerId];
 
-    // تحديث قاعدة البيانات: ننتقل لمرحلة التخمين بنفس الفريق الحالي (side)
     await update(gameRef, { 
-        clue: { word: clueValue, count: count }, 
+        clue: { word: clueValue, count: select.value }, // نخزنها كنص للعرض وكـ رقم للمنطق
         turn: { side: gameState.turn.side, phase: "guess" } 
     });
 
-    // تسجيل في اللوج
     await push(logRef, { 
         type: "clue", 
         team: myTeam, 
@@ -902,66 +963,76 @@ async function sendClue() {
 
 window.handleCardSelection = function(i) {
     if (!gameState) return;
-    
-    // يسمح بالاختيار فقط إذا كان الطور 'guess' والمستخدم هو "المستقبل" للتلميح
+
+    // الشرط: الطور تخمين + أنا لست صاحب الدور (أي أنا الشريك المخمن) + البطاقة غير مكشوفة
     const isMyTurnToGuess = (gameState.turn.phase === 'guess' && myTeam !== gameState.turn.side);
-    
+
     if (!isMyTurnToGuess || gameState.board[i].revealed) return;
 
-    // مسح الاختيارات السابقة لاختيار بطاقة واحدة في كل مرة (للتأكيد)
-    selectedCards.clear(); 
-    selectedCards.add(i);
-    
+    // منطق التنافسي: اختيار/إلغاء اختيار
+    if (selectedCards.has(i)) {
+        selectedCards.delete(i);
+    } else {
+        selectedCards.clear(); // التعاوني يفضل اختيار واحد في كل مرة للوضوح
+        selectedCards.add(i);
+    }
     renderGrid();
 };
 
 window.confirmSelection = async function(i) {
-    // شرط: يجب أن يكون الطور 'guess' وأنا لست صاحب التلميح (أنا الطرف المستقبل)
-    if (!gameState || gameState.turn.phase !== 'guess' || myTeam === gameState.turn.side) return;
+    // التحقق من الأمان (مشابه للتنافسي)
+    const isMyTurnToGuess = (gameState.turn.phase === 'guess' && myTeam !== gameState.turn.side);
+    if (!gameState || !isMyTurnToGuess || gameState.board[i].revealed || !selectedCards.has(i)) return;
     
     const card = gameState.board[i];
     const me = playersCache[playerId];
     
-    // المنطق العكسي: 
-    // إذا كان الأحمر هو من أعطى التلميح (side === 'red')، فإن النتيجة تُؤخذ من خريطة الأحمر (sideA)
-    // إذا كان الأزرق هو من أعطى التلميح (side === 'blue')، فإن النتيجة تُؤخذ من خريطة الأزرق (sideB)
+    // --- المنطق الجوهري للتعاوني ---
+    // الحكم هو خريطة الشريك (الذي أعطى التلميح)
     const judgesColor = (gameState.turn.side === 'red') ? card.sideA : card.sideB;
+    // ----------------------------
 
     const updates = {};
     updates[`board/${i}/revealed`] = true;
-    // تخزين اللون الذي ظهر فعلياً (للتوحيد البصري)
-    updates[`board/${i}/visual`] = getVisualForColor(judgesColor); 
+    
+    // تحديد شكل البطاقة بعد الكشف ليراها الجميع
+    let visualImg = cardVisuals['card-brown'][0];
+    if(judgesColor === 'red') visualImg = cardVisuals['card-red'][0];
+    if(judgesColor === 'blue') visualImg = cardVisuals['card-blue'][0];
+    if(judgesColor === 'killer') visualImg = cardVisuals['card-black'][0];
+    updates[`board/${i}/visual`] = visualImg;
 
     let nextSide = gameState.turn.side;
     let nextPhase = 'guess';
 
+    // منطق الفوز/الخسارة/نقل الدور
     if (judgesColor === 'killer') {
-        // لمس القاتل في خريطة "المُلمح" = خسارة
-        await update(ref(db, `rooms/${roomId}/game`), { winner: (myTeam === 'red' ? 'blue' : 'red') == 'red' ? 'blue':'red' }); 
-        // تبسيطاً: إذا لمست أسود خسرت الجولة
-        showCustomAlert("💀 لقد لمست البطاقة السوداء في خريطة شريكك!");
-        return;
+        // لمس القاتل = خسارة فورية
+        const winner = (myTeam === 'red') ? 'blue' : 'red'; // الخصم يفوز (مجازياً، أو نعتبرها خسارة للكل)
+        updates.winner = winner; 
+        showCustomAlert("💀 لقد لمست البطاقة السوداء!");
     } else if (judgesColor === 'neutral') {
-        // أصاب أبيض في خريطة المُلمح: ينتهي الدور وينتقل التلميح للطرف الآخر
+        // محايد = انتهاء الدور ونقله للطرف الآخر ليلمح
         nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
         nextPhase = 'clue';
-        updates['turn/side'] = nextSide;
-        updates['turn/phase'] = nextPhase;
+        updates['turn'] = { side: nextSide, phase: nextPhase };
+        updates['clue'] = { word: null, count: null };
+        guessesThisTurn = 0;
     } else {
-        // أصاب لون صحيح (أحمر أو أزرق حسب المُلمح): يستمر
+        // صحيح = استمرار
         guessesThisTurn++;
     }
 
-    // تحقق الفوز (كشف 15 بطاقة إجمالاً)
+    // شرط الفوز: كشف 15 بطاقة
     const totalRevealed = Object.values(gameState.board).filter(c => c.revealed).length + 1;
-    if (totalRevealed >= 15) {
-        updates.winner = "win";
+    if (totalRevealed >= 15 && !updates.winner) {
+        updates.winner = "win"; // حالة فوز خاصة
     }
 
     await update(gameRef, updates);
-    
-    // اللوج
-    await push(logRef, { 
+
+    // تسجيل اللوج (نفس تنسيق التنافسي)
+    await push(ref(db, `rooms/${roomId}/game/log`), { 
         type: "guess", 
         team: myTeam, 
         word: card.word, 
@@ -969,8 +1040,9 @@ window.confirmSelection = async function(i) {
         avatar: me.avatar, 
         at: Date.now() 
     });
-    
-    selectedCards.clear();
+
+    selectedCards.delete(i);
+    renderGrid();
 };
 
 // وظيفة مساعدة لتحديد شكل البطاقة بعد كشفها
@@ -983,15 +1055,18 @@ function getVisualForColor(color) {
 
 async function endTurn() {
     if (!gameState) return;
-    // عند إنهاء الدور يدوياً، ينتقل التلميح للطرف الآخر
+    // نقل الدور للطرف الآخر ليبدأ التلميح
     const nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
+    
     await update(gameRef, { 
         turn: { side: nextSide, phase: "clue" }, 
         clue: { word: null, count: null } 
     });
+    
     guessesThisTurn = 0;
     selectedCards.clear();
-    if(document.getElementById('clueInput')) document.getElementById('clueInput').value = '';
+    const input = document.getElementById('clueInput');
+    if(input) input.value = '';
 }
 
 window.openPlayersModal = async () => {
