@@ -450,12 +450,22 @@ async function autoJoinRoom() {
     const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
         const typeParam = urlParams.get('type') || 'public';
+        // التأكد من وضع PvP كمود افتراضي هنا
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
-            settings: { mode: 'PvP', timer: 0, visibility: typeParam } 
+            settings: { 
+                mode: 'PvP', // المود الافتراضي
+                timer: 0, 
+                visibility: typeParam 
+            } 
         });
     } else {
+        // إذا كانت الغرفة موجودة ولكن ينقصها حقل المود (حالة نادرة)
+        const data = roomSnap.val();
+        if (!data.settings || !data.settings.mode) {
+            await update(settingsRef, { mode: 'PvP', timer: 0 });
+        }
         updateRoomActivity();
     }
     
@@ -789,22 +799,24 @@ window.changeTimer = (val) => {
 let lastMode = null; 
 
 onValue(settingsRef, (snapshot) => {
-    const s = snapshot.val();
-    if (!s || !s.mode) return;
+const s = snapshot.val();
+    
+    // إذا لم تكن هناك إعدادات بعد (أو لم يتم تحميلها)، نفترض PvP لتنسيق الواجهة
+    const currentMode = (s && s.mode) ? s.mode : 'PvP';
 
-    // 1. تحديث التنبيهات عند التغيير
-    if (lastMode !== null && s.mode !== lastMode) {
+    // 1. تحديث التنبيهات عند التغيير الحقيقي فقط
+    if (lastMode !== null && s && s.mode !== lastMode) {
         const modeName = s.mode === 'Co_Op' ? 'الوضع التعاوني' : 'الوضع التنافسي';
         showToast(`🔄 تم تغيير النمط إلى: ${modeName}`);
     }
 
     // 2. تحديث الشكل البصري للبطاقات (Active State)
     document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-    const activeCard = document.getElementById('mode-' + s.mode);
+    const activeCard = document.getElementById('mode-' + currentMode);
     if (activeCard) activeCard.classList.add('active');
 
-    // 3. تحديث العناوين في اللوبي فوراً لجميع اللاعبين
-    renderLobbyHeaders(s.mode);
+    // 3. تحديث العناوين في اللوبي فوراً
+    renderLobbyHeaders(currentMode);
 
     // 4. تحديث مؤقت الوقت (Timer)
     const seconds = s.timer || 0;
@@ -917,11 +929,12 @@ function generateDuetBoard() {
 }
 
 window.handleStartGame = async () => {
-    if (!isAdmin) return;
+if (!isAdmin) return;
     
     const settingsSnap = await get(settingsRef);
-    const mode = settingsSnap.exists() ? settingsSnap.val().mode : 'PvP';
-    
+    // إذا لم يجد مود، سيعتبره PvP تلقائياً
+    const mode = (settingsSnap.exists() && settingsSnap.val().mode) ? settingsSnap.val().mode : 'PvP';
+        
     const playersSnap = await get(playersRef);
     const players = playersSnap.val() || {};
     const playerList = Object.values(players);
