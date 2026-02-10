@@ -127,6 +127,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+    import { get, child } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC95r_D7FVO-cynZ-gK6zbldvvrY4HD2YQ",
@@ -137,13 +138,74 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const joinInput = document.getElementById('joinIdInput');
+    const joinBtn = document.querySelector('.btn-action');
 
-    window.joinRoom = () => {
-        let val = document.getElementById('joinIdInput').value.trim();
-        if (!val) return;
-        if (val.includes('?r=')) {
-            val = new URL(val).searchParams.get('r');
+    document.getElementById('joinIdInput').addEventListener('input', (e) => {
+        let value = e.target.value.trim();
+        
+        // التحقق إذا كان النص المدخل يحتوي على رابط
+        if (value.includes('?r=')) {
+            try {
+                const urlParams = new URLSearchParams(value.split('?')[1]);
+                const roomCode = urlParams.get('r');
+                if (roomCode) {
+                    e.target.value = roomCode; // استبدال الرابط بالرمز فوراً
+                }
+            } catch (err) {
+                console.error("خطأ في تحليل الرابط");
+            }
         }
+    });
+
+// وظيفة للتحقق من وجود الغرفة وتغيير شكل الزر
+    async function checkRoomExists(roomId) {
+        const dbRef = ref(db);
+        try {
+            const snapshot = await get(child(dbRef, `rooms/${roomId}`));
+            if (snapshot.exists()) {
+                // إذا كانت الغرفة موجودة: اجعل الزر ساطعاً
+                joinBtn.style.filter = "brightness(1.5)";
+                joinBtn.style.boxShadow = "0 0 15px #7ed321";
+                joinBtn.innerText = "دخول الآن! ✨";
+            } else {
+                // إذا لم تكن موجودة: أعد الزر لشكلة الطبيعي
+                resetBtnStyle();
+            }
+        } catch (error) {
+            resetBtnStyle();
+        }
+    }
+
+    function resetBtnStyle() {
+        joinBtn.style.filter = "none";
+        joinBtn.style.boxShadow = "0 3px 0 #2e5a03";
+        joinBtn.innerText = "انضمام";
+    }
+
+    // مراقب الإدخال (تنظيف الرابط + التحقق من الغرفة)
+    joinInput.addEventListener('input', async (e) => {
+        let value = e.target.value.trim();
+
+        // 1. تنظيف الرابط إذا تم لصقه
+        if (value.includes('?r=')) {
+            const urlParams = new URLSearchParams(value.split('?')[1]);
+            value = urlParams.get('r');
+            e.target.value = value;
+        }
+
+        // 2. التحقق من وجود الغرفة في قاعدة البيانات
+        if (value.length >= 4) { // ابدأ التحقق إذا كان الرمز 4 أحرف فأكثر
+            checkRoomExists(value);
+        } else {
+            resetBtnStyle();
+        }
+    });
+
+    // وظيفة الانضمام الأصلية
+    window.joinRoom = () => {
+        let val = joinInput.value.trim();
+        if (!val) return;
         location.href = `lobby.html?r=${val}`;
     };
 
