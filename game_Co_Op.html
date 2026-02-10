@@ -858,15 +858,21 @@ function renderLog() {
 
 window.handleAction = function() {
     if (!gameState) return;
-    const isMyTurn = myTeam === gameState.turn.team;
-    if (gameState.turn.phase === 'spymaster') {
-        if (!(isSpy && isMyTurn)) return;
-        sendClue();
-    } else {
-        if (!(isOperative && isMyTurn)) return;
-        if (guessesThisTurn === 0) showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!. هل أنت متأكد؟", true, endTurn);
-        else if (guessesThisTurn < gameState.clue.count) showCustomAlert(`لم تنهِ محاولاتك بعد (${guessesThisTurn}/${gameState.clue.count}). هل أنت متأكد؟`, true, endTurn);
-        else endTurn();
+
+    // هل الدور الحالي هو دور فريقي لإعطاء تلميح؟
+    const isMyTurnToClue = (myTeam === gameState.turn.side && gameState.turn.phase === 'clue');
+    // هل الدور الحالي هو دور فريقي للتخمين (بعد أن أرسل الطرف الآخر تلميحاً)؟
+    const isMyTurnToGuess = (myTeam !== gameState.turn.side && gameState.turn.phase === 'guess');
+
+    if (isMyTurnToClue) {
+        sendClue(); // إرسال التلميح
+    } else if (isMyTurnToGuess) {
+        // إنهاء التخمين يدوياً (الزر الأحمر X)
+        if (guessesThisTurn === 0) {
+            showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!", false);
+        } else {
+            endTurn();
+        }
     }
 };
 
@@ -874,27 +880,56 @@ async function sendClue() {
     const input = document.getElementById('clueInput');
     const clueValue = input.value.trim();
     const select = document.getElementById('clueNum');
-    const input_wrapper = document.getElementsByClassName('clue-input-wrapper')[0];
+    const input_wrapper = document.querySelector('.clue-input-wrapper');
+
+    // 1. التحقق من إدخال نص
     if (!clueValue) {
         input_wrapper.classList.add('error-border');
         setTimeout(() => input_wrapper.classList.remove('error-border'), 1000);
         return;
     }
-    const onTableWords = Object.values(gameState.board).filter(c => !c.revealed).map(c => c.word.trim().toLowerCase());
-    const clueWords = clueValue.toLowerCase().split(/\s+/);
-    if (clueWords.some(w => onTableWords.includes(w))) {
-        showCustomAlert("خطأ! التلميح يحتوي على كلمة مطابقة موجودة في البطاقات.");
-        return;
-    }
+
+    // 2. التحقق من عدد الكلمات
     if (select.value === '-') {
         select.classList.add('error-border');
         setTimeout(() => select.classList.remove('error-border'), 1000);
         return;
     }
+
+    // 3. منع كتابة كلمة موجودة على الطاولة
+    const onTableWords = Object.values(gameState.board)
+        .filter(c => !c.revealed)
+        .map(c => c.word.trim().toLowerCase());
+    
+    if (onTableWords.includes(clueValue.toLowerCase())) {
+        showCustomAlert("خطأ! التلميح مطابق لكلمة موجودة في البطاقات.");
+        return;
+    }
+
     const count = select.value === "∞" ? 25 : parseInt(select.value);
     const me = playersCache[playerId];
-    await update(gameRef, { clue: { word: clueValue, count }, turn: { team: gameState.turn.team, phase: "operative", ready: false, updatedAt: null } });
-    await push(ref(db, `rooms/${roomId}/game/log`), { type: "clue", team: gameState.turn.team, word: clueValue, count: select.value, avatar: me.avatar, at: Date.now() });
+
+    // 4. تحديث قاعدة البيانات للنظام التعاوني
+    // ننتقل من phase: 'clue' إلى phase: 'guess' مع بقاء الـ side كما هو
+    await update(gameRef, { 
+        clue: { word: clueValue, count: count }, 
+        "turn/phase": "guess",
+        "turn/ready": false,
+        "turn/updatedAt": Date.now() + serverTimeOffset
+    });
+
+    // 5. إضافة السجل (Log)
+    await push(logRef, { 
+        type: "clue", 
+        team: myTeam, 
+        word: clueValue, 
+        count: select.value, 
+        avatar: me.avatar, 
+        at: Date.now() 
+    });
+
+    // تنظيف الإدخال
+    input.value = '';
 }
 
 window.handleCardSelection = function(i) {
@@ -942,12 +977,22 @@ window.confirmSelection = async function(i) {
 
 async function endTurn() {
     if (!gameState) return;
-    const enemy = myTeam === "blue" ? "red" : "blue";
-    await update(gameRef, { turn: { team: enemy, phase: "spymaster", ready: false, updatedAt: null }, clue: { word: null, count: null } });
+    
+    // الطرف القادم هو عكس الطرف الحالي
+    const nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
+    
+    await update(gameRef, { 
+        turn: { 
+            side: nextSide, 
+            phase: "clue", 
+            ready: false, 
+            updatedAt: Date.now() + serverTimeOffset 
+        }, 
+        clue: { word: null, count: null } 
+    });
+
     guessesThisTurn = 0;
     selectedCards.clear();
-    const input = document.getElementById('clueInput');
-    if(input) input.value = '';
 }
 
 window.openPlayersModal = async () => {
