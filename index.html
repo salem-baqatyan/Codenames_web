@@ -110,16 +110,15 @@
         <div class="panel-title"><span>🌐</span> تصفح الغرف العامة</div>
         <div class="rooms-container">
             <table class="rooms-table">
-                <thead>
-                    <tr>
-                        <th>الرمز</th>
-                        <th>اللاعبين</th>
-                        <th>الحالة</th>
-                    </tr>
-                </thead>
-                <tbody id="roomsListBody">
-                    </tbody>
-            </table>
+    <thead>
+        <tr>
+            <th>الرمز</th>
+            <th>اللاعبين</th>
+            <th>المود</th> <th>الحالة</th>
+        </tr>
+    </thead>
+    <tbody id="roomsListBody"></tbody>
+</table>
         </div>
     </div>
 </div>
@@ -215,14 +214,14 @@
         location.href = `lobby.html?r=${newId}&type=${selectedType}`;
     };
 
-    const roomsRef = ref(db, 'rooms');
-    onValue(roomsRef, (snapshot) => {
+const roomsRef = ref(db, 'rooms');
+onValue(roomsRef, (snapshot) => {
         const rooms = snapshot.val();
         const tbody = document.getElementById('roomsListBody');
         tbody.innerHTML = '';
 
         if (!rooms) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#555;">لا توجد غرف متاحة</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:#555;">لا توجد غرف متاحة</td></tr>';
             return;
         }
 
@@ -230,8 +229,11 @@
             if (room.settings?.visibility === 'private') return;
 
             const playersCount = room.players ? Object.keys(room.players).length : 0;
-
             if (playersCount === 0) return;
+
+            // تحديد شكل المود
+            const rawMode = room.settings?.mode || '—';
+            const modeText = rawMode === 'Co_Op' ? 'تعاوني' : (rawMode === 'PvP' ? 'تنافسي' : rawMode);
 
             const inGame = room.status === 'started';
             
@@ -240,10 +242,11 @@
             tr.onclick = () => location.href = `lobby.html?r=${id}`;
             tr.innerHTML = `
                 <td class="room-id">${id.toUpperCase()}</td>
-                <td style="color:#ddd;">👤 ${playersCount}/10</td>
+                <td style="color:#ddd;">👤 ${playersCount}</td>
+                <td style="color:#888;">${modeText}</td>
                 <td>
                     <span class="status-badge ${inGame ? 'status-game' : 'status-lobby'}">
-                        ${inGame ? '🎮 في اللعبة' : '⌛ بالردهة'}
+                        ${inGame ? '🎮' : '⌛'}
                     </span>
                 </td>
             `;
@@ -251,9 +254,11 @@
         });
 
         if (tbody.innerHTML === '') {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:#555;">لا توجد غرف نشطة حالياً</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:#555;">لا توجد غرف نشطة حالياً</td></tr>';
         }
     });
+
+
 </script>
 </body>
 </html>
