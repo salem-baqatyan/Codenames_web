@@ -231,20 +231,6 @@
 
     <!-- Teams Dashboard -->
 <div class="dashboard" id="gameDashboard"> 
-    <div class="team-side red-team">
-        <div class="player-card" id="red-operative">
-            <span class="role-title">RED SIDE</span>
-            <div class="avatar-box"></div>
-            <div class="player-name">—</div>
-        </div>
-        <div class="score" id="red-score">15</div>
-    </div>
-
-    <div class="game-log-container">
-        <div style="text-align:center;font-size:0.4rem;color:#aaa;margin-bottom:2px;">CO-OP LOG</div>
-        <div id="log-content"></div>
-    </div>
-
     <div class="team-side blue-team">
         <div class="player-card" id="blue-operative">
             <span class="role-title">BLUE SIDE</span>
@@ -253,6 +239,21 @@
         </div>
         <div class="score" id="blue-score">15</div>
     </div>
+
+    <div class="game-log-container">
+        <div style="text-align:center;font-size:0.4rem;color:#aaa;margin-bottom:2px;">CO-OP LOG</div>
+        <div id="log-content"></div>
+    </div>
+
+        <div class="team-side red-team">
+        <div class="player-card" id="red-operative">
+            <span class="role-title">RED SIDE</span>
+            <div class="avatar-box"></div>
+            <div class="player-name">—</div>
+        </div>
+        <div class="score" id="red-score">15</div>
+    </div>
+
 </div>
 
     <!-- Game Grid -->
@@ -739,19 +740,17 @@ function renderGrid() {
         i = Number(i);
         const div = document.createElement('div');
         
-        // الخريطة المرئية: الجانب الأحمر يرى sideA والأزرق يرى sideB
-        const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
+        // في التعاوني: الأحمر يرى ألوان SideA والأزرق يرى SideB
+        const myVisualColor = (myTeam === 'red') ? card.sideA : card.sideB;
 
         const visualClass =
-            myMapColor === "blue" ? "card-blue" :
-            myMapColor === "red" ? "card-red" :
-            myMapColor === "killer" ? "card-black" : "card-brown";
+            myVisualColor === "blue" ? "card-blue" :
+            myVisualColor === "red" ? "card-red" :
+            myVisualColor === "killer" ? "card-black" : "card-brown";
 
         div.id = `card-${i}`;
-        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed already-revealed' : ''} ${selectedCards.has(i) ? 'card-selected' : ''}`;
-
-        // إذا كُشفت البطاقة، نستخدم الصورة الأصلية لنوعها الفعلي (للتوحيد)
-        const displayImg = card.revealed ? card.visual : '';
+        // البطاقة تكون مخفية دائماً إلا إذا تم كشفها (revealed)
+        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed already-revealed' : 'card-hidden'}`;
 
         div.innerHTML = `
             <div class="confirm-btn" style="display: ${selectedCards.has(i) ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
@@ -778,49 +777,27 @@ window.togglePeek = function(i, event) {
 function updateUI() {
     if (!gameState) return;
     
-    const redCard = document.getElementById('red-operative');
-    const blueCard = document.getElementById('blue-operative');
-
-    // إزالة التوهج السابق
-    redCard.classList.remove('active-red');
-    blueCard.classList.remove('active-blue');
-
-    // منطق التوهج: من الذي عليه "الفعل" الآن؟
-    if (gameState.turn.phase === 'clue') {
-        // إذا كان الدور تلميح، التوهج عند صاحب الدور (side)
-        if (gameState.turn.side === 'red') redCard.classList.add('active-red');
-        else blueCard.classList.add('active-blue');
-    } else {
-        // إذا كان الدور تخمين، التوهج عند الطرف الآخر (المستقبل)
-        if (gameState.turn.side === 'red') blueCard.classList.add('active-blue');
-        else redCard.classList.add('active-red');
-    }
-
-    // تحديث النقاط (المتبقي لـ 15)
-    const revealedCount = Object.values(gameState.board).filter(c => c.revealed).length;
-    const remainingTo15 = Math.max(0, 15 - revealedCount);
-    document.getElementById('red-score').innerText = remainingTo15;
-    document.getElementById('blue-score').innerText = remainingTo15;
-
-    // إظهار/إخفاء عناصر التحكم (Clue Bar)
     const clueUI = document.getElementById('clue-ui');
-    const actionBtn = document.getElementById('action-btn');
+    const btn = document.getElementById('action-btn');
+    const icon = document.getElementById('btn-icon');
     
-    // شروط الدور
+    // من الذي عليه الدور؟ (side) وفي أي مرحلة؟ (phase)
     const isMyTurnToClue = (myTeam === gameState.turn.side && gameState.turn.phase === 'clue');
     const isMyTurnToGuess = (myTeam !== gameState.turn.side && gameState.turn.phase === 'guess');
 
-    // التحكم في الظهور (Block/None)
+    // إخفاء/إظهار شريط التلميح
     clueUI.style.display = isMyTurnToClue ? 'flex' : 'none';
-    actionBtn.style.display = (isMyTurnToClue || isMyTurnToGuess) ? 'flex' : 'none';
     
-    // تغيير شكل الزر بين (سهم) لإرسال التلميح و (X) لإنهاء التخمين
-    if (isMyTurnToGuess) {
-        actionBtn.classList.add('end-turn-btn');
-        document.getElementById('btn-icon').innerHTML = '<span class="x-icon">✕</span>';
-    } else {
-        actionBtn.classList.remove('end-turn-btn');
-        document.getElementById('btn-icon').innerHTML = '<div class="arrow-icon"></div>';
+    // إخفاء/إظهار زر الإرسال أو إنهاء الدور
+    btn.style.display = (isMyTurnToClue || isMyTurnToGuess) ? 'flex' : 'none';
+
+    if (isMyTurnToClue) {
+        icon.className = 'arrow-icon';
+        icon.innerHTML = ''; // السهم مرسوم بالـ CSS
+    } else if (isMyTurnToGuess) {
+        btn.classList.add('end-turn-btn');
+        icon.className = 'x-icon';
+        icon.innerHTML = '✕';
     }
 }
 
@@ -854,53 +831,24 @@ function renderLog() {
     });
 }
 
-window.handleAction = function() {
-    if (!gameState) return;
-    
-    if (gameState.turn.phase === 'clue') {
-        // إذا كان دوري كصاحب تلميح
-        if (myTeam === gameState.turn.side) sendClue();
-    } else {
-        // إذا كان دوري كمخمن
-        if (myTeam !== gameState.turn.side) endTurn();
-    }
-};
-
 async function sendClue() {
     const input = document.getElementById('clueInput');
     const clueValue = input.value.trim();
     const select = document.getElementById('clueNum');
-    const inputWrapper = document.querySelector('.clue-input-wrapper');
+    
+    if (!clueValue || select.value === '-') return;
 
-    if (!clueValue) {
-        inputWrapper.classList.add('error-border');
-        setTimeout(() => inputWrapper.classList.remove('error-border'), 1000);
-        return;
-    }
-
-    if (select.value === '-') {
-        select.classList.add('error-border');
-        setTimeout(() => select.classList.remove('error-border'), 1000);
-        return;
-    }
-
-    const count = select.value === "∞" ? 25 : parseInt(select.value);
     const me = playersCache[playerId];
-
-    // تحديث قاعدة البيانات: ننتقل لمرحلة التخمين بنفس الفريق الحالي (side)
+    
+    // تحديث الدور إلى التخمين (guess) مع بقاء نفس الـ side
     await update(gameRef, { 
-        clue: { word: clueValue, count: count }, 
-        turn: { side: gameState.turn.side, phase: "guess" } 
+        clue: { word: clueValue, count: select.value === "∞" ? 25 : parseInt(select.value) }, 
+        turn: { side: myTeam, phase: "guess" } 
     });
 
-    // تسجيل في اللوج
     await push(logRef, { 
-        type: "clue", 
-        team: myTeam, 
-        word: clueValue, 
-        count: select.value, 
-        avatar: me.avatar, 
-        at: Date.now() 
+        type: "clue", team: myTeam, word: clueValue, 
+        count: select.value, avatar: me.avatar, at: Date.now() 
     });
 }
 
@@ -912,49 +860,71 @@ window.handleCardSelection = function(i) {
 };
 
 window.confirmSelection = async function(i) {
-    // شرط: يجب أن يكون الطور 'guess' وأنا لست صاحب التلميح (أنا المستقبل)
+    // الشرط: يجب أن يكون الطور 'guess' وأنا لست صاحب التلميح الحالي
     if (!gameState || gameState.turn.phase !== 'guess' || myTeam === gameState.turn.side) return;
     
     const card = gameState.board[i];
     const me = playersCache[playerId];
     
-    // كشف اللون بناءً على خريطة اللاعب الحالي
-    const revealedColor = (myTeam === 'red') ? card.sideA : card.sideB;
+    // الأهم: النتيجة تعتمد على ما يراه "صاحب التلميح" (side)
+    // إذا كان الأحمر هو من أعطى التلميح، نكشف لون البطاقة في خريطة الأحمر (sideA)
+    const revealedColor = (gameState.turn.side === 'red') ? card.sideA : card.sideB;
 
     const updates = {};
     updates[`board/${i}/revealed`] = true;
-    
+    // تخزين اللون الفعلي الذي تم كشفه لتوحيد الصورة
+    updates[`board/${i}/visual`] = cardVisuals[
+        revealedColor === 'blue' ? 'card-blue' : 
+        revealedColor === 'red' ? 'card-red' : 
+        revealedColor === 'killer' ? 'card-black' : 'card-brown'
+    ][0];
+
     let nextSide = gameState.turn.side;
     let nextPhase = 'guess';
+    let endTurnImmediately = false;
 
     if (revealedColor === 'killer') {
-        updates.winner = "lose"; 
-    } else if (revealedColor === 'neutral') {
-        // إذا أصاب أبيض: ينتهي الدور ويتحول التلميح للطرف الذي كان يخمن الآن
-        nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
-        nextPhase = 'clue';
-        updates.turn = { side: nextSide, phase: nextPhase };
-    } else {
-        // إصابة صحيحة (أحمر أو أزرق): يستمر في التخمين
-        guessesThisTurn++;
+        updates.winner = "lose"; // خسارة فورية في التعاوني عند لمس الأسود
+    } else if (revealedColor === 'neutral' || (revealedColor !== gameState.turn.side && revealedColor !== 'killer')) {
+        // إذا أخطأ (لمس لون الطرف الآخر أو أبيض): ينتهي الدور
+        endTurnImmediately = true;
     }
 
-    // تحقق الفوز (كشف 15 بطاقة)
-    const totalRevealed = Object.values(gameState.board).filter(c => c.revealed).length + 1;
-    if (totalRevealed >= 15) updates.winner = "win";
-
     await update(gameRef, updates);
+
+    // تسجيل اللوج
     await push(logRef, { 
         type: "guess", team: myTeam, word: card.word, 
         cardColor: revealedColor, avatar: me.avatar, at: Date.now() 
     });
-    
-    selectedCards.clear();
-    renderGrid();
+
+    if (endTurnImmediately) {
+        endTurn();
+    } else {
+        guessesThisTurn++;
+        selectedCards.clear();
+        renderGrid();
+    }
 };
-async function endTurn() {
+
+window.handleAction = function() {
     if (!gameState) return;
-    // عند إنهاء الدور يدوياً، ينتقل التلميح للطرف الآخر
+    
+    if (gameState.turn.phase === 'clue') {
+        if (myTeam === gameState.turn.side) sendClue();
+    } else {
+        if (myTeam !== gameState.turn.side) {
+            if (guessesThisTurn === 0) {
+                showToast("يجب اختيار بطاقة واحدة على الأقل");
+            } else {
+                endTurn();
+            }
+        }
+    }
+};
+
+async function endTurn() {
+    // عند انتهاء التخمين، ينتقل التلميح للطرف الآخر
     const nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
     await update(gameRef, { 
         turn: { side: nextSide, phase: "clue" }, 
@@ -962,9 +932,7 @@ async function endTurn() {
     });
     guessesThisTurn = 0;
     selectedCards.clear();
-    if(document.getElementById('clueInput')) document.getElementById('clueInput').value = '';
 }
-
 window.openPlayersModal = async () => {
     const modal = document.getElementById('playersListModal');
     if (modal.style.display === 'flex') { modal.style.display = 'none'; return; }
