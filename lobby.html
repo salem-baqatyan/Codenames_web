@@ -799,26 +799,30 @@ window.changeTimer = (val) => {
 let lastMode = null; 
 
 onValue(settingsRef, (snapshot) => {
-const s = snapshot.val();
-    
-    // إذا لم تكن هناك إعدادات بعد (أو لم يتم تحميلها)، نفترض PvP لتنسيق الواجهة
-    const currentMode = (s && s.mode) ? s.mode : 'PvP';
+    const s = snapshot.val();
+    if (!s) return;
 
-    // 1. تحديث التنبيهات عند التغيير الحقيقي فقط
-    if (lastMode !== null && s && s.mode !== lastMode) {
-        const modeName = s.mode === 'Co_Op' ? 'الوضع التعاوني' : 'الوضع التنافسي';
+    // المود الحالي من قاعدة البيانات
+    const currentMode = s.mode || 'PvP';
+
+    /* --- التعديل هنا --- */
+    // لا تظهر الرسالة إذا كانت هذه أول مرة يتم فيها تحميل الصفحة (lastMode === null)
+    // تظهر فقط إذا كانت هناك قيمة سابقة مخزنة وتختلف عن القيمة الجديدة
+    if (lastMode !== null && currentMode !== lastMode) {
+        const modeName = currentMode === 'Co_Op' ? 'الوضع التعاوني' : 'الوضع التنافسي';
         showToast(`🔄 تم تغيير النمط إلى: ${modeName}`);
     }
+    /* ------------------ */
 
-    // 2. تحديث الشكل البصري للبطاقات (Active State)
+    // تحديث الشكل البصري للبطاقات (Active State)
     document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
     const activeCard = document.getElementById('mode-' + currentMode);
     if (activeCard) activeCard.classList.add('active');
 
-    // 3. تحديث العناوين في اللوبي فوراً
+    // تحديث العناوين في اللوبي فوراً بناءً على المود الحالي
     renderLobbyHeaders(currentMode);
 
-    // 4. تحديث مؤقت الوقت (Timer)
+    // تحديث مؤقت الوقت (Timer)
     const seconds = s.timer || 0;
     const displayTimer = document.getElementById('lobbyDisplayTimer');
     let label = "بدون", icon = "🚫", displayStr = "";
@@ -832,19 +836,18 @@ const s = snapshot.val();
         if(displayTimer) displayTimer.style.display = 'none'; 
     }
 
-    document.getElementById('mainTimerText').innerText = label;
-    document.getElementById('mainTimerIcon').innerText = icon;
-    document.getElementById('modalTimerText').innerText = label;
-    document.getElementById('modalTimerIcon').innerText = icon;
+    if(document.getElementById('mainTimerText')) document.getElementById('mainTimerText').innerText = label;
+    if(document.getElementById('mainTimerIcon')) document.getElementById('mainTimerIcon').innerText = icon;
+    if(document.getElementById('modalTimerText')) document.getElementById('modalTimerText').innerText = label;
+    if(document.getElementById('modalTimerIcon')) document.getElementById('modalTimerIcon').innerText = icon;
     if(displayTimer) displayTimer.innerText = displayStr;
 
-    // تحديث قيمة السلايدر للمشرف فقط لضمان المزامنة
     const timerSlider = document.getElementById('timerSlider');
     const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
     if(timerSlider) timerSlider.value = valMap[seconds] || 0;
 
-    // حفظ الحالة الأخيرة
-    lastMode = s.mode;
+    // حفظ الحالة الحالية لتصبح هي "الحالة السابقة" في التغيير القادم
+    lastMode = currentMode;
 });
 
 function renderLobbyHeaders(mode) {
@@ -856,13 +859,20 @@ function renderLobbyHeaders(mode) {
     const redTitles = document.querySelectorAll('.red-box .box-title');
 
     if (isCoOp) {
+        // 1. إضافة الـ Class الخاص بتغيير الاستايل (CSS سيقوم بالباقي)
         grid.classList.add('co-op-active');
-        // في التعاوني، نظهر فقط العنوان الأول لكل فريق
-        if(blueTitles[0]) blueTitles[0].innerText = "BLUE SIDE";
-        if(redTitles[0]) redTitles[0].innerText = "RED SIDE";
+
+        // 2. تغيير المسميات
+        if(blueTitles[0]) blueTitles[0].innerText = "SIDE A (BLUE)";
+        if(redTitles[0]) redTitles[0].innerText = "SIDE B (RED)";
+        
+        // ملاحظة: الـ CSS سيهتم بإخفاء الصناديق الثانية تلقائياً 
+        // بفضل Class: .co-op-active
     } else {
+        // 1. إزالة الـ Class للعودة للوضع الطبيعي PvP
         grid.classList.remove('co-op-active');
-        // في التنافسي، نعيد المسميات الأربعة
+
+        // 2. إعادة المسميات الأصلية
         if(blueTitles[0]) blueTitles[0].innerText = "OPERATIVE";
         if(blueTitles[1]) blueTitles[1].innerText = "SPYMASTER";
         if(redTitles[0]) redTitles[0].innerText = "OPERATIVE";
@@ -929,61 +939,69 @@ function generateDuetBoard() {
 }
 
 window.handleStartGame = async () => {
-if (!isAdmin) return;
+    if (!isAdmin) return;
     
     const settingsSnap = await get(settingsRef);
-    // إذا لم يجد مود، سيعتبره PvP تلقائياً
     const mode = (settingsSnap.exists() && settingsSnap.val().mode) ? settingsSnap.val().mode : 'PvP';
         
     const playersSnap = await get(playersRef);
     const players = playersSnap.val() || {};
     const playerList = Object.values(players);
     
-    // استخراج كافة الأدوار التي اختارها اللاعبون الموجودون حالياً
-    const activeRoles = playerList.map(p => p.team);
+    // استخراج كافة الأدوار المشغولة
+    const occupiedRoles = playerList.map(p => p.team);
 
     if (mode === 'PvP') {
-        // الأدوار المطلوبة لبدء وضع التنافس
-        const requiredRoles = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
+        // الأدوار المطلوبة في التنافسي
+        const required = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
+        const missing = required.filter(role => !occupiedRoles.includes(role));
         
-        // التحقق: هل كل دور من الأدوار المطلوبة موجود في قائمة الأدوار النشطة؟
-        const isReady = requiredRoles.every(role => activeRoles.includes(role));
-        
-        if (!isReady) {
+        if (missing.length > 0) {
             return showToast("⚠️ يجب تعيين لاعب في كل دور (جاسوس وقائد لكل فريق)");
         }
     } else {
-        // وضع Co_Op (التعاوني)
-        const hasBlue = activeRoles.includes('blue-operative');
-        const hasRed = activeRoles.includes('red-operative');
+        // في التعاوني (Co_Op) نحتاج فقط Side A و Side B
+        // في تصميمك التعاوني يستخدم blue-operative و red-operative كممثلين للطرفين
+        const hasBlue = occupiedRoles.includes('blue-operative');
+        const hasRed = occupiedRoles.includes('red-operative');
+        
         if (!hasBlue || !hasRed) 
-            return showToast("⚠️ يجب وجود لاعب في كل جهة (أحمر وأزرق)");
+            return showToast("⚠️ يجب وجود لاعب في كل جهة (أزرق وأحمر)");
     }
 
-    // تحديد الفريق البادئ عشوائياً
-    // const startingSide = Math.random() < 0.5 ? "red" : "blue";
-    const startingSide = "red";
+    // تحديد الفريق البادئ عشوائياً (مهم جداً للعدالة)
+    const startingSide = Math.random() < 0.5 ? "red" : "blue";
 
     let boardData;
     let turnUpdate;
+    let remainingCards;
 
     if (mode === 'Co_Op') {
         boardData = generateDuetBoard();
         turnUpdate = { side: startingSide, phase: 'clue' };
+        // في التعاوني الأهداف مشتركة (هنا مثال بسيط)
+        remainingCards = { blue: 9, red: 9 }; 
     } else {
-        // في PvP: الفريق البادئ يأخذ 9 كلمات والآخر 8
         boardData = generateBoard(startingSide);
         turnUpdate = { team: startingSide, phase: "spymaster" };
+        // تحديد عدد الكلمات المتبقية بناءً على الفريق البادئ
+        remainingCards = {
+            blue: (startingSide === "blue" ? 9 : 8),
+            red: (startingSide === "red" ? 9 : 8)
+        };
     }
 
-    // 1. تحديث بيانات اللعبة أولاً
+    // 1. رفع بيانات اللعبة
     await set(ref(db, `rooms/${roomId}/game`), {
         board: boardData,
         mode: mode,
-        turn: turnUpdate
+        turn: turnUpdate,
+        remaining: remainingCards, // أضفنا هذا لكي لا ينهار الـ UI في صفحة اللعبة
+        status: "playing",
+        createdAt: Date.now()
     });
 
-    // 2. تغيير حالة الغرفة إلى "started" وهذا سيؤدي لتوجيه الجميع تلقائياً
+    // 2. تحديث حالة الغرفة لبدء التوجيه
     await update(roomRef, { status: "started" });
 };
 
