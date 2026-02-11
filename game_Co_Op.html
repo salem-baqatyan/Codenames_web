@@ -676,15 +676,21 @@ onValue(logRef, (snap) => {
     }
 });
 
-onValue(resultRef, async (snap) => {
-    const winner = snap.val();
+onValue(statusRef, (snap) => {
+    const status = snap.val();
+    if (status === "lobby" && isPageLoaded) {
+        // إذا تغيرت الحالة لردهة، ننتقل فوراً
+        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
+    }
+});
+
+onValue(resultRef, (snap) => {
+     const winner = snap.val();
     if (!winner || !myTeam) return;
 
     const modal = document.getElementById('customAlert');
     let title = (winner === "win_coop") ? "🏆 تناغم مذهل! 🏆" : "💀 حظاً أوفر! 💀";
-    let message = (winner === "win_coop") ? 
-        "لقد نجحتم في التحدي وكشفتم جميع الأهداف!" : 
-        "للأسف تم لمس البطاقة السوداء. التسلل يحتاج دقة!";
+    let message = (winner === "win_coop") ? "نجحتم في كشف الأهداف!" : "انتهت المهمة بلمس البطاقة السوداء!";
     let alertClass = (winner === "win_coop") ? "alert-win" : "alert-lose";
 
     modal.className = `custom-alert ${alertClass}`;
@@ -693,25 +699,21 @@ onValue(resultRef, async (snap) => {
         <div class="alert-body" style="text-align:center;">
             <span style="font-size:1.4rem; display:block; margin-bottom:10px;">${title}</span>
             <p style="font-size:1rem; margin-bottom:10px;">${message}</p>
-            
             <div class="timer-container">
-                <svg class="timer-svg">
-                    <circle class="timer-circle-bg" cx="30" cy="30" r="28"></circle>
-                    <circle id="timer-bar" class="timer-circle-fg" cx="30" cy="30" r="28"></circle>
-                </svg>
+                <svg class="timer-svg"><circle class="timer-circle-bg" cx="30" cy="30" r="28"></circle>
+                <circle id="timer-bar" class="timer-circle-fg" cx="30" cy="30" r="28" style="stroke-dashoffset: 0;"></circle></svg>
                 <div id="countdown-text">10</div>
             </div>
-            <p style="font-size:0.8rem; opacity:0.8;">العودة للردهة خلال ثوانٍ...</p>
+            <p style="font-size:0.8rem; opacity:0.8;">العودة للردهة تلقائياً...</p>
         </div>
         <div class="alert-btns">
-            <button class="alert-btn btn-cancel" id="leaveGameBtn" style="width:100%">مغادرة الغرفة 🏠</button>
+            <button class="alert-btn btn-cancel" id="leaveGameBtn" style="width:100%">مغادرة الغرفة تماماً 🏠</button>
         </div>
     `;
 
     modal.style.display = 'block';
     setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
 
-    // منطق العد التنازلي
     let timeLeft = 10;
     const timerBar = document.getElementById('timer-bar');
     const countdownText = document.getElementById('countdown-text');
@@ -721,41 +723,49 @@ onValue(resultRef, async (snap) => {
         timeLeft--;
         if (countdownText) countdownText.innerText = timeLeft;
         if (timerBar) {
-            const offset = totalOffset - (timeLeft * (totalOffset / 10));
-            timerBar.style.strokeDashoffset = offset;
+            timerBar.style.strokeDashoffset = totalOffset - (timeLeft * (totalOffset / 10));
         }
 
         if (timeLeft <= 0) {
             clearInterval(countdownInterval);
-            await goToLobby();
+            handleAutoTransition();
         }
     }, 1000);
 
-    // دالة الانتقال للردهة (تنفذ للجميع عند انتهاء الوقت)
-    async function goToLobby() {
+    // دالة الانتقال التلقائي
+    async function handleAutoTransition() {
+        // تحديد المشرف
         const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
-        const isAdmin = (playerId === playerList[0].id);
+        const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
+
+        // تحديث الفريق ليكون مشاهداً (اختياري حسب رغبتك)
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { team: "spectators-list" });
 
         if (isAdmin) {
-            // المشرف فقط يقوم بتحديث حالة الغرفة للجميع
+            // المشرف يغير حالة الغرفة، مما يحفز الانتقال عند الجميع عبر مراقب statusRef
             await update(roomRef, { status: "lobby" });
-            await set(gameRef, null); 
+            // نمسح نتيجة الفوز واللعبة لتهيئة الجولة القادمة
+            await update(ref(db, `rooms/${roomId}/game`), { winner: null }); 
         }
-
-        // الجميع يغير فريقه لجمهور وينتقل
-        await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-            team: "spectators-list"
-        });
-        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
     }
 
-    // زر المغادرة (فردي)
-    document.getElementById('leaveGameBtn').onclick = async () => {
+    // زر المغادرة - تم استخدامه بـ addEventListener لضمان العمل
+    const leaveBtn = document.getElementById('leaveGameBtn');
+    leaveBtn.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         clearInterval(countdownInterval);
-        // 1. مسح بيانات اللاعب من الغرفة
-        await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
-        // 2. الانتقال لصفحة index
-        window.location.href = 'index.html';
+        
+        try {
+            // 1. مسح اللاعب من قاعدة البيانات
+            const pRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+            await remove(pRef);
+            // 2. الانتقال لصفحة index
+            window.location.replace('index.html'); 
+        } catch (err) {
+            console.error("Error leaving:", err);
+            window.location.href = 'index.html'; // انتقال اضطراري
+        }
     };
 });
 
