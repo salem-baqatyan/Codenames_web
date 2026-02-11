@@ -660,7 +660,6 @@ onValue(logRef, (snap) => {
     }
 });
 
-let resultTimerInterval = null;
 onValue(resultRef, async (snap) => {
     const winner = snap.val();
     if (!winner || !myTeam) return;
@@ -725,26 +724,7 @@ onValue(resultRef, async (snap) => {
     };
 });
 
-// دالة الانتقال للردهة (تنفذ للجميع)
-async function goToLobbyAction() {
-    const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
-    const isAdmin = (playerId === playerList[0].id);
 
-    // المشرف فقط هو من يعيد ضبط الغرفة في قاعدة البيانات
-    if (isAdmin) {
-        await update(roomRef, { status: "lobby" });
-        await update(gameRef, { winner: null }); // تصفير النتيجة لإيقاف استدعاء الدالة مجدداً
-        await set(gameRef, null); 
-    }
-
-    // الجميع ينتقل إلى قسم الجمهور في الردهة
-    const me = playersCache[playerId];
-    await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-        team: "spectators-list"
-    });
-
-    window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
-}
 
 // دالة الانتقال للردهة (تنفذ للجميع)
 async function goToLobbyAction() {
