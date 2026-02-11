@@ -65,24 +65,40 @@
         .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
         .btn-cancel { background: #333; color: #bbb; border: 1px solid #444; }
 
-        .timer-container {
-            position: relative;
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 15px auto;
-        }
-        .timer-svg { transform: rotate(-90deg); width: 60px; height: 60px; }
-        .timer-circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 4; }
-        .timer-circle-fg {
-            fill: none; stroke: #7ed321; stroke-width: 4;
-            stroke-linecap: round; stroke-dasharray: 176; /* 2 * PI * 28 */
-            stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear;
-        }
-        .timer-text {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 1.1rem; font-weight: bold; color: white;
-        }
-        .alert-lose .timer-circle-fg { stroke: #e74c3c; }
+        /* مؤقت دائري بسيط */
+.timer-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 10px auto;
+}
+.timer-svg {
+    transform: rotate(-90deg);
+    width: 60px;
+    height: 60px;
+}
+.timer-circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 4;
+}
+.timer-circle-fg {
+    fill: none;
+    stroke: #3498db;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 176; /* المحيط تقريباً 2 * pi * r */
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+}
+#countdown-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    color: white;
+}
         /* --- Players List Modal & Mini Cards --- */
         #playersListModal {
             position: absolute; top: 60px; right: 15px; left: auto; width: 280px; height: auto;
@@ -665,87 +681,83 @@ onValue(resultRef, async (snap) => {
     if (!winner || !myTeam) return;
 
     const modal = document.getElementById('customAlert');
-    let title = winner === "win_coop" ? "🏆 تناغم مذهل! 🏆" : "💀 حظاً أوفر! 💀";
-    let message = winner === "win_coop" ? "لقد نجحتم في التحدي كفريق واحد!" : "للأسف تم لمس البطاقة السوداء!";
-    let alertClass = winner === "win_coop" ? "alert-win" : "alert-lose";
+    let title = (winner === "win_coop") ? "🏆 تناغم مذهل! 🏆" : "💀 حظاً أوفر! 💀";
+    let message = (winner === "win_coop") ? 
+        "لقد نجحتم في التحدي وكشفتم جميع الأهداف!" : 
+        "للأسف تم لمس البطاقة السوداء. التسلل يحتاج دقة!";
+    let alertClass = (winner === "win_coop") ? "alert-win" : "alert-lose";
 
     modal.className = `custom-alert ${alertClass}`;
     modal.innerHTML = `
         <div class="alert-drag-handle"><div class="drag-indicator"></div></div>
-        <div class="timer-container">
-            <svg class="timer-svg">
-                <circle class="timer-circle-bg" cx="30" cy="30" r="28"></circle>
-                <circle id="timerPath" class="timer-circle-fg" cx="30" cy="30" r="28"></circle>
-            </svg>
-            <div id="timerNumber" class="timer-text">10</div>
-        </div>
-        <div class="alert-body">
-            <span style="font-size:1.3rem; display:block; mb:10px;">${title}</span>
-            <p>${message}</p>
+        <div class="alert-body" style="text-align:center;">
+            <span style="font-size:1.4rem; display:block; margin-bottom:10px;">${title}</span>
+            <p style="font-size:1rem; margin-bottom:10px;">${message}</p>
+            
+            <div class="timer-container">
+                <svg class="timer-svg">
+                    <circle class="timer-circle-bg" cx="30" cy="30" r="28"></circle>
+                    <circle id="timer-bar" class="timer-circle-fg" cx="30" cy="30" r="28"></circle>
+                </svg>
+                <div id="countdown-text">10</div>
+            </div>
+            <p style="font-size:0.8rem; opacity:0.8;">العودة للردهة خلال ثوانٍ...</p>
         </div>
         <div class="alert-btns">
-            <button class="alert-btn btn-ok" id="returnNowBtn">العودة للردهة الآن 🔄</button>
-            <button class="alert-btn btn-cancel" id="leaveGameBtn">مغادرة النهائياً 🏠</button>
+            <button class="alert-btn btn-cancel" id="leaveGameBtn" style="width:100%">مغادرة الغرفة 🏠</button>
         </div>
     `;
 
     modal.style.display = 'block';
     setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
 
-    // --- منطق المؤقت الدائري ---
+    // منطق العد التنازلي
     let timeLeft = 10;
-    const path = document.getElementById('timerPath');
-    const number = document.getElementById('timerNumber');
-    const fullDash = 176;
+    const timerBar = document.getElementById('timer-bar');
+    const countdownText = document.getElementById('countdown-text');
+    const totalOffset = 176;
 
-    if(resultTimerInterval) clearInterval(resultTimerInterval);
-    
-    resultTimerInterval = setInterval(async () => {
+    const countdownInterval = setInterval(async () => {
         timeLeft--;
-        number.innerText = timeLeft;
-        path.style.strokeDashoffset = fullDash - (fullDash * timeLeft / 10);
+        if (countdownText) countdownText.innerText = timeLeft;
+        if (timerBar) {
+            const offset = totalOffset - (timeLeft * (totalOffset / 10));
+            timerBar.style.strokeDashoffset = offset;
+        }
 
         if (timeLeft <= 0) {
-            clearInterval(resultTimerInterval);
-            await goToLobbyAction(); // الانتقال الجماعي
+            clearInterval(countdownInterval);
+            await goToLobby();
         }
     }, 1000);
 
-    // زر العودة الفوري (للمستعجل)
-    document.getElementById('returnNowBtn').onclick = () => goToLobbyAction();
+    // دالة الانتقال للردهة (تنفذ للجميع عند انتهاء الوقت)
+    async function goToLobby() {
+        const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
+        const isAdmin = (playerId === playerList[0].id);
 
-    // زر المغادرة النهائية (نقل فردي ومسح بيانات)
+        if (isAdmin) {
+            // المشرف فقط يقوم بتحديث حالة الغرفة للجميع
+            await update(roomRef, { status: "lobby" });
+            await set(gameRef, null); 
+        }
+
+        // الجميع يغير فريقه لجمهور وينتقل
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
+            team: "spectators-list"
+        });
+        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
+    }
+
+    // زر المغادرة (فردي)
     document.getElementById('leaveGameBtn').onclick = async () => {
-        clearInterval(resultTimerInterval);
-        // 1. مسح اللاعب من الردهة
+        clearInterval(countdownInterval);
+        // 1. مسح بيانات اللاعب من الغرفة
         await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
-        // 2. النقل الفردي
+        // 2. الانتقال لصفحة index
         window.location.href = 'index.html';
     };
 });
-
-
-
-// دالة الانتقال للردهة (تنفذ للجميع)
-async function goToLobbyAction() {
-    const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
-    const isAdmin = (playerId === playerList[0].id);
-
-    // المشرف فقط هو من يعيد ضبط الغرفة في قاعدة البيانات
-    if (isAdmin) {
-        await update(roomRef, { status: "lobby" });
-        await update(gameRef, { winner: null }); // تصفير النتيجة لإيقاف استدعاء الدالة مجدداً
-        await set(gameRef, null); 
-    }
-
-    // الجميع ينتقل إلى قسم الجمهور في الردهة
-    const me = playersCache[playerId];
-    await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-        team: "spectators-list"
-    });
-
-    window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
-}
 
 function applyGameStateToUI() {
     if (!gameState) return;
