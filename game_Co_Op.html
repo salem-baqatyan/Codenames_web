@@ -753,29 +753,6 @@ onValue(resultRef, (snap) => {
             });
         }
     }
-
-    // زر المغادرة - داخل دالة resultRef
-    // const leaveBtn = document.getElementById('leaveGameBtn');
-    // leaveBtn.onclick = async (e) => {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-        
-    //     // أهم خطوة: إيقاف أي عد تنازلي شغال لمنع تنفيذ handleAutoTransition
-    //     clearInterval(countdownInterval);
-        
-    //     // منع المتصفح من استقبال تحديثات إضافية من Firebase قبل الخروج
-    //     isPageLoaded = false; 
-
-    //     try {
-    //         const pRef = ref(db, `rooms/${roomId}/players/${playerId}`);
-    //         // مسح البيانات
-    //         await remove(pRef);
-    //         // مسح بيانات الجلسة محلياً لضمان عدم العودة
-    //         window.location.replace('index.html'); 
-    //     } catch (err) {
-    //         window.location.href = 'index.html';
-    //     }
-    // };
 });
 
 function applyGameStateToUI() {

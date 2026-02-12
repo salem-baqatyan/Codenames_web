@@ -64,7 +64,40 @@
         .alert-btn:active { transform: scale(0.95); }
         .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
         .btn-cancel { background: #333; color: #bbb; border: 1px solid #444; }
-
+/* مؤقت دائري بسيط */
+.timer-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 10px auto;
+}
+.timer-svg {
+    transform: rotate(-90deg);
+    width: 60px;
+    height: 60px;
+}
+.timer-circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 4;
+}
+.timer-circle-fg {
+    fill: none;
+    stroke: #3498db;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 176; /* المحيط تقريباً 2 * pi * r */
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+}
+#countdown-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    color: white;
+}
         /* --- Players List Modal & Mini Cards --- */
         #playersListModal {
             position: absolute; top: 60px; right: 15px; left: auto; width: 280px; height: auto;
@@ -317,6 +350,8 @@ const gameRef = ref(db, `rooms/${roomId}/game`);
 const playersRef = ref(db, `rooms/${roomId}/players`);
 const statusRef = ref(db, `rooms/${roomId}/status`);
 const logRef = ref(db, `rooms/${roomId}/game/log`);
+const resultRef = ref(db, `rooms/${roomId}/game/winner`);
+
 
 
 /* ---------- 2. State & Assets ---------- */
@@ -633,68 +668,86 @@ onValue(logRef, (snap) => {
         renderLog(); 
     }
 });
+// مراقب حالة الغرفة للانتقال التلقائي للردهة
+onValue(statusRef, (snap) => {
+    const status = snap.val();
+    if (status === "lobby" && isPageLoaded) {
+        // إذا تغيرت الحالة لردهة، ننتقل فوراً
+        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
+    }
+});
 
-// onValue(statusRef, (snap) => {
-//     const status = snap.val();
-//     if (status === "waiting" && isPageLoaded) {
-//         window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
-//     }
-//     if (status === "ended") {
-//         window.location.href = "index.html";
-//     }
-// });
-
-onValue(ref(db, `rooms/${roomId}/game/winner`), (snap) => {
+onValue(resultRef, (snap) => {
     const winner = snap.val();
     if (!winner || !myTeam) return;
 
-    const isWinner = myTeam === winner;
-    const winnerName = winner === "blue" ? "الأزرق 🔵" : "الأحمر 🔴";
     const modal = document.getElementById('customAlert');
-    
-    modal.className = `custom-alert ${isWinner ? 'alert-win' : 'alert-lose'}`;
+    let title = (winner === "win_coop") ? "🏆 تناغم مذهل! 🏆" : "💀 حظاً أوفر! 💀";
+    let message = (winner === "win_coop") ? "نجحتم في كشف الأهداف!" : "انتهت المهمة بلمس البطاقة السوداء!";
+    let alertClass = (winner === "win_coop") ? "alert-win" : "alert-lose";
+
+    modal.className = `custom-alert ${alertClass}`;
     modal.innerHTML = `
         <div class="alert-drag-handle"><div class="drag-indicator"></div></div>
-        <div class="alert-body">
-            <span style="font-size:1.5rem; display:block; margin-bottom:10px;">
-                ${isWinner ? '🏆 مبروووك! 🏆' : '💀 حظاً أوفر!'}
-            </span>
-            <p style="font-size:1rem; margin-bottom:15px;">فاز الفريق ${winnerName}</p>
-        </div>
-        <div class="alert-btns">
-            <button class="alert-btn btn-ok" id="nextGenBtn">الجولة التالية 🔄</button>
-            <button class="alert-btn btn-cancel" id="leaveGameBtn">مغادرة اللعبة 🏠</button>
+        <div class="alert-body" style="text-align:center;">
+            <span style="font-size:1.4rem; display:block; margin-bottom:10px;">${title}</span>
+            <p style="font-size:1rem; margin-bottom:10px;">${message}</p>
+            <div class="timer-container">
+                <svg class="timer-svg"><circle class="timer-circle-bg" cx="30" cy="30" r="28"></circle>
+                <circle id="timer-bar" class="timer-circle-fg" cx="30" cy="30" r="28" style="stroke-dashoffset: 0;"></circle></svg>
+                <div id="countdown-text">10</div>
+            </div>
+            <p style="font-size:0.8rem; opacity:0.8;">العودة للردهة تلقائياً...</p>
         </div>
     `;
 
     modal.style.display = 'block';
     setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
 
-    document.getElementById('nextGenBtn').onclick = async () => {
-        const me = playersCache[playerId];
-        
-        const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
-        const isAdmin = (playerId === playerList[0].id);
+    let timeLeft = 10;
+    const timerBar = document.getElementById('timer-bar');
+    const countdownText = document.getElementById('countdown-text');
+    const totalOffset = 176;
 
-        if (isAdmin) {
-            await update(roomRef, { status: "lobby" });
-            await set(gameRef, null); 
+    const countdownInterval = setInterval(async () => {
+        timeLeft--;
+        if (countdownText) countdownText.innerText = timeLeft;
+        if (timerBar) {
+            timerBar.style.strokeDashoffset = totalOffset - (timeLeft * (totalOffset / 10));
         }
 
-        await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-            team: "spectators-list",
-            name: me.name,
-            avatar: me.avatar
+        if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            handleAutoTransition();
+        }
+    }, 1000);
+
+    async function handleAutoTransition() {
+        // 1. تأكد أولاً أن اللاعب لا يزال في الغرفة ولم يضغط "مغادرة"
+        const playersSnap = await get(playersRef);
+        const currentPlayers = playersSnap.val() || {};
+        
+        if (!currentPlayers[playerId]) return; // إذا كنت قد غادرت فعلياً، لا تفعل شيئاً
+
+        const playerList = Object.values(currentPlayers).sort((a, b) => a.joinedAt - b.joinedAt);
+        const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
+
+        // 2. كل لاعب يحدث فريقه لنفسه فقط (لا نحدث الكل دفعة واحدة)
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
+            team: "spectators-list" 
         });
 
-        window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
-    };
+        // 3. المشرف فقط يغير حالة الغرفة
+        if (isAdmin) {
+            // تحديث حالة الغرفة ومسح الـ winner في تحديث واحد (Atomic Update)
+            await update(roomRef, { 
+                status: "lobby",
+                "game/winner": null 
+            });
+        }
+    }
+    });
 
-    document.getElementById('leaveGameBtn').onclick = async () => {
-        await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
-        window.location.href = 'index.html';
-    };
-});
 
 function applyGameStateToUI() {
     if (!gameState) return;
