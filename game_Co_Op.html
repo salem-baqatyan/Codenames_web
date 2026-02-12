@@ -685,7 +685,7 @@ onValue(statusRef, (snap) => {
 });
 
 onValue(resultRef, (snap) => {
-     const winner = snap.val();
+    const winner = snap.val();
     if (!winner || !myTeam) return;
 
     const modal = document.getElementById('customAlert');
@@ -732,39 +732,51 @@ onValue(resultRef, (snap) => {
         }
     }, 1000);
 
-    // دالة الانتقال التلقائي
     async function handleAutoTransition() {
-        // تحديد المشرف
-        const playerList = Object.values(playersCache).sort((a, b) => a.joinedAt - b.joinedAt);
+        // 1. تأكد أولاً أن اللاعب لا يزال في الغرفة ولم يضغط "مغادرة"
+        const playersSnap = await get(playersRef);
+        const currentPlayers = playersSnap.val() || {};
+        
+        if (!currentPlayers[playerId]) return; // إذا كنت قد غادرت فعلياً، لا تفعل شيئاً
+
+        const playerList = Object.values(currentPlayers).sort((a, b) => a.joinedAt - b.joinedAt);
         const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
 
-        // تحديث الفريق ليكون مشاهداً (اختياري حسب رغبتك)
-        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { team: "spectators-list" });
+        // 2. كل لاعب يحدث فريقه لنفسه فقط (لا نحدث الكل دفعة واحدة)
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
+            team: "spectators-list" 
+        });
 
+        // 3. المشرف فقط يغير حالة الغرفة
         if (isAdmin) {
-            // المشرف يغير حالة الغرفة، مما يحفز الانتقال عند الجميع عبر مراقب statusRef
-            await update(roomRef, { status: "lobby" });
-            // نمسح نتيجة الفوز واللعبة لتهيئة الجولة القادمة
-            await update(ref(db, `rooms/${roomId}/game`), { winner: null }); 
+            // تحديث حالة الغرفة ومسح الـ winner في تحديث واحد (Atomic Update)
+            await update(roomRef, { 
+                status: "lobby",
+                "game/winner": null 
+            });
         }
     }
 
-    // زر المغادرة - تم استخدامه بـ addEventListener لضمان العمل
+    // زر المغادرة - داخل دالة resultRef
     const leaveBtn = document.getElementById('leaveGameBtn');
     leaveBtn.onclick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
+        
+        // أهم خطوة: إيقاف أي عد تنازلي شغال لمنع تنفيذ handleAutoTransition
         clearInterval(countdownInterval);
         
+        // منع المتصفح من استقبال تحديثات إضافية من Firebase قبل الخروج
+        isPageLoaded = false; 
+
         try {
-            // 1. مسح اللاعب من قاعدة البيانات
             const pRef = ref(db, `rooms/${roomId}/players/${playerId}`);
+            // مسح البيانات
             await remove(pRef);
-            // 2. الانتقال لصفحة index
+            // مسح بيانات الجلسة محلياً لضمان عدم العودة
             window.location.replace('index.html'); 
         } catch (err) {
-            console.error("Error leaving:", err);
-            window.location.href = 'index.html'; // انتقال اضطراري
+            window.location.href = 'index.html';
         }
     };
 });
