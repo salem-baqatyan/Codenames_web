@@ -162,15 +162,6 @@
         const dbRef = ref(db);
         try {
             const snapshot = await get(child(dbRef, `rooms/${roomId}`));
-            if (snapshot.exists()) {
-                // إذا كانت الغرفة موجودة: اجعل الزر ساطعاً
-                joinBtn.style.filter = "brightness(1.5)";
-                joinBtn.style.boxShadow = "0 0 15px #7ed321";
-                joinBtn.innerText = "دخول الآن! ✨";
-            } else {
-                // إذا لم تكن موجودة: أعد الزر لشكلة الطبيعي
-                resetBtnStyle();
-            }
         } catch (error) {
             resetBtnStyle();
         }
