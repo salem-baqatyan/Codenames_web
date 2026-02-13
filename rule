@@ -1,166 +1,0 @@
-    <!-- Rules Modal -->
-    <div class="modal-overlay" id="rulesModal">
-        <div class="settings-modal">
-            <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
-            <div class="modal-header">كيفية اللعب</div>
-            <div class="rules-intro">
-                <p><b>كودنايمز (Codenames):</b> هي لعبة تعتمد على ربط الكلمات والعمل الجماعي بين فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</p>
-                <p> الفائز هو أول فريق يجد جميع كلماته السرية.</p>
-                
-               
-            </div>
-            <div id="rulesAccordion">
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎮 الإعداد والأدوار</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>ينقسم اللاعبون إلى فريقين: <b>الأزرق</b> و <b>الأحمر</b>.</li>
-                            <li>يجب أن يحتوي كل فريق على <b>قائد الجواسيس (Spymaster)</b> و<b>عميل (Operative)</b>.</li>
-                            <li>يتم عرض شبكة 5×5 مكونة من 25 بطاقة بها كلمات رمزية.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕵️ قادة الجواسيس (Spymaster)</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يرى القادة هويات جميع البطاقات، وهي سرية تماماً عن العملاء.</li>
-                            <li>يعطي القائد تلميحاً مكوناً من <b>كلمة واحدة </b>ان امكن و <b>رقم </b>لعدد الكلمات المرتبطة بهذه التلميح لمساعدة فريقه.</li>
-                        </ul>
-                        <div class="log-row row-red">
-                            <div class="log-clue-item log-clue-red">
-                                <img src="img/avatar/snowman.webp" id="rulesExampleAvatar" class="log-avatar" style="border-color:#fff">
-                                <div class="log-text-clue">حيوان</div>
-                                <div class="log-num-circle">3</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🙋‍♂️ العملاء (Operatives)</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>(بلا الوان)لا يعرف العملاء هويات البطاقات مسبقاً.</li>
-                            <li>يحاول تخمين الكلمات الصحيحة بناءً على تلميح قائد الجواسيس.</li>
-                            <li>يجب عليهم تجنب كلمات الفريق المنافس، وبطاقة الاغتيال(السوداء).</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🟦 أنواع البطاقات</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>يتم تعيين كل كلمة في الشبكة سرياً لواحد من أربعة أصناف:</p>
-                        <ul>
-                            <li><b>بطاقات زرقاء:</b> يجب على الفريق الأزرق العثور عليها.</li>
-                            <li><b>بطاقات حمراء:</b> يجب على الفريق الأحمر العثور عليها.</li>
-                            <li><b>المارة الأبرياء:</b> بطاقات محايدة تنهي الدور فقط.</li>
-                            <li><b>بطاقة المغتال (السوداء):</b> إذا لمستها، يخسر فريقك فوراً!</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>💬 إعطاء التلميحات</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>عندما يأتي دورك كقائد جاسوس:</p>
-                        <ol>
-                            <li>ابحث عن كلمة واحدة تربط أكبر عدد ممكن من بطاقات فريقك.</li>
-                            <li>أضف رقماً يوضح عدد الكلمات المرتبطة بهذا التلميح.</li>
-                            <li><b>تنبيه:</b> لا يصح إعطاء تلميح هو جزء من كلمة موجودة على الشبكة!</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🧠 التلميحات الصالحة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>يجب أن يتعلق التلميح <b>بمعنى</b> الكلمات وليس بطريقة كتابتها أو موقعها.</li>
-                            <li>لا يجوز استخدام ترجمات للكلمات الموجودة بلغات أخرى.</li>
-                            <li>إذا لم تكن متأكداً من قانونية التلميح، اسأل القائد المنافس سرياً.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🕹️ التخمين (للعملاء)</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>بعد رؤية التلميح، يقوم العميل بـ:</p>
-                        <ol>
-                            <li>البحث عن رابط بين التلميح والكلمات الموجودة</li>
-                            <li>تحديد اختيارهم عن طريق الضغط على الكلمات التي يشكوا بها.</li>
-                            <li>أكد الكلمات التي طابقت التلميح.</li>
-                            <li>إذا كان التخمين صحيحاً، يمكنك الاستمرار بتخمين كلمة إضافية.</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔢 أرقام التلميحات الخاصة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>التلميح 0:</b> يعني أن لا توجد أي كلمة من كلمات فريقك ترتبط بالتلميح.</li>
-                            <li><b>التلميح لا نهائي (∞):</b> يسمح للعملاء بالتخمين بلا حدود حتى يخطئوا.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🔄 تدفق اللعبة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>تنتهي نوبة الفريق في الحالات التالية:</p>
-                        <ul>
-                            <li>اختيار بطاقة "مار بريء"(بطاقة محايدة) أو بطاقة الفريق المنافس.</li>
-                            <li>أو الضغط على زر انهاء الدور</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🎯 الفوز والخسارة</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li><b>الفوز:</b> كشف جميع بطاقات فريقك أولاً.</li>
-                            <li><b>الخسارة الفورية:</b> لمس بطاقة "المغتال" البطاقة السوداء.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span>🥳 نصائح ختامية</span><span>▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <ul>
-                            <li>ضروري يكون بينك وبين فريقك تفاهم وتناغم عالي.</li>
-                            <li>استمتع بالربط الإبداعي بين الكلمات وفك شفرة التلميح!</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <button class="close-modal-btn" onclick="toggleRulesModal(false)">فهمت ذلك!</button>
-        </div>
-    </div>

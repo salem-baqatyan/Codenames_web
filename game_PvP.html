@@ -1018,7 +1018,9 @@ async function endTurn() {
     guessesThisTurn = 0;
     selectedCards.clear();
     const input = document.getElementById('clueInput');
+    const select = document.getElementById('clueNum');
     if(input) input.value = '';
+    if(select) select.value = "-";
 }
 
 window.openPlayersModal = async () => {
