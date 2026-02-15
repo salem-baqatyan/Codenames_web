@@ -841,12 +841,7 @@ function renderGrid() {
             <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
-            
-            ${card.revealed ? `
-                <div class="revealed-marker ${card.revealedBy === 'red' ? 'from-red' : 'from-blue'}"></div>
-                <img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">
-            ` : ''}
-            
+            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">` : ''}
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;
@@ -1069,19 +1064,15 @@ window.confirmSelection = async function(i) {
     const isMyTurnToGuess = (gameState.turn.phase === 'guess' && myTeam !== gameState.turn.side);
     if (!gameState || isSpectator || !isMyTurnToGuess || gameState.board[i].revealed || !selectedCards.has(i)) return;
     
-const card = gameState.board[i];
+    const card = gameState.board[i];
     const me = playersCache[playerId];
     
-    // في التعاوني: نحن نكشف بناءً على ما يراه الشريك (صاحب الدور الحالي)
-    const currentSide = gameState.turn.side; // الجانب الذي أعطى التلميح
-    const judgesColor = (currentSide === 'red') ? card.sideA : card.sideB;
-    const visualToShow = (currentSide === 'red') ? card.visualA : card.visualB;
+    // المنطق التعاوني: الحكم هو خريطة الشريك
+    const judgesColor = (gameState.turn.side === 'red') ? card.sideA : card.sideB;
 
     const updates = {};
     updates[`board/${i}/revealed`] = true;
-    updates[`board/${i}/revealedBy`] = currentSide; // نخزن الجانب الذي تمت القراءة من خريطته
-    updates[`board/${i}/visual`] = visualToShow;
-        
+    
     // تعيين الصورة بناءً على اللون الحقيقي في خريطة الشريك
     let visualImg = getVisualForColor(judgesColor);
     updates[`board/${i}/visual`] = visualImg;
