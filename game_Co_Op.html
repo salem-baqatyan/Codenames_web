@@ -1119,10 +1119,20 @@ window.confirmSelection = async function(i) {
 
 // وظيفة مساعدة لتحديد شكل البطاقة بعد كشفها
 function getVisualForColor(color) {
-    if (color === 'red') return cardVisuals['card-red'][0];
-    if (color === 'blue') return cardVisuals['card-blue'][0];
-    if (color === 'killer') return cardVisuals['card-black'][0];
-    return cardVisuals['card-brown'][0];
+    let visuals;
+    if (color === 'red') {
+        visuals = cardVisuals['card-red'];
+    } else if (color === 'blue') {
+        visuals = cardVisuals['card-blue'];
+    } else if (color === 'killer') {
+        visuals = cardVisuals['card-black'];
+    } else {
+        visuals = cardVisuals['card-brown'];
+    }
+
+    // اختيار صورة عشوائية من المصفوفة بدلاً من الثابت [0]
+    const randomIndex = Math.floor(Math.random() * visuals.length);
+    return visuals[randomIndex];
 }
 
 async function endTurn() {
