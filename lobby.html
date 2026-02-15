@@ -941,17 +941,16 @@ function renderLobbyHeaders(mode) {
 
 /* ---------- 7. Game Engine & Start ---------- */
 function getFreshShuffledVisuals() {
-    // نأخذ نسخة عميقة من المصفوفات الأصلية
     const fresh = {
         blue: [...cardVisuals.blue],
         red: [...cardVisuals.red],
         neutral: [...cardVisuals.neutral],
         killer: [...cardVisuals.killer]
     };
-    // نخلطهم
     shuffleArray(fresh.blue);
     shuffleArray(fresh.red);
     shuffleArray(fresh.neutral);
+    // القاتل صورة واحدة لا تحتاج خلط
     return fresh;
 }
 
@@ -1006,21 +1005,21 @@ function generateDuetBoard() {
     while(cards.length < 25) cards.push({ sideA: 'neutral', sideB: 'neutral' });
 
     shuffleArray(cards);
+
     const gameVisuals = getFreshShuffledVisuals();
 
     return cards.map((card, i) => {
-        // نختار صورة لكل جانب بناءً على لونه في تلك الخريطة
-        const imgA = gameVisuals[card.sideA === 'killer' ? 'killer' : (card.sideA === 'neutral' ? 'neutral' : 'red')].pop();
-        const imgB = gameVisuals[card.sideB === 'killer' ? 'killer' : (card.sideB === 'neutral' ? 'neutral' : 'blue')].pop();
+        let typeToUse = 'neutral';
+        if (card.sideA === 'red') typeToUse = 'red';
+        else if (card.sideB === 'blue') typeToUse = 'blue';
+        else if (card.sideA === 'killer' || card.sideB === 'killer') typeToUse = 'killer';
 
         return {
             word: shuffledWords[i],
             sideA: card.sideA,
             sideB: card.sideB,
             revealed: false,
-            // نخزن الصورتين معاً
-            visualA: imgA, 
-            visualB: imgB
+            visual: gameVisuals[typeToUse].pop()
         };
     });
 }
