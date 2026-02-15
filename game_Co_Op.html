@@ -1069,10 +1069,12 @@ window.confirmSelection = async function(i) {
     
     // المنطق التعاوني: الحكم هو خريطة الشريك
     const judgesColor = (gameState.turn.side === 'red') ? card.sideA : card.sideB;
+    const finalVisual = (gameState.turn.side === 'red') ? card.visualA : card.visualB;
 
     const updates = {};
     updates[`board/${i}/revealed`] = true;
-    
+    updates[`board/${i}/visual`] = finalVisual; // نثبت الصورة التي كانت مخزنة في الـ Setup
+
     // تعيين الصورة بناءً على اللون الحقيقي في خريطة الشريك
     let visualImg = getVisualForColor(judgesColor);
     updates[`board/${i}/visual`] = visualImg;
@@ -1081,10 +1083,8 @@ window.confirmSelection = async function(i) {
     let nextPhase = 'guess';
 
     if (judgesColor === 'killer') {
-        // حالة خسارة: لمس الأسود
         updates.winner = "lose_killer"; 
     } else if (judgesColor === 'neutral') {
-        // حالة خطأ: لمس المحايد (ينتهي الدور)
         nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
         nextPhase = 'clue';
         updates['turn'] = { side: nextSide, phase: nextPhase, ready: false, updatedAt: null };
@@ -1092,12 +1092,10 @@ window.confirmSelection = async function(i) {
         guessesThisTurn = 0;
         selectedCards.clear();
     } else {
-        // حالة صحيحة: استمرار التخمين
         guessesThisTurn++;
-        selectedCards.delete(i); // إزالة البطاقة التي تم تأكيدها فقط من التحديد
+        selectedCards.delete(i);
     }
 
-    // شرط الفوز التعاوني: كشف 15 بطاقة إجمالاً
     const totalRevealed = Object.values(gameState.board).filter(c => c.revealed).length + 1;
     if (totalRevealed >= 15 && updates.winner !== "lose_killer") {
         updates.winner = "win_coop"; 
