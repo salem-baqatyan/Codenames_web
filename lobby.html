@@ -985,47 +985,45 @@ function generateBoard(startingTeam) {
     });
 }
 function generateDuetBoard() {
-    if (typeof words === 'undefined' || words.length < 25) {
-        console.error("Words array is missing or too short!");
-        return [];
-    }
-
     const shuffledWords = [...words]; 
     shuffleArray(shuffledWords);
     
-    let cardsLogic = [];
-    for(let i=0; i<3; i++) cardsLogic.push({ sideA: 'red', sideB: 'blue' });
-    cardsLogic.push({ sideA: 'killer', sideB: 'killer' });
-    cardsLogic.push({ sideA: 'red', sideB: 'killer' });
-    cardsLogic.push({ sideA: 'killer', sideB: 'blue' });
-    for(let i=0; i<5; i++) cardsLogic.push({ sideA: 'red', sideB: 'neutral' });
-    for(let i=0; i<5; i++) cardsLogic.push({ sideA: 'neutral', sideB: 'blue' });
-    while(cardsLogic.length < 25) cardsLogic.push({ sideA: 'neutral', sideB: 'neutral' });
+    let cards = [];
+    
+    // 3 كلمات: (A احمر B ازرق)
+    for(let i=0; i<3; i++) cards.push({ sideA: 'red', sideB: 'blue' });
+    // 1 كلمة: (أسود للطرفين)
+    cards.push({ sideA: 'killer', sideB: 'killer' });
+    // 1 كلمة: (احمر لـ A، أسود لـ B)
+    cards.push({ sideA: 'red', sideB: 'killer' });
+    // 1 كلمة: (أسود لـ A، ازرق لـ B)
+    cards.push({ sideA: 'killer', sideB: 'blue' });
+    // 5 كلمات: (احمر لـ A، أبيض لـ B)
+    for(let i=0; i<5; i++) cards.push({ sideA: 'red', sideB: 'neutral' });
+    // 5 كلمات: (أبيض لـ A، ازرق لـ B)
+    for(let i=0; i<5; i++) cards.push({ sideA: 'neutral', sideB: 'blue' });
+    // البقية (9 كلمات): (أبيض للطرفين)
+    while(cards.length < 25) cards.push({ sideA: 'neutral', sideB: 'neutral' });
 
-    shuffleArray(cardsLogic);
+    shuffleArray(cards);
+    const gameVisuals = getFreshShuffledVisuals();
 
-    const visuals = getFreshShuffledVisuals();
-
-    return cardsLogic.map((card, i) => {
-        // منطق اختيار الصورة A: إذا كان قاتل يأخذ أسود، غير ذلك أحمر (أو محايد)
-        const imgA = card.sideA === 'killer' ? visuals.killer[0] : 
-                     (card.sideA === 'red' ? (visuals.red.pop() || visuals.red[0]) : (visuals.neutral.pop() || visuals.neutral[0]));
-        
-        // منطق اختيار الصورة B: إذا كان قاتل يأخذ أسود، غير ذلك أزرق (أو محايد)
-        const imgB = card.sideB === 'killer' ? visuals.killer[0] : 
-                     (card.sideB === 'blue' ? (visuals.blue.pop() || visuals.blue[0]) : (visuals.neutral.pop() || visuals.neutral[0]));
+    return cards.map((card, i) => {
+        // نختار صورة لكل جانب بناءً على لونه في تلك الخريطة
+        const imgA = gameVisuals[card.sideA === 'killer' ? 'killer' : (card.sideA === 'neutral' ? 'neutral' : 'red')].pop();
+        const imgB = gameVisuals[card.sideB === 'killer' ? 'killer' : (card.sideB === 'neutral' ? 'neutral' : 'blue')].pop();
 
         return {
             word: shuffledWords[i],
             sideA: card.sideA,
             sideB: card.sideB,
             revealed: false,
+            // نخزن الصورتين معاً
             visualA: imgA, 
             visualB: imgB
         };
     });
 }
-
 window.handleStartGame = async () => {
     if (!isAdmin) return;
     
