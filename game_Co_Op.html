@@ -809,9 +809,7 @@ function applyGameStateToUI() {
 function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
-    // للحصول على قائمة البطاقات المكشوفة سابقاً لتأثير الأنيميشن (اختياري)
     const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
-    
     grid.innerHTML = '';
 
     Object.entries(gameState.board).forEach(([i, card]) => {
@@ -819,29 +817,33 @@ function renderGrid() {
         const div = document.createElement('div');
         const cardId = `card-${i}`;
 
-        // --- منطق التعاوني: تحديد اللون بناءً على الفريق ---
+        // تحديد اللون بناءً على الفريق (خريطة العميل والقائد)
         const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
         
         const visualClass =
             myMapColor === "blue" ? "card-blue" :
             myMapColor === "red" ? "card-red" :
             myMapColor === "killer" ? "card-black" : "card-brown";
-        // ------------------------------------------------
 
         const isSelected = selectedCards.has(i);
-        const isPeeking = peekingCards.has(i); // ميزة التنافسي
+        const isPeeking = peekingCards.has(i); 
 
         div.id = cardId;
         div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
         
+        // --- التعديل الرئيسي: حقن الصورة الفريدة عند الكشف ---
+        if (card.revealed) {
+            div.style.backgroundImage = `url('${card.visual}')`;
+            div.style.backgroundSize = 'cover';
+        }
+
         if (card.revealed && existingRevealed.includes(cardId)) div.classList.add('already-revealed');
 
-        // الهيكل مطابق للتنافسي (مع إضافة togglePeek للصورة)
         div.innerHTML = `
             <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
-            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">` : ''}
+            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img" style="opacity:0" onclick="togglePeek(${i}, event)">` : ''}
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;
@@ -850,7 +852,6 @@ function renderGrid() {
         grid.appendChild(div);
     });
 }
-
 window.togglePeek = function(i, event) {
     event.stopPropagation();
     // يسمح برفع البطاقة فقط إذا كانت مكشوفة
