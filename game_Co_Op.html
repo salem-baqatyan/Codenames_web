@@ -809,7 +809,9 @@ function applyGameStateToUI() {
 function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
+    // للحصول على قائمة البطاقات المكشوفة سابقاً لتأثير الأنيميشن (اختياري)
     const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
+    
     grid.innerHTML = '';
 
     Object.entries(gameState.board).forEach(([i, card]) => {
@@ -817,33 +819,34 @@ function renderGrid() {
         const div = document.createElement('div');
         const cardId = `card-${i}`;
 
-        // تحديد اللون بناءً على الفريق (خريطة العميل والقائد)
+        // --- منطق التعاوني: تحديد اللون بناءً على الفريق ---
         const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
         
         const visualClass =
             myMapColor === "blue" ? "card-blue" :
             myMapColor === "red" ? "card-red" :
             myMapColor === "killer" ? "card-black" : "card-brown";
+        // ------------------------------------------------
 
         const isSelected = selectedCards.has(i);
-        const isPeeking = peekingCards.has(i); 
+        const isPeeking = peekingCards.has(i); // ميزة التنافسي
 
         div.id = cardId;
         div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
         
-        // --- التعديل الرئيسي: حقن الصورة الفريدة عند الكشف ---
-        if (card.revealed) {
-            div.style.backgroundImage = `url('${card.visual}')`;
-            div.style.backgroundSize = 'cover';
-        }
-
         if (card.revealed && existingRevealed.includes(cardId)) div.classList.add('already-revealed');
 
+        // الهيكل مطابق للتنافسي (مع إضافة togglePeek للصورة)
         div.innerHTML = `
             <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
-            ${card.revealed ? `<img src="${card.visual}" class="card-reveal-img" style="opacity:0" onclick="togglePeek(${i}, event)">` : ''}
+            
+            ${card.revealed ? `
+                <div class="revealed-marker ${card.revealedBy === 'red' ? 'from-red' : 'from-blue'}"></div>
+                <img src="${card.visual}" class="card-reveal-img" onclick="togglePeek(${i}, event)">
+            ` : ''}
+            
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;
@@ -852,6 +855,7 @@ function renderGrid() {
         grid.appendChild(div);
     });
 }
+
 window.togglePeek = function(i, event) {
     event.stopPropagation();
     // يسمح برفع البطاقة فقط إذا كانت مكشوفة
@@ -1065,15 +1069,19 @@ window.confirmSelection = async function(i) {
     const isMyTurnToGuess = (gameState.turn.phase === 'guess' && myTeam !== gameState.turn.side);
     if (!gameState || isSpectator || !isMyTurnToGuess || gameState.board[i].revealed || !selectedCards.has(i)) return;
     
-    const card = gameState.board[i];
+const card = gameState.board[i];
     const me = playersCache[playerId];
     
-    // المنطق التعاوني: الحكم هو خريطة الشريك
-    const judgesColor = (gameState.turn.side === 'red') ? card.sideA : card.sideB;
+    // في التعاوني: نحن نكشف بناءً على ما يراه الشريك (صاحب الدور الحالي)
+    const currentSide = gameState.turn.side; // الجانب الذي أعطى التلميح
+    const judgesColor = (currentSide === 'red') ? card.sideA : card.sideB;
+    const visualToShow = (currentSide === 'red') ? card.visualA : card.visualB;
 
     const updates = {};
     updates[`board/${i}/revealed`] = true;
-    
+    updates[`board/${i}/revealedBy`] = currentSide; // نخزن الجانب الذي تمت القراءة من خريطته
+    updates[`board/${i}/visual`] = visualToShow;
+        
     // تعيين الصورة بناءً على اللون الحقيقي في خريطة الشريك
     let visualImg = getVisualForColor(judgesColor);
     updates[`board/${i}/visual`] = visualImg;
@@ -1120,10 +1128,20 @@ window.confirmSelection = async function(i) {
 
 // وظيفة مساعدة لتحديد شكل البطاقة بعد كشفها
 function getVisualForColor(color) {
-    if (color === 'red') return cardVisuals['card-red'][0];
-    if (color === 'blue') return cardVisuals['card-blue'][0];
-    if (color === 'killer') return cardVisuals['card-black'][0];
-    return cardVisuals['card-brown'][0];
+    let visuals;
+    if (color === 'red') {
+        visuals = cardVisuals['card-red'];
+    } else if (color === 'blue') {
+        visuals = cardVisuals['card-blue'];
+    } else if (color === 'killer') {
+        visuals = cardVisuals['card-black'];
+    } else {
+        visuals = cardVisuals['card-brown'];
+    }
+
+    // اختيار صورة عشوائية من المصفوفة بدلاً من الثابت [0]
+    const randomIndex = Math.floor(Math.random() * visuals.length);
+    return visuals[randomIndex];
 }
 
 async function endTurn() {
