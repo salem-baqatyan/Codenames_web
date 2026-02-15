@@ -1005,22 +1005,21 @@ function generateDuetBoard() {
     while(cards.length < 25) cards.push({ sideA: 'neutral', sideB: 'neutral' });
 
     shuffleArray(cards);
-
-    // نحتاج دالة تجلب صورة عشوائية بناءً على النوع
-    const getRandomVisual = (type) => {
-        const list = cardVisuals[type === 'red' ? 'card-red' : type === 'blue' ? 'card-blue' : type === 'killer' ? 'card-black' : 'card-brown'];
-        return list[Math.floor(Math.random() * list.length)];
-    };
+    const gameVisuals = getFreshShuffledVisuals();
 
     return cards.map((card, i) => {
+        // نختار صورة لكل جانب بناءً على لونه في تلك الخريطة
+        const imgA = gameVisuals[card.sideA === 'killer' ? 'killer' : (card.sideA === 'neutral' ? 'neutral' : 'red')].pop();
+        const imgB = gameVisuals[card.sideB === 'killer' ? 'killer' : (card.sideB === 'neutral' ? 'neutral' : 'blue')].pop();
+
         return {
             word: shuffledWords[i],
             sideA: card.sideA,
             sideB: card.sideB,
             revealed: false,
-            // نخزن صورتين: واحدة لكل جانب
-            visualA: getRandomVisual(card.sideA),
-            visualB: getRandomVisual(card.sideB)
+            // نخزن الصورتين معاً
+            visualA: imgA, 
+            visualB: imgB
         };
     });
 }
