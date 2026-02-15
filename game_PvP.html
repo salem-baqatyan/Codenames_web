@@ -368,12 +368,22 @@ const avatarImages = [
     "img/avatar/surprised_man.webp",
 ];
 
+// توليد مصفوفة الصور 1-9 تلقائياً لكل فئة لضمان التحميل المسبق الكامل
 const cardVisuals = {
-    'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-    'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
+    'card-blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
+    'card-red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
     'card-black': ['img/card/Black.webp'],
-    'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+    'card-brown': Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`)
 };
+
+// تجميع كل الصور في مصفوفة واحدة للتحميل
+const allImagesToPreload = [
+    ...avatarImages,
+    ...cardVisuals['card-blue'],
+    ...cardVisuals['card-red'],
+    ...cardVisuals['card-black'],
+    ...cardVisuals['card-brown']
+];
 
 let myRole = null;      
 let myTeam = null;      
@@ -394,15 +404,6 @@ let serverTimeOffset = 0;
 let isPageLoaded = false; 
 let peekingCards = new Set(); 
 
-const allImagesToPreload = [
-    ...avatarImages,
-    ...cardVisuals['card-blue'],
-    ...cardVisuals['card-red'],
-    ...cardVisuals['card-black'],
-    ...cardVisuals['card-brown']
-];
-
-
 /* ---------- 3. Profile Management ---------- */
 const offsetRef = ref(db, ".info/serverTimeOffset");
 onValue(offsetRef, (snap) => {
@@ -411,29 +412,31 @@ onValue(offsetRef, (snap) => {
 
 function startGameManager() {
     const loader = document.getElementById('loadingScreen');
+    
     const finishLoading = () => {
-        loader.style.opacity = '0';
+        // إضافة تأخير بسيط للتأكد من استقرار الواجهة
         setTimeout(() => {
-            loader.style.display = 'none';
-            isPageLoaded = true; 
-            if (gameState) applyGameStateToUI(); 
-        }, 300);
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                isPageLoaded = true; 
+                if (gameState) applyGameStateToUI(); 
+            }, 400);
+        }, 500);
     };
 
-    if (areImagesCached()) {
-        finishLoading();
-    } else {
-        preloadImages().then(finishLoading);
-    }
+    // نبدأ التحميل دائماً لضمان الجاهزية
+    preloadImages().then(finishLoading);
 }
 
 
 /* ---------- 4. Utility Helpers ---------- */
 function areImagesCached() {
+    // نتحقق من كل الصور في المصفوفة الشاملة
     for (let src of allImagesToPreload) {
         let img = new Image();
         img.src = src;
-        if (!img.complete) return false;
+        if (!img.complete || img.naturalWidth === 0) return false;
     }
     return true;
 }
@@ -443,8 +446,13 @@ function preloadImages() {
         return new Promise((resolve) => {
             const img = new Image();
             img.src = src;
-            img.onload = resolve;
-            img.onerror = resolve; 
+            // إذا كانت الصورة محملة مسبقاً (Cache)
+            if (img.complete && img.naturalWidth !== 0) {
+                resolve();
+            } else {
+                img.onload = resolve;
+                img.onerror = resolve; // نكمل حتى لو فشلت صورة واحدة لضمان تشغيل اللعبة
+            }
         });
     });
     return Promise.all(promises);

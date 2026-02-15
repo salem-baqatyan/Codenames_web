@@ -283,11 +283,11 @@
             <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
             <div class="mode-options">
                 <div class="mode-card" id="mode-Co_Op" onclick="setGameMode('Co_Op')">
-                    <img src="img/Co_Op.png" class="mode-img">
+                    <img src="img/mode/Co_Op.png" class="mode-img">
                     <div class="mode-info"><b>تعاونية</b><span>2+ لاعبين</span></div>
                 </div>
                 <div class="mode-card active" id="mode-PvP" onclick="setGameMode('PvP')">
-                    <img src="img/PvP.png" class="mode-img">
+                    <img src="img/mode/PvP.png" class="mode-img">
                     <div class="mode-info"><b>تنافسية</b><span>4+ لاعبين</span></div>
                 </div>
             </div>
@@ -418,14 +418,12 @@ const avatarImages = [
 ];
 
 const cardVisuals = {
-    blue: ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-    red: ['img/card/Red1.webp', 'img/card/Red2.webp'],
-    killer: ['img/card/Black.webp'],
-    neutral: ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+    blue: Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
+    red: Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
+    neutral: Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`),
+    killer: ['img/card/Black.webp']
 };
 
-let shuffledPools = { blue: [], red: [], killer: [], neutral: [] };
-let lastUsedImages = { blue: null, red: null, killer: null, neutral: null };
 
 
 /* ---------- 3. Profile Management ---------- */
@@ -584,19 +582,6 @@ function preloadImages() {
     return Promise.all(promises);
 }
 
-function getNextImageFromPool(type) {
-    if (shuffledPools[type].length === 0) {
-        let newPool = [...cardVisuals[type]];
-        shuffleArray(newPool);
-        if (newPool.length > 1 && newPool[newPool.length - 1] === lastUsedImages[type]) {
-            [newPool[newPool.length - 1], newPool[0]] = [newPool[0], newPool[newPool.length - 1]];
-        }
-        shuffledPools[type] = newPool;
-    }
-    const img = shuffledPools[type].pop();
-    lastUsedImages[type] = img;
-    return img;
-}
 
 window.copyRoomLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -955,8 +940,21 @@ function renderLobbyHeaders(mode) {
 }
 
 /* ---------- 7. Game Engine & Start ---------- */
+function getFreshShuffledVisuals() {
+    const fresh = {
+        blue: [...cardVisuals.blue],
+        red: [...cardVisuals.red],
+        neutral: [...cardVisuals.neutral],
+        killer: [...cardVisuals.killer]
+    };
+    shuffleArray(fresh.blue);
+    shuffleArray(fresh.red);
+    shuffleArray(fresh.neutral);
+    // القاتل صورة واحدة لا تحتاج خلط
+    return fresh;
+}
+
 function generateBoard(startingTeam) {
-    // لم نعد بحاجة لتعريف المصفوفة الطويلة هنا
     const shuffledWords = [...words]; 
     shuffleArray(shuffledWords);
 
@@ -972,12 +970,18 @@ function generateBoard(startingTeam) {
 
     shuffleArray(types);
 
-    return types.map((type, i) => ({ 
-        word: shuffledWords[i], 
-        type, 
-        revealed: false, 
-        visual: getNextImageFromPool(type) 
-    }));
+    const gameVisuals = getFreshShuffledVisuals();
+
+    return types.map((type, i) => {
+        const visualImg = gameVisuals[type].pop();
+        
+        return { 
+            word: shuffledWords[i], 
+            type, 
+            revealed: false, 
+            visual: visualImg 
+        };
+    });
 }
 function generateDuetBoard() {
     const shuffledWords = [...words]; 
@@ -1002,16 +1006,23 @@ function generateDuetBoard() {
 
     shuffleArray(cards);
 
-    return cards.map((card, i) => ({
-        word: shuffledWords[i],
-        sideA: card.sideA,
-        sideB: card.sideB,
-        revealed: false,
-        // اختيار الصورة بناءً على حالة الكرت لـ SideA أو SideB أو محايد
-        visual: getNextImageFromPool(card.sideA === 'red' ? 'red' : (card.sideB === 'blue' ? 'blue' : 'neutral'))
-    }));
-}
+    const gameVisuals = getFreshShuffledVisuals();
 
+    return cards.map((card, i) => {
+        let typeToUse = 'neutral';
+        if (card.sideA === 'red') typeToUse = 'red';
+        else if (card.sideB === 'blue') typeToUse = 'blue';
+        else if (card.sideA === 'killer' || card.sideB === 'killer') typeToUse = 'killer';
+
+        return {
+            word: shuffledWords[i],
+            sideA: card.sideA,
+            sideB: card.sideB,
+            revealed: false,
+            visual: gameVisuals[typeToUse].pop()
+        };
+    });
+}
 window.handleStartGame = async () => {
     if (!isAdmin) return;
     
