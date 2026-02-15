@@ -988,36 +988,41 @@ function generateDuetBoard() {
     shuffleArray(shuffledWords);
     
     let cards = [];
-    // توزيع الأدوار (3 هدف مشترك، 1 قاتل مشترك، إلخ...) كما في كودك
+    
+    // 3 كلمات: (A احمر B ازرق)
     for(let i=0; i<3; i++) cards.push({ sideA: 'red', sideB: 'blue' });
+    // 1 كلمة: (أسود للطرفين)
     cards.push({ sideA: 'killer', sideB: 'killer' });
+    // 1 كلمة: (احمر لـ A، أسود لـ B)
     cards.push({ sideA: 'red', sideB: 'killer' });
+    // 1 كلمة: (أسود لـ A، ازرق لـ B)
     cards.push({ sideA: 'killer', sideB: 'blue' });
+    // 5 كلمات: (احمر لـ A، أبيض لـ B)
     for(let i=0; i<5; i++) cards.push({ sideA: 'red', sideB: 'neutral' });
+    // 5 كلمات: (أبيض لـ A، ازرق لـ B)
     for(let i=0; i<5; i++) cards.push({ sideA: 'neutral', sideB: 'blue' });
+    // البقية (9 كلمات): (أبيض للطرفين)
     while(cards.length < 25) cards.push({ sideA: 'neutral', sideB: 'neutral' });
 
     shuffleArray(cards);
 
-    // نحصل على مصفوفات صور مخلوطة وجاهزة
-    const visualsA = getFreshShuffledVisuals(); 
-    const visualsB = getFreshShuffledVisuals();
+    const gameVisuals = getFreshShuffledVisuals();
 
     return cards.map((card, i) => {
-        // نختار صورة للجانب A وصورة للجانب B بناءً على نوعهما
+        let typeToUse = 'neutral';
+        if (card.sideA === 'red') typeToUse = 'red';
+        else if (card.sideB === 'blue') typeToUse = 'blue';
+        else if (card.sideA === 'killer' || card.sideB === 'killer') typeToUse = 'killer';
+
         return {
             word: shuffledWords[i],
             sideA: card.sideA,
             sideB: card.sideB,
             revealed: false,
-            // هنا نرفع الصورتين مسبقاً
-            visualA: visualsA[card.sideA].pop(),
-            visualB: visualsB[card.sideB].pop(),
-            revealedBy: null // سنخزن من الذي كشفها (red أو blue)
+            visual: gameVisuals[typeToUse].pop()
         };
     });
 }
-
 window.handleStartGame = async () => {
     if (!isAdmin) return;
     
