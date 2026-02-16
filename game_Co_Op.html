@@ -916,12 +916,20 @@ function updateUI() {
     if (activeTeam === 'red') redCard.classList.add('active-red');
     else blueCard.classList.add('active-blue');
 
-    // تحديث السكور (المتبقي للوصول لـ 15)
-    const revealedCount = Object.values(gameState.board).filter(c => c.revealed).length;
-    const remainingToWin = 15 - revealedCount;
-    document.getElementById('blue-score').innerText = Math.max(0, remainingToWin);
-    document.getElementById('red-score').innerText = Math.max(0, remainingToWin);
+    const revealedGoals = Object.values(gameState.board).filter(card => {
+    if (!card.revealed) return false;
 
+    const isRedGoal = (card.sideA === 'red' || card.sideB === 'red');
+    const isBlueGoal = (card.sideA === 'blue' || card.sideB === 'blue');
+    
+    // ملاحظة: البطاقة البنية (neutral) لن تدخل في هذا الشرط
+    return isRedGoal || isBlueGoal;
+}).length;
+
+const remainingToWin = 15 - revealedGoals;
+
+document.getElementById('blue-score').innerText = Math.max(0, remainingToWin);
+document.getElementById('red-score').innerText = Math.max(0, remainingToWin);
     // 3. إدارة لوحة التحكم (Control Panel)
     const isMyTurn = (myTeam === activeTeam);
 

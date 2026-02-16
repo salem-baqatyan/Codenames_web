@@ -940,20 +940,6 @@ function renderLobbyHeaders(mode) {
 }
 
 /* ---------- 7. Game Engine & Start ---------- */
-// function getFreshShuffledVisuals() {
-//     const fresh = {
-//         blue: [...cardVisuals.blue],
-//         red: [...cardVisuals.red],
-//         neutral: [...cardVisuals.neutral],
-//         killer: [...cardVisuals.killer]
-//     };
-//     shuffleArray(fresh.blue);
-//     shuffleArray(fresh.red);
-//     shuffleArray(fresh.neutral);
-//     // القاتل صورة واحدة لا تحتاج خلط
-//     return fresh;
-// }
-
 function generateBoard(startingTeam) {
     const shuffledWords = [...words]; 
     shuffleArray(shuffledWords);
@@ -970,16 +956,12 @@ function generateBoard(startingTeam) {
 
     shuffleArray(types);
 
-    const gameVisuals = getFreshShuffledVisuals();
-
     return types.map((type, i) => {
-        const visualImg = gameVisuals[type].pop();
-        
         return { 
             word: shuffledWords[i], 
             type, 
-            revealed: false, 
-            visual: visualImg 
+            revealed: false 
+            // تم حذف حقل visual
         };
     });
 }
