@@ -362,10 +362,10 @@ const avatarImages = [
 ];
 
 const cardVisuals = {
-    'card-blue': ['img/card/Blue1.webp', 'img/card/Blue2.webp'],
-    'card-red': ['img/card/Red1.webp', 'img/card/Red2.webp'],
-    'card-black': ['img/card/Black.webp'],
-    'card-brown': ['img/card/Normal1.webp', 'img/card/Normal2.webp']
+    'blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
+    'red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
+    'brown': Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`),
+    'black': ['img/card/Black.webp']
 };
 
 let myRole = null;      
@@ -575,6 +575,22 @@ function hideLoading() {
     setTimeout(() => loader.style.display = 'none', 400);
 }
 
+function getUnusedVisual(type) {
+    const typeKey = type === 'killer' ? 'black' : (type === 'neutral' ? 'brown' : type);
+    const allPossible = cardVisuals[typeKey];
+    
+    // جلب الصور المستخدمة حالياً في اللوحة
+    const usedVisuals = Object.values(gameState.board)
+        .filter(c => c.revealed && c.visual)
+        .map(c => c.visual);
+    
+    // تصفية الصور المتاحة (التي لم تستخدم بعد)
+    const available = allPossible.filter(src => !usedVisuals.includes(src));
+    
+    // إذا انتهت الصور (حالة نادرة جداً)، نختار عشوائياً من الكل، وإلا نختار من المتاح
+    const sourceArray = available.length > 0 ? available : allPossible;
+    return sourceArray[Math.floor(Math.random() * sourceArray.length)];
+}
 
 /* ---------- 5. Lobby & Team Logic ---------- */
 document.getElementById('roomDisplay').innerText = "🔗 " + roomId;
@@ -1060,31 +1076,28 @@ window.handleCardSelection = function(i) {
 };
 
 window.confirmSelection = async function(i) {
-    // منع الجمهور والتأكد من الصلاحية
     const isMyTurnToGuess = (gameState.turn.phase === 'guess' && myTeam !== gameState.turn.side);
     if (!gameState || isSpectator || !isMyTurnToGuess || gameState.board[i].revealed || !selectedCards.has(i)) return;
     
     const card = gameState.board[i];
     const me = playersCache[playerId];
-    
-    // المنطق التعاوني: الحكم هو خريطة الشريك
     const judgesColor = (gameState.turn.side === 'red') ? card.sideA : card.sideB;
 
     const updates = {};
     updates[`board/${i}/revealed`] = true;
     
-    // تعيين الصورة بناءً على اللون الحقيقي في خريطة الشريك
-    let visualImg = getVisualForColor(judgesColor);
-    updates[`board/${i}/visual`] = visualImg;
+    // --- الجزء الجديد: اختيار الصورة لحظة الكشف ---
+    const visualImg = getUnusedVisual(judgesColor);
+    updates[`board/${i}/visual`] = visualImg; 
+    // الآن الصورة أصبحت جزءاً من قاعدة البيانات، سيراها اللاعب الآخر فوراً
+    // ----------------------------------------------
 
     let nextSide = gameState.turn.side;
     let nextPhase = 'guess';
 
     if (judgesColor === 'killer') {
-        // حالة خسارة: لمس الأسود
         updates.winner = "lose_killer"; 
     } else if (judgesColor === 'neutral') {
-        // حالة خطأ: لمس المحايد (ينتهي الدور)
         nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
         nextPhase = 'clue';
         updates['turn'] = { side: nextSide, phase: nextPhase, ready: false, updatedAt: null };
@@ -1092,12 +1105,10 @@ window.confirmSelection = async function(i) {
         guessesThisTurn = 0;
         selectedCards.clear();
     } else {
-        // حالة صحيحة: استمرار التخمين
         guessesThisTurn++;
-        selectedCards.delete(i); // إزالة البطاقة التي تم تأكيدها فقط من التحديد
+        selectedCards.delete(i);
     }
 
-    // شرط الفوز التعاوني: كشف 15 بطاقة إجمالاً
     const totalRevealed = Object.values(gameState.board).filter(c => c.revealed).length + 1;
     if (totalRevealed >= 15 && updates.winner !== "lose_killer") {
         updates.winner = "win_coop"; 
@@ -1105,7 +1116,6 @@ window.confirmSelection = async function(i) {
 
     await update(gameRef, updates);
 
-    // تسجيل اللوج
     await push(ref(db, `rooms/${roomId}/game/log`), { 
         type: "guess", 
         team: myTeam, 
