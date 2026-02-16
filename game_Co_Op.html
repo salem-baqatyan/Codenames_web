@@ -1120,8 +1120,19 @@ window.confirmSelection = async function(i) {
         selectedCards.delete(i);
     }
 
-    const totalRevealed = Object.values(gameState.board).filter(c => c.revealed).length + 1;
-    if (totalRevealed >= 15 && updates.winner !== "lose_killer") {
+    const revealedGoalsCount = Object.values(gameState.board).filter(c => {
+        // يجب أن تكون البطاقة مكشوفة
+        if (!c.revealed) return false;
+        
+        // نحدد لونها الحقيقي بناءً على الخريطة (sideA أو sideB) 
+        // إذا كان أحد الجانبين ملون (أزرق أو أحمر) فهي هدف
+        const isGoal = (c.sideA === 'blue' || c.sideA === 'red' || c.sideB === 'blue' || c.sideB === 'red');
+        
+        return isGoal;
+    }).length;
+
+    // الآن نستخدم عدد الأهداف الفعلي للتحقق من الفوز
+    if (revealedGoalsCount >= 15 && updates.winner !== "lose_killer") {
         updates.winner = "win_coop"; 
     }
 
