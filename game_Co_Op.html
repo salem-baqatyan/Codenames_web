@@ -368,6 +368,14 @@ const cardVisuals = {
     'black': ['img/card/Black.webp']
 };
 
+const allImagesToPreload = [
+    ...avatarImages,
+    ...cardVisuals['card-blue'],
+    ...cardVisuals['card-red'],
+    ...cardVisuals['card-black'],
+    ...cardVisuals['card-brown']
+];
+
 let myRole = null;      
 let myTeam = null;      
 let isSpy = false;
@@ -389,15 +397,6 @@ let peekingCards = new Set();
 // ميزة للمشاهد: الضغط على البطاقات الجانبية يغير خريطته
 document.getElementById('blue-operative').onclick = () => { if(isSpectator) { myTeam = 'blue'; renderGrid(); } };
 document.getElementById('red-operative').onclick = () => { if(isSpectator) { myTeam = 'red'; renderGrid(); } };
-
-const allImagesToPreload = [
-    ...avatarImages,
-    ...cardVisuals['card-blue'],
-    ...cardVisuals['card-red'],
-    ...cardVisuals['card-black'],
-    ...cardVisuals['card-brown']
-];
-
 
 /* ---------- 3. Profile Management ---------- */
 onValue(offsetRef, (snap) => {
@@ -575,22 +574,6 @@ function hideLoading() {
     setTimeout(() => loader.style.display = 'none', 400);
 }
 
-function getUnusedVisual(type) {
-    const typeKey = type === 'killer' ? 'black' : (type === 'neutral' ? 'brown' : type);
-    const allPossible = cardVisuals[typeKey];
-    
-    // جلب الصور المستخدمة حالياً في اللوحة
-    const usedVisuals = Object.values(gameState.board)
-        .filter(c => c.revealed && c.visual)
-        .map(c => c.visual);
-    
-    // تصفية الصور المتاحة (التي لم تستخدم بعد)
-    const available = allPossible.filter(src => !usedVisuals.includes(src));
-    
-    // إذا انتهت الصور (حالة نادرة جداً)، نختار عشوائياً من الكل، وإلا نختار من المتاح
-    const sourceArray = available.length > 0 ? available : allPossible;
-    return sourceArray[Math.floor(Math.random() * sourceArray.length)];
-}
 
 /* ---------- 5. Lobby & Team Logic ---------- */
 document.getElementById('roomDisplay').innerText = "🔗 " + roomId;
@@ -637,6 +620,26 @@ function renderPlayersPanel() {
     if (countElement) {
         countElement.textContent = Object.keys(playersCache).length;
     }
+}
+
+function getVisualForColor(color) {
+    const key = color === 'blue' ? 'card-blue' : 
+                color === 'red' ? 'card-red' : 
+                color === 'killer' ? 'card-black' : 'card-brown';
+    
+    const availablePool = [...cardVisuals[key]];
+    
+    // جلب الصور المستخدمة حالياً في اللوحة لمنع التكرار
+    const usedVisuals = Object.values(gameState.board)
+        .filter(c => c.revealed && c.visual)
+        .map(c => c.visual);
+
+    // تصفية الصور المتاحة (استبعد الصور المستخدمة)
+    const freshOptions = availablePool.filter(src => !usedVisuals.includes(src));
+
+    // إذا نفدت الخيارات (حالة نادرة جداً)، نستخدم أي صورة عشوائية، وإلا نختار من الجديد
+    const finalPool = freshOptions.length > 0 ? freshOptions : availablePool;
+    return finalPool[Math.floor(Math.random() * finalPool.length)];
 }
 
 
@@ -1086,11 +1089,11 @@ window.confirmSelection = async function(i) {
     const updates = {};
     updates[`board/${i}/revealed`] = true;
     
-    // --- الجزء الجديد: اختيار الصورة لحظة الكشف ---
-    const visualImg = getUnusedVisual(judgesColor);
-    updates[`board/${i}/visual`] = visualImg; 
-    // الآن الصورة أصبحت جزءاً من قاعدة البيانات، سيراها اللاعب الآخر فوراً
-    // ----------------------------------------------
+    // --- التعديل الجوهري هنا ---
+    // اختيار الصورة وحفظها فوراً في الـ Firebase
+    const chosenVisual = getVisualForColor(judgesColor);
+    updates[`board/${i}/visual`] = chosenVisual;
+    // ---------------------------
 
     let nextSide = gameState.turn.side;
     let nextPhase = 'guess';
@@ -1125,7 +1128,6 @@ window.confirmSelection = async function(i) {
         at: Date.now() 
     });
 };
-
 async function endTurn() {
     if (!gameState) return;
     const nextSide = (gameState.turn.side === 'red') ? 'blue' : 'red';
