@@ -368,21 +368,19 @@ const avatarImages = [
     "img/avatar/surprised_man.webp",
 ];
 
-// توليد مصفوفة الصور 1-9 تلقائياً لكل فئة لضمان التحميل المسبق الكامل
 const cardVisuals = {
-    'card-blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
-    'card-red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
-    'card-black': ['img/card/Black.webp'],
-    'card-brown': Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`)
+    'blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
+    'red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
+    'brown': Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`),
+    'black': ['img/card/Black.webp']
 };
 
-// تجميع كل الصور في مصفوفة واحدة للتحميل
 const allImagesToPreload = [
     ...avatarImages,
-    ...cardVisuals['card-blue'],
-    ...cardVisuals['card-red'],
-    ...cardVisuals['card-black'],
-    ...cardVisuals['card-brown']
+    ...cardVisuals['blue'],
+    ...cardVisuals['red'],
+    ...cardVisuals['brown'],
+    ...cardVisuals['black']
 ];
 
 let myRole = null;      
@@ -413,22 +411,23 @@ onValue(offsetRef, (snap) => {
 function startGameManager() {
     const loader = document.getElementById('loadingScreen');
     
+    // مهلة أمان 5 ثوانٍ
+    const safetySwitch = setTimeout(() => {
+        if (!isPageLoaded) finishLoading();
+    }, 5000);
+
     const finishLoading = () => {
-        // إضافة تأخير بسيط للتأكد من استقرار الواجهة
+        clearTimeout(safetySwitch);
+        loader.style.opacity = '0';
         setTimeout(() => {
-            loader.style.opacity = '0';
-            setTimeout(() => {
-                loader.style.display = 'none';
-                isPageLoaded = true; 
-                if (gameState) applyGameStateToUI(); 
-            }, 400);
-        }, 500);
+            loader.style.display = 'none';
+            isPageLoaded = true; 
+            if (gameState) applyGameStateToUI(); 
+        }, 400);
     };
 
-    // نبدأ التحميل دائماً لضمان الجاهزية
-    preloadImages().then(finishLoading);
+    preloadImages().then(finishLoading).catch(finishLoading);
 }
-
 
 /* ---------- 4. Utility Helpers ---------- */
 function areImagesCached() {
@@ -586,6 +585,14 @@ function hideLoading() {
     loader.style.opacity = '0';
     loader.style.transition = 'opacity 0.4s ease';
     setTimeout(() => loader.style.display = 'none', 400);
+}
+function getUniqueVisual(type) {
+    const pool = cardVisuals[type];
+    const used = Object.values(gameState.board)
+        .filter(c => c.visual)
+        .map(c => c.visual);
+    const available = pool.filter(src => !used.includes(src));
+    return available.length > 0 ? available[0] : pool[0];
 }
 
 
@@ -792,43 +799,36 @@ function applyGameStateToUI() {
 function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
-    const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
     grid.innerHTML = '';
 
     Object.entries(gameState.board).forEach(([i, card]) => {
         i = Number(i);
         const div = document.createElement('div');
-        const cardId = `card-${i}`;
         
-        // القائد والمشاهد يرى المحتوى، العميل يرى البطاقة مخفية حتى تُكشف
-        const isHidden = !card.revealed && !isSpy && !isSpectator;
+        // القائد والمشاهد يرى اللون دائماً، العميل يراه فقط إذا كُشفت البطاقة
+        const shouldShowColor = isSpy || isSpectator || card.revealed;
         
-        const isSelected = selectedCards.has(i);
-        const isPeeking = peekingCards.has(i); 
-
         const visualClass =
             card.type === "blue" ? "card-blue" :
             card.type === "red" ? "card-red" :
             card.type === "killer" ? "card-black" : "card-brown";
 
-        div.id = cardId;
-        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
+        div.id = `card-${i}`;
+        div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${selectedCards.has(i) ? 'card-selected' : ''}`;
         
-        if (isHidden) div.classList.add('card-hidden');
+        // إذا كان عميلاً والبطاقة لم تُكشف، نستخدم كلاس الإخفاء
+        if (!card.revealed && !isSpy && !isSpectator) div.classList.add('card-hidden');
 
-        // --- التعديل الرئيسي: إظهار الصورة الفريدة للقائد أو عند الكشف ---
-        if (!isHidden) {
+        // إظهار الصورة إذا كانت الظروف تسمح
+        if (shouldShowColor && card.visual) {
             div.style.backgroundImage = `url('${card.visual}')`;
             div.style.backgroundSize = 'cover';
         }
 
-        if (card.revealed && existingRevealed.includes(cardId)) div.classList.add('already-revealed');
-
         div.innerHTML = `
-            <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
+            <div class="confirm-btn" style="display: ${selectedCards.has(i) ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
             </div>
-            <img src="${card.visual}" class="card-reveal-img" style="opacity: ${card.revealed ? 1 : 0}" onclick="togglePeek(${i}, event)">
             <div class="card-main-body">
                 <div class="bottom-box">${card.word}</div>
             </div>`;
@@ -837,7 +837,6 @@ function renderGrid() {
         grid.appendChild(div);
     });
 }
-
 window.togglePeek = function(i, event) {
     event.stopPropagation();
     if (!gameState.board[i].revealed) return;
@@ -982,60 +981,42 @@ window.confirmSelection = async function(i) {
     const updates = {};
     updates[`board/${i}/revealed`] = true;
 
-    const currentBoard = gameState.board;
-    let redRemaining = 0;
-    let blueRemaining = 0;
+    // --- ضمان عدم تكرار الصورة وتوحيدها عند الجميع ---
+    if (!card.visual) {
+        const typeKey = card.type === 'killer' ? 'black' : (card.type === 'neutral' ? 'brown' : card.type);
+        updates[`board/${i}/visual`] = getUniqueVisual(typeKey);
+    }
 
-    Object.entries(currentBoard).forEach(([index, c]) => {
-        const isRevealed = (Number(index) === i) ? true : c.revealed;
-        
-        if (!isRevealed) {
+    // حساب البطاقات المتبقية
+    let redRemaining = 0, blueRemaining = 0;
+    Object.entries(gameState.board).forEach(([idx, c]) => {
+        const isNowRevealed = (Number(idx) === i) ? true : c.revealed;
+        if (!isNowRevealed) {
             if (c.type === 'red') redRemaining++;
             if (c.type === 'blue') blueRemaining++;
         }
     });
 
-    const remaining = { red: redRemaining, blue: blueRemaining };
-    updates.remaining = remaining;
+    updates.remaining = { red: redRemaining, blue: blueRemaining };
 
-    let nextTurn = null;
+    // منطق تبديل الأدوار أو الفوز
     let winner = null;
-
-    if (card.type === "killer") {
-        winner = enemy;
-    } else if (card.type === enemy || card.type === "neutral") {
-        nextTurn = enemy;
+    if (card.type === "killer") winner = enemy;
+    else if (card.type !== myTeam) {
+        updates.turn = { team: enemy, phase: "spymaster", ready: false, updatedAt: null };
+        updates.clue = { word: null, count: null };
     }
 
     if (!winner) {
-        if (remaining.blue === 0) winner = "blue";
-        else if (remaining.red === 0) winner = "red";
+        if (updates.remaining.blue === 0) winner = "blue";
+        else if (updates.remaining.red === 0) winner = "red";
     }
 
-    await push(ref(db, `rooms/${roomId}/game/log`), { 
-        type: "guess", 
-        team: myTeam, 
-        word: card.word, 
-        cardColor: card.type, 
-        avatar: me.avatar, 
-        at: Date.now() 
-    });
-
-    guessesThisTurn++;
-    selectedCards.delete(i);
-
-    if (winner) {
-        updates.winner = winner;
-    } else if (nextTurn) {
-        updates.turn = { team: nextTurn, phase: "spymaster", ready: false, updatedAt: null };
-        updates.clue = { word: null, count: null };
-        guessesThisTurn = 0;
-        selectedCards.clear();
-    }
+    if (winner) updates.winner = winner;
 
     await update(gameRef, updates);
+    // تسجيل اللوج...
 };
-
 async function endTurn() {
     if (!gameState) return;
     const enemy = myTeam === "blue" ? "red" : "blue";
