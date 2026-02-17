@@ -370,20 +370,34 @@ const avatarImages = [
 
 // توليد مصفوفة الصور 1-9 تلقائياً لكل فئة لضمان التحميل المسبق الكامل
 const cardVisuals = {
-    'card-blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
-    'card-red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
-    'card-black': ['img/card/Black.webp'],
-    'card-brown': Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`)
+    'blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
+    'red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
+    'neutral': Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`),
+    'killer': ['img/card/Black.webp']
 };
 
-// تجميع كل الصور في مصفوفة واحدة للتحميل
 const allImagesToPreload = [
     ...avatarImages,
-    ...cardVisuals['card-blue'],
-    ...cardVisuals['card-red'],
-    ...cardVisuals['card-black'],
-    ...cardVisuals['card-brown']
+    ...cardVisuals['blue'],
+    ...cardVisuals['red'],
+    ...cardVisuals['neutral'],
+    ...cardVisuals['killer']
 ];
+function getVisualForType(type) {
+    const pool = cardVisuals[type] || cardVisuals['neutral'];
+    if (type === 'killer') return pool[0];
+
+    // جلب الصور التي ظهرت بالفعل على اللوحة
+    const usedVisuals = Object.values(gameState.board)
+        .filter(c => c.revealed && c.visual)
+        .map(c => c.visual);
+
+    const available = pool.filter(src => !usedVisuals.includes(src));
+    
+    // إذا نفدت الصور الفريدة، نختار أي واحدة عشوائياً، وإلا نختار من المتاحة
+    const finalPool = available.length > 0 ? available : pool;
+    return finalPool[Math.floor(Math.random() * finalPool.length)];
+}
 
 let myRole = null;      
 let myTeam = null;      
@@ -412,7 +426,14 @@ onValue(offsetRef, (snap) => {
 
 function startGameManager() {
     const loader = document.getElementById('loadingScreen');
+    
+    // حماية: إذا استغرق التحميل أكثر من 6 ثوانٍ، ادخل للعبة فوراً
+    const backupTimeout = setTimeout(() => {
+        if (!isPageLoaded) finishLoading();
+    }, 6000);
+
     const finishLoading = () => {
+        clearTimeout(backupTimeout);
         loader.style.opacity = '0';
         setTimeout(() => {
             loader.style.display = 'none';
@@ -421,11 +442,7 @@ function startGameManager() {
         }, 300);
     };
 
-    if (areImagesCached()) {
-        finishLoading();
-    } else {
-        preloadImages().then(finishLoading);
-    }
+    preloadImages().then(finishLoading).catch(finishLoading);
 }
 
 
@@ -949,22 +966,28 @@ window.handleCardSelection = function(i) {
 };
 
 window.confirmSelection = async function(i) {
+    // التحقق من الصلاحية (طور العميل + فريقه + البطاقة غير مكشوفة)
     if (!gameState || gameState.turn.phase !== 'operative' || !isOperative || myTeam !== gameState.turn.team || gameState.board[i].revealed || !selectedCards.has(i)) return;
     
-    const card = gameState.board[i];
+    const card = gameState.board[i]; // في التنافسي card.type موجود مسبقاً
     const me = playersCache[playerId];
     const enemy = myTeam === "blue" ? "red" : "blue";
     
     const updates = {};
     updates[`board/${i}/revealed`] = true;
 
+    // --- الجزء الجديد: تحديد الصورة ومزامنتها لمرة واحدة ---
+    const chosenVisual = getVisualForType(card.type);
+    updates[`board/${i}/visual`] = chosenVisual;
+    // ---------------------------------------------------
+
     const currentBoard = gameState.board;
     let redRemaining = 0;
     let blueRemaining = 0;
 
+    // حساب المتبقي بدقة
     Object.entries(currentBoard).forEach(([index, c]) => {
         const isRevealed = (Number(index) === i) ? true : c.revealed;
-        
         if (!isRevealed) {
             if (c.type === 'red') redRemaining++;
             if (c.type === 'blue') blueRemaining++;
@@ -977,10 +1000,11 @@ window.confirmSelection = async function(i) {
     let nextTurn = null;
     let winner = null;
 
+    // منطق القواعد التنافسية
     if (card.type === "killer") {
-        winner = enemy;
+        winner = enemy; // خسارة فورية بلمس الأسود
     } else if (card.type === enemy || card.type === "neutral") {
-        nextTurn = enemy;
+        nextTurn = enemy; // انتهاء الدور بلمس بطاقة الخصم أو المحايد
     }
 
     if (!winner) {
@@ -988,6 +1012,7 @@ window.confirmSelection = async function(i) {
         else if (remaining.red === 0) winner = "red";
     }
 
+    // تسجيل الفعل في السجل
     await push(ref(db, `rooms/${roomId}/game/log`), { 
         type: "guess", 
         team: myTeam, 
