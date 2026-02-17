@@ -696,32 +696,62 @@ onValue(statusRef, (snap) => {
 });
 
 onValue(resultRef, (snap) => {
-    const winner = snap.val();
-    if (!winner || !myTeam) return;
+    const winnerTeam = snap.val();
+    if (!winnerTeam || !myTeam) return;
 
     const modal = document.getElementById('customAlert');
-    let title = (winner === "win_coop") ? "🏆 تناغم مذهل! 🏆" : "💀 حظاً أوفر! 💀";
-    let message = (winner === "win_coop") ? "نجحتم في كشف الأهداف!" : "انتهت المهمة بلمس البطاقة السوداء!";
-    let alertClass = (winner === "win_coop") ? "alert-win" : "alert-lose";
+    const isWinner = (myTeam === winnerTeam);
+    
+    // فحص سبب الفوز: هل الفريق الآخر لمس القاتل؟
+    // نبحث في السجل عن آخر حركة "guess" فإذا كان لون البطاقة أسود، فالسبب هو المغتال
+    const logArray = gameState.log ? Object.values(gameState.log) : [];
+    const lastGuess = logArray.sort((a, b) => b.at - a.at).find(l => l.type === "guess");
+    const isAssassinLoss = lastGuess && lastGuess.cardColor === 'black';
 
+    let title = "";
+    let message = "";
+    let alertClass = isWinner ? "alert-win" : "alert-lose";
+
+    if (isAssassinLoss) {
+        // حالة النهاية بسبب بطاقة المغتال 💀
+        if (isWinner) {
+            title = "🏆 انتصار غير متوقع! 🏆";
+            message = `لقد ارتكب الخصم خطأً فادحاً ولمس بطاقة المغتال! الفوز للفريق ${winnerTeam === 'blue' ? 'الأزرق 🔵' : 'الأحمر 🔴'}.`;
+        } else {
+            title = "💀 مهمة انتحارية! 💀";
+            message = "للأسف، لقد لمس فريقكم بطاقة المغتال وانتهت المهمة فوراً بالهزيمة.";
+        }
+    } else {
+        // حالة النهاية الطبيعية بكشف جميع البطاقات 🎯
+        if (isWinner) {
+            title = "🏆 نصر مستحق! 🏆";
+            message = `أحسنتم! لقد كشفتم جميع أهداف الفريق ${winnerTeam === 'blue' ? 'الأزرق 🔵' : 'الأحمر 🔴'} بنجاح باهر.`;
+        } else {
+            title = "🏁 انتهت اللعبة 🏁";
+            message = `لقد استطاع الخصم كشف جميع أهدافه قبلكم. حظاً أوفر في المهمة القادمة!`;
+        }
+    }
+
+    // بناء محتوى التنبيه
     modal.className = `custom-alert ${alertClass}`;
     modal.innerHTML = `
         <div class="alert-drag-handle"><div class="drag-indicator"></div></div>
-        <div class="alert-body" style="text-align:center;">
-            <span style="font-size:1.4rem; display:block; margin-bottom:10px;">${title}</span>
-            <p style="font-size:1rem; margin-bottom:10px;">${message}</p>
+        <div class="alert-body" style="text-align:center; direction: rtl;">
+            <span style="font-size:1.4rem; display:block; margin-bottom:10px; font-weight:bold;">${title}</span>
+            <p style="font-size:1.1rem; margin-bottom:15px; line-height:1.4;">${message}</p>
             <div class="timer-container">
                 <svg class="timer-svg"><circle class="timer-circle-bg" cx="30" cy="30" r="28"></circle>
                 <circle id="timer-bar" class="timer-circle-fg" cx="30" cy="30" r="28" style="stroke-dashoffset: 0;"></circle></svg>
                 <div id="countdown-text">10</div>
             </div>
-            <p style="font-size:0.8rem; opacity:0.8;">العودة للردهة تلقائياً...</p>
+            <p style="font-size:0.85rem; opacity:0.8; margin-top:10px;">العودة للردهة تلقائياً...</p>
         </div>
     `;
 
     modal.style.display = 'block';
     setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
 
+    // منطق العداد التنازلي والعودة للردهة
     let timeLeft = 10;
     const timerBar = document.getElementById('timer-bar');
     const countdownText = document.getElementById('countdown-text');
@@ -741,31 +771,20 @@ onValue(resultRef, (snap) => {
     }, 1000);
 
     async function handleAutoTransition() {
-        // 1. تأكد أولاً أن اللاعب لا يزال في الغرفة ولم يضغط "مغادرة"
         const playersSnap = await get(playersRef);
         const currentPlayers = playersSnap.val() || {};
-        
-        if (!currentPlayers[playerId]) return; // إذا كنت قد غادرت فعلياً، لا تفعل شيئاً
+        if (!currentPlayers[playerId]) return;
 
         const playerList = Object.values(currentPlayers).sort((a, b) => a.joinedAt - b.joinedAt);
         const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
 
-        // 2. كل لاعب يحدث فريقه لنفسه فقط (لا نحدث الكل دفعة واحدة)
-        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
-            team: "spectators-list" 
-        });
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { team: "spectators-list" });
 
-        // 3. المشرف فقط يغير حالة الغرفة
         if (isAdmin) {
-            // تحديث حالة الغرفة ومسح الـ winner في تحديث واحد (Atomic Update)
-            await update(roomRef, { 
-                status: "lobby",
-                "game/winner": null 
-            });
+            await update(roomRef, { status: "lobby", "game/winner": null });
         }
     }
-    });
-
+});
 
 function applyGameStateToUI() {
     if (!gameState) return;
