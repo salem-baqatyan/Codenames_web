@@ -765,7 +765,33 @@ onValue(resultRef, (snap) => {
             handleAutoTransition();
         }
     }, 1000);
+
+    async function handleAutoTransition() {
+        // 1. تأكد أولاً أن اللاعب لا يزال في الغرفة ولم يضغط "مغادرة"
+        const playersSnap = await get(playersRef);
+        const currentPlayers = playersSnap.val() || {};
+        
+        if (!currentPlayers[playerId]) return; // إذا كنت قد غادرت فعلياً، لا تفعل شيئاً
+
+        const playerList = Object.values(currentPlayers).sort((a, b) => a.joinedAt - b.joinedAt);
+        const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
+
+        // 2. كل لاعب يحدث فريقه لنفسه فقط (لا نحدث الكل دفعة واحدة)
+        await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
+            team: "spectators-list" 
+        });
+
+        // 3. المشرف فقط يغير حالة الغرفة
+        if (isAdmin) {
+            // تحديث حالة الغرفة ومسح الـ winner في تحديث واحد (Atomic Update)
+            await update(roomRef, { 
+                status: "lobby",
+                "game/winner": null 
+            });
+        }
+    }
 });
+
 
 function applyGameStateToUI() {
     if (!gameState) return;
