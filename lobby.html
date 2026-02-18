@@ -231,6 +231,16 @@
                     <div class="mode-info"><b>تنافسية</b><span>4+ لاعبين</span></div>
                 </div>
             </div>
+            <!-- <div class="panel-label" style="margin-top: 15px;">حزمة الكلمات</div> -->
+            <div class="mode-options">
+                <div class="mode-card active" id="pack-basic" onclick="setWordPack('basic')">
+                    <img src="img/mode/basic_pack.webp" class="mode-img"> <div class="mode-info"><b>بسيطة</b><span>كلمات شائعة</span></div>
+                </div>
+                <div class="mode-card" id="pack-advanced" onclick="setWordPack('advanced')">
+                    <img src="img/mode/advanced_pack.webp" class="mode-img">
+                    <div class="mode-info"><b>متقدمة</b><span>كلمات نادرة</span></div>
+                </div>
+            </div>
             <div class="setting-row" onclick="openTimerModal()">
                 <span id="mainTimerIcon" style="font-size:1.2rem;">🚫</span>
                 <div style="margin-right:10px;">
@@ -275,53 +285,6 @@
         </div>
 
         <!-- Overlay Modal -->
-        <!-- Profile Modal -->
-        <div class="modal-overlay" id="profileModal" style="display:flex;">
-            <div class="settings-modal">
-                <div class="modal-header" id="profileHeader" style="font-weight:bold;margin-bottom:10px;">أهلاً بك! جهز ملفك</div>
-                <div class="avatar-selector" id="avatarContainer"></div>
-                <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
-                <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
-                <button id="leaveRoomBtn" class="leave-btn" style="display:none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
-            </div>
-        </div>
-
-        <!-- Timer Modal -->
-        <div class="modal-overlay" id="timerModal">
-            <div class="settings-modal">
-                <div class="modal-header">إعدادات المؤقت</div>
-                <div id="modalTimerIcon" style="text-align:center;font-size:3rem;margin:10px 0;">🚫</div>
-                <div id="modalTimerText" style="text-align:center;font-weight:bold;">بدون مؤقت</div>
-                <input type="range" min="0" max="3" value="0" id="timerSlider" style="width:100%;margin-top:20px;" oninput="changeTimer(this.value)">
-                <div class="slider-labels">
-                    <span id="label0" class="active-label">بدون</span>
-                    <span id="label1">30ث</span>
-                    <span id="label2">1د</span>
-                    <span id="label3">2د</span>
-                </div>
-                <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
-            </div>
-        </div>
-
-        <!-- Players List Modal -->
-        <div id="playersListModal">
-            <div class="players-modal-title">اللاعبين</div>
-            <div class="horizontal-players-scroll" id="playersListContainer"> </div>
-        </div>
-        
-        <!-- Rules Modal -->
-        <div class="modal-overlay" id="rulesModal">
-            <div class="settings-modal">
-                <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
-                <div class="modal-header" id="rulesTitle"></div>
-                <div class="rules-intro" id="rulesIntro"></div>
-                
-                <div id="rulesAccordionContainer">
-                    </div>
-
-                <button class="close-modal-btn" id="rulesCloseBtn" onclick="toggleRulesModal(false)"></button>
-            </div>
-        </div>
 
     </div>
 </div>
@@ -769,6 +732,13 @@ window.setGameMode = (mode) => {
         console.error("خطأ أثناء نقل اللاعبين:", err);
     });
 };
+window.setWordPack = (pack) => {
+    if (!isAdmin) {
+        showToast("عذراً، الآدمن فقط يمكنه تغيير حزمة الكلمات");
+        return; 
+    }
+    update(settingsRef, { wordPack: pack });
+};
 window.openTimerModal = () => { if (isAdmin) document.getElementById('timerModal').style.display = 'flex'; };
 window.changeTimer = (val) => {
     if (!isAdmin) return;
@@ -844,6 +814,11 @@ onValue(settingsRef, (snapshot) => {
     const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
     if(timerSlider) timerSlider.value = valMap[seconds] || 0;
 
+    const currentPack = s.wordPack || 'basic'; // الافتراضي بسيطة
+    document.querySelectorAll('[id^="pack-"]').forEach(c => c.classList.remove('active'));
+    const activePackCard = document.getElementById('pack-' + currentPack);
+    if (activePackCard) activePackCard.classList.add('active');
+
     lastMode = currentMode;
 });
 
@@ -872,8 +847,12 @@ function renderLobbyHeaders(mode) {
 }
 
 /* ---------- 7. Game Engine & Start ---------- */
-function generateBoard(startingTeam) {
-    const shuffledWords = [...basic_words]; 
+async function generateBoard(startingTeam) {
+    const settingsSnap = await get(settingsRef);
+    const pack = settingsSnap.val()?.wordPack || 'basic';
+    
+    const selectedSource = (pack === 'advanced') ? advanced_words : basic_words;
+    const shuffledWords = [...selectedSource]; 
     shuffleArray(shuffledWords);
 
     const redCount = (startingTeam === "red") ? 9 : 8;
@@ -897,8 +876,12 @@ function generateBoard(startingTeam) {
         };
     });
 }
-function generateDuetBoard() {
-    const shuffledWords = [...basic_words]; 
+async function generateDuetBoard() {
+    const settingsSnap = await get(settingsRef);
+    const pack = settingsSnap.val()?.wordPack || 'basic';
+    
+    const selectedSource = (pack === 'advanced') ? advanced_words : basic_words;
+    const shuffledWords = [...selectedSource]; 
     shuffleArray(shuffledWords);
     
     let cards = [];
