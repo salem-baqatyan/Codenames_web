@@ -234,11 +234,16 @@
             <!-- <div class="panel-label" style="margin-top: 15px;">حزمة الكلمات</div> -->
             <div class="mode-options">
                 <div class="mode-card active" id="pack-basic" onclick="setWordPack('basic')">
-                    <img src="img/mode/basic_pack.webp" class="mode-img"> <div class="mode-info"><b>بسيطة</b><span>كلمات شائعة</span></div>
+                    <div class="mode-info" style="margin-right:0; text-align:center; width:100%;">
+                        <b style="font-size: 0.85rem;">بسيطة</b>
+                        <span style="font-size: 0.6rem;">كلمات شائعة وواضحة</span>
+                    </div>
                 </div>
                 <div class="mode-card" id="pack-advanced" onclick="setWordPack('advanced')">
-                    <img src="img/mode/advanced_pack.webp" class="mode-img">
-                    <div class="mode-info"><b>متقدمة</b><span>كلمات نادرة</span></div>
+                    <div class="mode-info" style="margin-right:0; text-align:center; width:100%;">
+                        <b style="font-size: 0.85rem;">متقدمة</b>
+                        <span style="font-size: 0.6rem;">تحدي أكبر وكلمات منوعة</span>
+                    </div>
                 </div>
             </div>
             <div class="setting-row" onclick="openTimerModal()">
@@ -735,9 +740,10 @@ window.setGameMode = (mode) => {
 window.setWordPack = (pack) => {
     if (!isAdmin) {
         showToast("عذراً، الآدمن فقط يمكنه تغيير حزمة الكلمات");
-        return; 
+        return;
     }
     update(settingsRef, { wordPack: pack });
+    updateRoomActivity();
 };
 window.openTimerModal = () => { if (isAdmin) document.getElementById('timerModal').style.display = 'flex'; };
 window.changeTimer = (val) => {
@@ -791,6 +797,11 @@ onValue(settingsRef, (snapshot) => {
 
     renderLobbyHeaders(currentMode);
 
+    const currentPack = s.wordPack || 'basic'; // الافتراضي بسيطة
+    document.querySelectorAll('[id^="pack-"]').forEach(c => c.classList.remove('active'));
+    const activePackCard = document.getElementById('pack-' + currentPack);
+    if (activePackCard) activePackCard.classList.add('active');
+
     const seconds = s.timer || 0;
     const displayTimer = document.getElementById('lobbyDisplayTimer');
     let label = "بدون", icon = "🚫", displayStr = "";
@@ -813,11 +824,6 @@ onValue(settingsRef, (snapshot) => {
     const timerSlider = document.getElementById('timerSlider');
     const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
     if(timerSlider) timerSlider.value = valMap[seconds] || 0;
-
-    const currentPack = s.wordPack || 'basic'; // الافتراضي بسيطة
-    document.querySelectorAll('[id^="pack-"]').forEach(c => c.classList.remove('active'));
-    const activePackCard = document.getElementById('pack-' + currentPack);
-    if (activePackCard) activePackCard.classList.add('active');
 
     lastMode = currentMode;
 });
@@ -847,12 +853,8 @@ function renderLobbyHeaders(mode) {
 }
 
 /* ---------- 7. Game Engine & Start ---------- */
-async function generateBoard(startingTeam) {
-    const settingsSnap = await get(settingsRef);
-    const pack = settingsSnap.val()?.wordPack || 'basic';
-    
-    const selectedSource = (pack === 'advanced') ? advanced_words : basic_words;
-    const shuffledWords = [...selectedSource]; 
+function generateBoard(startingTeam, wordsArray) {
+    const shuffledWords = [...wordsArray]; // استخدام المصفوفة الممررة
     shuffleArray(shuffledWords);
 
     const redCount = (startingTeam === "red") ? 9 : 8;
@@ -876,12 +878,8 @@ async function generateBoard(startingTeam) {
         };
     });
 }
-async function generateDuetBoard() {
-    const settingsSnap = await get(settingsRef);
-    const pack = settingsSnap.val()?.wordPack || 'basic';
-    
-    const selectedSource = (pack === 'advanced') ? advanced_words : basic_words;
-    const shuffledWords = [...selectedSource]; 
+function generateDuetBoard(wordsArray) {
+    const shuffledWords = [...wordsArray]; // استخدام المصفوفة الممررة
     shuffleArray(shuffledWords);
     
     let cards = [];
@@ -907,9 +905,12 @@ async function generateDuetBoard() {
 window.handleStartGame = async () => {
     if (!isAdmin) return;
     
-    const settingsSnap = await get(settingsRef);
-    const mode = (settingsSnap.exists() && settingsSnap.val().mode) ? settingsSnap.val().mode : 'PvP';
-        
+const settingsSnap = await get(settingsRef);
+    const settings = settingsSnap.val() || {};
+    const mode = settings.mode || 'PvP';
+    const pack = settings.wordPack || 'basic';
+    const selectedWordsPool = (pack === 'advanced') ? advanced_words : basic_words;
+
     const playersSnap = await get(playersRef);
     const players = playersSnap.val() || {};
     const playerList = Object.values(players);
@@ -938,11 +939,11 @@ window.handleStartGame = async () => {
     let remainingCards;
 
     if (mode === 'Co_Op') {
-        boardData = generateDuetBoard();
+        boardData = generateDuetBoard(selectedWordsPool);
         turnUpdate = { side: startingSide, phase: 'clue' };
         remainingCards = { blue: 9, red: 9 }; 
     } else {
-        boardData = generateBoard(startingSide);
+        boardData = generateBoard(startingSide, selectedWordsPool);
         turnUpdate = { team: startingSide, phase: "spymaster" };
         remainingCards = {
             blue: (startingSide === "blue" ? 9 : 8),
