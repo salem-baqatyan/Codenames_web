@@ -74,15 +74,12 @@
         .spectators-list { display: flex; gap: 10px; justify-content: center; align-items: center; min-height: 65px; flex-wrap: wrap; }
 
         /* --- Settings Panel --- */
-        .settings-panel { background: #1a1a1a; margin: 5px 15px; border-radius: 15px; padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        .panel-label { text-align: center; color: #888; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; }
-        
-        /* --- Settings Panel --- */
         .settings-panel { 
-            background: #1a1a1a; margin: 5px 15px; border-radius: 15px; padding: 10px; flex: 1; 
-            display: flex; flex-direction: column; justify-content: center; border: 1px solid #333; 
+            background: #1a1a1a; margin: 5px 15px; border-radius: 15px; padding: 10px; flex: 1; display: flex; 
+            flex-direction: column; justify-content: center; border: 1px solid #333; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
-        .panel-label { text-align: center; color: var(--text-gray); font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; }
+        .panel-label { text-align: center; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; color: #888;}
+        .panel-label { text-align: center; font-size: 0.70rem; font-weight: bold; margin-bottom: 10px; color: var(--text-gray);}
         .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .mode-card { 
             border-radius: 12px; padding: 8px; display: flex; align-items: center; gap: 8px; 
@@ -112,16 +109,9 @@
         .player-slot-container { min-height: 55px; display: flex; align-items: center; justify-content: center; }
         .join-btn { width: 85%; padding: 4px 0; font-size: 0.65rem; font-weight: bold; color: white; background: linear-gradient(to bottom, #7ed321, #417505); border: 1.5px solid #b8e986; border-radius: 15px; cursor: pointer; box-shadow: 0 2px 0 #2e5a03; user-select: none; }
         .join-btn.locked { background: transparent !important; border: 1.5px solid #fff !important; box-shadow: none !important; cursor: not-allowed; opacity: 0.7; }
-/* عندما يكون الأب يحمل كلاس co-op-active */
-.teams-grid.co-op-active {
-    grid-template-rows: 1fr; /* سطر واحد فقط */
-}
-
-/* إخفاء المربعات التي لا نحتاجها في وضع التعاون */
-.teams-grid.co-op-active .blue-box:nth-child(3), 
-.teams-grid.co-op-active .red-box:nth-child(4) {
-    display: none;
-}
+        .teams-grid.co-op-active {grid-template-rows: 1fr;}
+        .teams-grid.co-op-active .blue-box:nth-child(3), 
+        .teams-grid.co-op-active .red-box:nth-child(4) {display: none;}
 
         /* --- Footer --- */
         .footer { background: #000; height: 70px; padding: 10px; display: flex; align-items: center; flex-shrink: 0; }
@@ -135,7 +125,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform-origin: top right; animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
         .players-modal-title { font-size: 0.7rem; font-weight: bold; color: #fff; text-align: right; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
         .horizontal-players-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 5px 2px 10px 2px; scrollbar-width: none; }
         .player-card-mini { display: flex; flex-direction: column; align-items: center; min-width: 50px; position: relative; user-select: none; }
@@ -153,26 +142,14 @@
         
         /* --- Rules Modal --- */
         #rulesModal .settings-modal { 
-            height: 85vh; /* تثبيت طول الديالوج */
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px 15px 15px 15px; 
-            width: 90%; 
-            position: relative; 
-            overflow: hidden; /* لمنع خروج أي شيء عن الحدود */
+            height: 85vh; display: flex; flex-direction: column; padding: 20px 15px 15px 15px; 
+            width: 90%; position: relative; overflow: hidden;
         }
         
         #rulesAccordionContainer { 
-            flex: 1; /* جعل المحتوى يأخذ كل المساحة المتاحة بين الهيدر والزر */
-            overflow-y: auto; /* تفعيل السكرول هنا فقط */
-            padding-left: 5px; 
-            margin-bottom: 15px;
-            /* تصميم السكرول */
-            scrollbar-width: thin;
-            scrollbar-color: #444 transparent;
+            flex: 1; overflow-y: auto; padding-left: 5px; margin-bottom: 15px; scrollbar-width: thin; scrollbar-color: #444 transparent;
         }
 
-        /* تنسيق السكرول للمتصفحات الحديثة (Chrome, Safari) */
         #rulesAccordionContainer::-webkit-scrollbar { width: 5px; }
         #rulesAccordionContainer::-webkit-scrollbar-track { background: transparent; }
         #rulesAccordionContainer::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
@@ -188,18 +165,9 @@
         .close-icon { position: absolute; top: 15px; left: 15px; font-size: 1.2rem; cursor: pointer; color: #888; z-index: 10; }
         .modal-header { flex-shrink: 0; margin-bottom: 10px; text-align: center; font-weight: bold; }
         
-        /* الزر السفلي - ثابت لا يتأثر بالسكرول */
         .close-modal-btn { 
-            width: 100%; 
-            background: #444; 
-            color: white; 
-            border: none; 
-            padding: 15px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            flex-shrink: 0; /* منع الزر من الانضغاط */
-            margin-top: auto;
+            width: 100%; background: #444; color: white; border: none; padding: 15px; border-radius: 12px; 
+            cursor: pointer; font-weight: bold; flex-shrink: 0; margin-top: auto;
         }
 
         /* --- Game Log Styles --- */
@@ -224,34 +192,6 @@
 
  <!-- App Wrapper -->
 <div class="mobile-wrapper">
-
-    <!-- Profile Modal -->
-    <div class="modal-overlay" id="profileModal" style="display:flex;">
-        <div class="settings-modal">
-            <div class="modal-header" id="profileHeader" style="font-weight:bold;margin-bottom:10px;">أهلاً بك! جهز ملفك</div>
-            <div class="avatar-selector" id="avatarContainer"></div>
-            <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
-            <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
-            <button id="leaveRoomBtn" class="leave-btn" style="display:none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
-        </div>
-    </div>
-
-    <!-- Timer Modal -->
-    <div class="modal-overlay" id="timerModal">
-        <div class="settings-modal">
-            <div class="modal-header">إعدادات المؤقت</div>
-            <div id="modalTimerIcon" style="text-align:center;font-size:3rem;margin:10px 0;">🚫</div>
-            <div id="modalTimerText" style="text-align:center;font-weight:bold;">بدون مؤقت</div>
-            <input type="range" min="0" max="3" value="0" id="timerSlider" style="width:100%;margin-top:20px;" oninput="changeTimer(this.value)">
-            <div class="slider-labels">
-                <span id="label0" class="active-label">بدون</span>
-                <span id="label1">30ث</span>
-                <span id="label2">1د</span>
-                <span id="label3">2د</span>
-            </div>
-            <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
-        </div>
-    </div>
 
     <!-- Top Section -->
     <div class="top-section">
@@ -333,11 +273,42 @@
         <div class="footer">
             <button class="start-btn" id="startBtn" onclick="handleStartGame()">بدء اللعبة</button>
         </div>
+
+        <!-- Overlay Modal -->
+        <!-- Profile Modal -->
+        <div class="modal-overlay" id="profileModal" style="display:flex;">
+            <div class="settings-modal">
+                <div class="modal-header" id="profileHeader" style="font-weight:bold;margin-bottom:10px;">أهلاً بك! جهز ملفك</div>
+                <div class="avatar-selector" id="avatarContainer"></div>
+                <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
+                <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
+                <button id="leaveRoomBtn" class="leave-btn" style="display:none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
+            </div>
+        </div>
+
+        <!-- Timer Modal -->
+        <div class="modal-overlay" id="timerModal">
+            <div class="settings-modal">
+                <div class="modal-header">إعدادات المؤقت</div>
+                <div id="modalTimerIcon" style="text-align:center;font-size:3rem;margin:10px 0;">🚫</div>
+                <div id="modalTimerText" style="text-align:center;font-weight:bold;">بدون مؤقت</div>
+                <input type="range" min="0" max="3" value="0" id="timerSlider" style="width:100%;margin-top:20px;" oninput="changeTimer(this.value)">
+                <div class="slider-labels">
+                    <span id="label0" class="active-label">بدون</span>
+                    <span id="label1">30ث</span>
+                    <span id="label2">1د</span>
+                    <span id="label3">2د</span>
+                </div>
+                <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
+            </div>
+        </div>
+
         <!-- Players List Modal -->
         <div id="playersListModal">
             <div class="players-modal-title">اللاعبين</div>
             <div class="horizontal-players-scroll" id="playersListContainer"> </div>
         </div>
+        
         <!-- Rules Modal -->
         <div class="modal-overlay" id="rulesModal">
             <div class="settings-modal">
@@ -353,9 +324,9 @@
         </div>
 
     </div>
-
 </div>
-<script src="words.js"></script>
+<script src="basic_words.js"></script>
+<script src="advanced_wards.js"></script>
 <script src="rules.js"></script>
 <script type="module">
 // <!-- JS Section -->
@@ -417,15 +388,6 @@ const avatarImages = [
     "img/avatar/surprised_man.webp",
 ];
 
-// const cardVisuals = {
-//     blue: Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
-//     red: Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
-//     neutral: Array.from({length: 9}, (_, i) => `img/card/Normal${i + 1}.webp`),
-//     killer: ['img/card/Black.webp']
-// };
-
-
-
 /* ---------- 3. Profile Management ---------- */
 async function renderAvatars() {
     const container = document.getElementById('avatarContainer');
@@ -447,7 +409,6 @@ async function renderAvatars() {
         container.appendChild(img);
     });
 }
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('profileModal').style.display = 'none';
@@ -494,18 +455,16 @@ async function autoJoinRoom() {
     const roomSnap = await get(roomRef);
     if (!roomSnap.exists()) {
         const typeParam = urlParams.get('type') || 'public';
-        // التأكد من وضع PvP كمود افتراضي هنا
         await set(roomRef, { 
             lastActivity: now, 
             status: "lobby", 
             settings: { 
-                mode: 'PvP', // المود الافتراضي
+                mode: 'PvP',
                 timer: 0, 
                 visibility: typeParam 
             } 
         });
     } else {
-        // إذا كانت الغرفة موجودة ولكن ينقصها حقل المود (حالة نادرة)
         const data = roomSnap.val();
         if (!data.settings || !data.settings.mode) {
             await update(settingsRef, { mode: 'PvP', timer: 0 });
@@ -669,12 +628,10 @@ function renderLobby(players, adminId) {
 
     if (isCoOp) {
         grid.classList.add('co-op-active');
-        // تغيير العناوين لـ Side A و Side B (أو RED و BLUE كما طلبت)
         document.querySelectorAll('.blue-box .box-title')[0].innerText = "BLUE SIDE";
         document.querySelectorAll('.red-box .box-title')[0].innerText = "RED SIDE";
     } else {
         grid.classList.remove('co-op-active');
-        // إعادة العناوين الأصلية لوضع التنافس
         document.querySelectorAll('.blue-box .box-title')[0].innerText = "OPERATIVE";
         document.querySelectorAll('.blue-box .box-title')[1].innerText = "SPYMASTER";
         document.querySelectorAll('.red-box .box-title')[0].innerText = "OPERATIVE";
@@ -774,20 +731,17 @@ onValue(playersRef, (snapshot) => {
     const playerList = Object.values(players);
     document.getElementById('playerCount').innerText = playerList.length;
     
-    // ترتيب اللاعبين حسب وقت الانضمام لتحديد الآدمن (أول من دخل)
     const sorted = playerList.sort((a, b) => a.joinedAt - b.joinedAt);
     const adminId = sorted[0].id;
     
-    isAdmin = (playerId === adminId); // تحديث المتغير العالمي
+    isAdmin = (playerId === adminId);
 
-    // تحديث الواجهة بناءً على الصلاحية
     document.getElementById('startBtn').style.display = isAdmin ? 'block' : 'none';
     
-    // تأكد أن لوحة الإعدادات تستجيب للنقرات إذا كان آدمن
     const settingsPanel = document.querySelector('.settings-panel');
     if (settingsPanel) {
         settingsPanel.style.opacity = isAdmin ? "1" : "0.5";
-        settingsPanel.style.pointerEvents = isAdmin ? "auto" : "none"; // إضافة هذا السطر لمنع الضغط لغير الآدمن
+        settingsPanel.style.pointerEvents = isAdmin ? "auto" : "none";
     }
     
     renderLobby(players, adminId);
@@ -801,15 +755,11 @@ window.setGameMode = (mode) => {
         return; 
     }
     
-    // 1. تحديث المود في الإعدادات
     update(settingsRef, { mode: mode });
-
-    // 2. نقل جميع اللاعبين إلى الجمهور
-    // نستخدم transaction على مرجع اللاعبين لضمان تحديث الجميع
     runTransaction(playersRef, (players) => {
         if (players) {
             Object.keys(players).forEach(id => {
-                players[id].team = 'spectators-list'; // تعيين الفريق كجمهور للكل
+                players[id].team = 'spectators-list';
             });
         }
         return players;
@@ -831,14 +781,12 @@ window.changeTimer = (val) => {
 function updateRulesUI(mode) {
     const data = gameRulesData[mode] || gameRulesData['PvP'];
     
-    // تحديث النصوص الأساسية
     document.getElementById('rulesTitle').innerText = data.title;
     document.getElementById('rulesIntro').innerHTML = data.intro;
     document.getElementById('rulesCloseBtn').innerText = data.button;
 
-    // بناء الأكورديون
     const container = document.getElementById('rulesAccordionContainer');
-    container.innerHTML = ''; // مسح القديم
+    container.innerHTML = '';
 
     data.accordion.forEach(item => {
         const accordionItem = document.createElement('div');
@@ -860,28 +808,19 @@ onValue(settingsRef, (snapshot) => {
     const s = snapshot.val();
     if (!s) return;
 
-    // المود الحالي من قاعدة البيانات
     const currentMode = s.mode || 'PvP';
     updateRulesUI(currentMode);
-
-    /* --- التعديل هنا --- */
-    // لا تظهر الرسالة إذا كانت هذه أول مرة يتم فيها تحميل الصفحة (lastMode === null)
-    // تظهر فقط إذا كانت هناك قيمة سابقة مخزنة وتختلف عن القيمة الجديدة
     if (lastMode !== null && currentMode !== lastMode) {
         const modeName = currentMode === 'Co_Op' ? 'الوضع التعاوني' : 'الوضع التنافسي';
         showToast(`🔄 تم تغيير النمط إلى: ${modeName}`);
     }
-    /* ------------------ */
 
-    // تحديث الشكل البصري للبطاقات (Active State)
     document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
     const activeCard = document.getElementById('mode-' + currentMode);
     if (activeCard) activeCard.classList.add('active');
 
-    // تحديث العناوين في اللوبي فوراً بناءً على المود الحالي
     renderLobbyHeaders(currentMode);
 
-    // تحديث مؤقت الوقت (Timer)
     const seconds = s.timer || 0;
     const displayTimer = document.getElementById('lobbyDisplayTimer');
     let label = "بدون", icon = "🚫", displayStr = "";
@@ -905,7 +844,6 @@ onValue(settingsRef, (snapshot) => {
     const valMap = { 0: 0, 30: 1, 60: 2, 120: 3 };
     if(timerSlider) timerSlider.value = valMap[seconds] || 0;
 
-    // حفظ الحالة الحالية لتصبح هي "الحالة السابقة" في التغيير القادم
     lastMode = currentMode;
 });
 
@@ -918,20 +856,14 @@ function renderLobbyHeaders(mode) {
     const redTitles = document.querySelectorAll('.red-box .box-title');
 
     if (isCoOp) {
-        // 1. إضافة الـ Class الخاص بتغيير الاستايل (CSS سيقوم بالباقي)
         grid.classList.add('co-op-active');
 
-        // 2. تغيير المسميات
         if(blueTitles[0]) blueTitles[0].innerText = "SIDE A (BLUE)";
         if(redTitles[0]) redTitles[0].innerText = "SIDE B (RED)";
         
-        // ملاحظة: الـ CSS سيهتم بإخفاء الصناديق الثانية تلقائياً 
-        // بفضل Class: .co-op-active
     } else {
-        // 1. إزالة الـ Class للعودة للوضع الطبيعي PvP
         grid.classList.remove('co-op-active');
 
-        // 2. إعادة المسميات الأصلية
         if(blueTitles[0]) blueTitles[0].innerText = "OPERATIVE";
         if(blueTitles[1]) blueTitles[1].innerText = "SPYMASTER";
         if(redTitles[0]) redTitles[0].innerText = "OPERATIVE";
@@ -941,7 +873,7 @@ function renderLobbyHeaders(mode) {
 
 /* ---------- 7. Game Engine & Start ---------- */
 function generateBoard(startingTeam) {
-    const shuffledWords = [...words]; 
+    const shuffledWords = [...basic_words]; 
     shuffleArray(shuffledWords);
 
     const redCount = (startingTeam === "red") ? 9 : 8;
@@ -966,7 +898,7 @@ function generateBoard(startingTeam) {
     });
 }
 function generateDuetBoard() {
-    const shuffledWords = [...words]; 
+    const shuffledWords = [...basic_words]; 
     shuffleArray(shuffledWords);
     
     let cards = [];
@@ -986,7 +918,6 @@ function generateDuetBoard() {
             sideA: card.sideA,
             sideB: card.sideB,
             revealed: false
-            // تم حذف حقل visual وحساب typeToUse
         };
     });
 }
@@ -1000,11 +931,9 @@ window.handleStartGame = async () => {
     const players = playersSnap.val() || {};
     const playerList = Object.values(players);
     
-    // استخراج كافة الأدوار المشغولة
     const occupiedRoles = playerList.map(p => p.team);
 
     if (mode === 'PvP') {
-        // الأدوار المطلوبة في التنافسي
         const required = ['blue-operative', 'blue-spymaster', 'red-operative', 'red-spymaster'];
         const missing = required.filter(role => !occupiedRoles.includes(role));
         
@@ -1012,8 +941,6 @@ window.handleStartGame = async () => {
             return showToast("⚠️ يجب تعيين لاعب في كل دور (جاسوس وقائد لكل فريق)");
         }
     } else {
-        // في التعاوني (Co_Op) نحتاج فقط Side A و Side B
-        // في تصميمك التعاوني يستخدم blue-operative و red-operative كممثلين للطرفين
         const hasBlue = occupiedRoles.includes('blue-operative');
         const hasRed = occupiedRoles.includes('red-operative');
         
@@ -1021,7 +948,6 @@ window.handleStartGame = async () => {
             return showToast("⚠️ يجب وجود لاعب في كل جهة (أزرق وأحمر)");
     }
 
-    // تحديد الفريق البادئ عشوائياً (مهم جداً للعدالة)
     const startingSide = Math.random() < 0.5 ? "red" : "blue";
 
     let boardData;
@@ -1031,29 +957,25 @@ window.handleStartGame = async () => {
     if (mode === 'Co_Op') {
         boardData = generateDuetBoard();
         turnUpdate = { side: startingSide, phase: 'clue' };
-        // في التعاوني الأهداف مشتركة (هنا مثال بسيط)
         remainingCards = { blue: 9, red: 9 }; 
     } else {
         boardData = generateBoard(startingSide);
         turnUpdate = { team: startingSide, phase: "spymaster" };
-        // تحديد عدد الكلمات المتبقية بناءً على الفريق البادئ
         remainingCards = {
             blue: (startingSide === "blue" ? 9 : 8),
             red: (startingSide === "red" ? 9 : 8)
         };
     }
 
-    // 1. رفع بيانات اللعبة
     await set(ref(db, `rooms/${roomId}/game`), {
         board: boardData,
         mode: mode,
         turn: turnUpdate,
-        remaining: remainingCards, // أضفنا هذا لكي لا ينهار الـ UI في صفحة اللعبة
+        remaining: remainingCards,
         status: "playing",
         createdAt: Date.now()
     });
 
-    // 2. تحديث حالة الغرفة لبدء التوجيه
     await update(roomRef, { status: "started" });
 };
 
