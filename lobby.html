@@ -57,7 +57,7 @@
         .active-label { color: #7ed321; font-weight: bold; }
 
         /* --- Top Section --- */
-        .top-section { height: 48%; display: flex; flex-direction: column; padding-bottom: 5px; }
+        .top-section { height: 55%; display: flex; flex-direction: column; padding-bottom: 5px; }
 
         /* --- App Bar --- */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; flex-shrink: 0; user-select: none; -webkit-user-select: none; }
@@ -75,14 +75,13 @@
 
         /* --- Settings Panel --- */
         .settings-panel { 
-            background: #1a1a1a; margin: 5px 15px; border-radius: 15px; padding: 10px; flex: 1; display: flex; 
+            background: #1a1a1a; margin: 5px 10px; border-radius: 15px; padding: 0px 10px; flex: 1; display: flex; 
             flex-direction: column; justify-content: center; border: 1px solid #333; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
-        .panel-label { text-align: center; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; color: #888;}
         .panel-label { text-align: center; font-size: 0.70rem; font-weight: bold; margin-bottom: 10px; color: var(--text-gray);}
-        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
         .mode-card { 
-            border-radius: 12px; padding: 8px; display: flex; align-items: center; gap: 8px; 
+            border-radius: 12px; padding: 5px; display: flex; align-items: center; gap: 8px; 
             border: 1px solid #444; cursor: pointer; transition: all 0.3s ease; 
         }
         .mode-card.active { border-color: var(--green-action); background: rgba(126, 211, 33, 0.1); box-shadow: 0 0 15px rgba(126, 211, 33, 0.2); }
@@ -93,12 +92,12 @@
         .mode-info span { font-size: 0.6rem; color: #666; }
         .setting-row { 
             border-radius: 10px; margin-top: 10px; display: flex; align-items: center; 
-            padding: 8px 12px; border: 1px solid #333; cursor: pointer; transition: 0.2s; 
+            padding: 5px 12px; border: 1px solid #333; cursor: pointer; transition: 0.2s; 
         }
         .setting-row:active { transform: scale(0.98); background: rgba(255,255,255,0.02); }
         
         /* --- Bottom Section --- */
-        .bottom-section { height: 52%; display: flex; flex-direction: column; border-top: 1px solid #222; overflow: hidden; }
+        .bottom-section { height: 45%; display: flex; flex-direction: column; border-top: 1px solid #222; overflow: hidden; }
 
         /* --- Teams Grid --- */
         .teams-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 10px; min-height: 0; }
@@ -222,27 +221,26 @@
         <div class="settings-panel">
             <div class="panel-label">إعدادات اللعبة (للآدمن فقط)</div>
             <div class="mode-options">
-                <div class="mode-card" id="mode-Co_Op" onclick="setGameMode('Co_Op')">
-                    <img src="img/mode/Co_Op.webp" class="mode-img">
-                    <div class="mode-info"><b>تعاونية</b><span>2+ لاعبين</span></div>
-                </div>
                 <div class="mode-card active" id="mode-PvP" onclick="setGameMode('PvP')">
                     <img src="img/mode/PvP.webp" class="mode-img">
                     <div class="mode-info"><b>تنافسية</b><span>4+ لاعبين</span></div>
                 </div>
+                <div class="mode-card" id="mode-Co_Op" onclick="setGameMode('Co_Op')">
+                    <img src="img/mode/Co_Op.webp" class="mode-img">
+                    <div class="mode-info"><b>تعاونية</b><span>2+ لاعبين</span></div>
+                </div>
             </div>
-            <!-- <div class="panel-label" style="margin-top: 15px;">حزمة الكلمات</div> -->
-            <div class="mode-options">
+            <div class="mode-options" style="margin-top: 5px;">
                 <div class="mode-card active" id="pack-basic" onclick="setWordPack('basic')">
-                    <div class="mode-info" style="margin-right:0; text-align:center; width:100%;">
-                        <b style="font-size: 0.85rem;">بسيطة</b>
-                        <span style="font-size: 0.6rem;">كلمات شائعة وواضحة</span>
+                    <img src="img/mode/basic_pack.webp" class="mode-img"> <div class="mode-info">
+                        <b>بسيطة</b>
+                        <span>كلمات شائعة</span>
                     </div>
                 </div>
                 <div class="mode-card" id="pack-advanced" onclick="setWordPack('advanced')">
-                    <div class="mode-info" style="margin-right:0; text-align:center; width:100%;">
-                        <b style="font-size: 0.85rem;">متقدمة</b>
-                        <span style="font-size: 0.6rem;">تحدي أكبر وكلمات منوعة</span>
+                    <img src="img/mode/advanced_pack.webp" class="mode-img"> <div class="mode-info">
+                        <b>متقدمة</b>
+                        <span>كلمات أكثر صعوبة</span>
                     </div>
                 </div>
             </div>
@@ -290,12 +288,58 @@
         </div>
 
         <!-- Overlay Modal -->
+        <!-- Profile Modal -->
+        <div class="modal-overlay" id="profileModal" style="display:flex;">
+            <div class="settings-modal">
+                <div class="modal-header" id="profileHeader" style="font-weight:bold;margin-bottom:10px;">أهلاً بك! جهز ملفك</div>
+                <div class="avatar-selector" id="avatarContainer"></div>
+                <input type="text" id="nicknameInput" class="nickname-input" placeholder="اكتب لقبك هنا..." maxlength="12">
+                <button class="save-btn" onclick="saveProfile()">حفظ وانضمام</button>
+                <button id="leaveRoomBtn" class="leave-btn" style="display:none;" onclick="leaveLobby()">مغادرة الردهة 🚪</button>
+            </div>
+        </div>
+
+        <!-- Timer Modal -->
+        <div class="modal-overlay" id="timerModal">
+            <div class="settings-modal">
+                <div class="modal-header">إعدادات المؤقت</div>
+                <div id="modalTimerIcon" style="text-align:center;font-size:3rem;margin:10px 0;">🚫</div>
+                <div id="modalTimerText" style="text-align:center;font-weight:bold;">بدون مؤقت</div>
+                <input type="range" min="0" max="3" value="0" id="timerSlider" style="width:100%;margin-top:20px;" oninput="changeTimer(this.value)">
+                <div class="slider-labels">
+                    <span id="label0" class="active-label">بدون</span>
+                    <span id="label1">30ث</span>
+                    <span id="label2">1د</span>
+                    <span id="label3">2د</span>
+                </div>
+                <button class="save-btn" style="background:#444;" onclick="document.getElementById('timerModal').style.display='none'">إغلاق</button>
+            </div>
+        </div>
+
+        <!-- Players List Modal -->
+        <div id="playersListModal">
+            <div class="players-modal-title">اللاعبين</div>
+            <div class="horizontal-players-scroll" id="playersListContainer"></div>
+        </div>
+
+        <!-- Rules Modal -->
+        <div class="modal-overlay" id="rulesModal">
+            <div class="settings-modal">
+                <span class="close-icon" onclick="toggleRulesModal(false)">✕</span>
+                <div class="modal-header" id="rulesTitle"></div>
+                <div class="rules-intro" id="rulesIntro"></div>
+                <div id="rulesAccordionContainer"></div>
+                <button class="close-modal-btn" id="rulesCloseBtn" onclick="toggleRulesModal(false)"></button>
+            </div>
+        </div>
+
 
     </div>
 </div>
-<script src="basic_words.js"></script>
-<script src="advanced_wards.js"></script>
-<script src="rules.js"></script>
+<!-- Strings Imports -->
+<script src="strings/basic_words.js"></script>
+<script src="strings/advanced_words.js"></script>
+<script src="strings/rules.js"></script>
 <script type="module">
 // <!-- JS Section -->
 
@@ -854,7 +898,7 @@ function renderLobbyHeaders(mode) {
 
 /* ---------- 7. Game Engine & Start ---------- */
 function generateBoard(startingTeam, wordsArray) {
-    const shuffledWords = [...wordsArray]; // استخدام المصفوفة الممررة
+    const shuffledWords = [...wordsArray]; 
     shuffleArray(shuffledWords);
 
     const redCount = (startingTeam === "red") ? 9 : 8;
@@ -874,12 +918,11 @@ function generateBoard(startingTeam, wordsArray) {
             word: shuffledWords[i], 
             type, 
             revealed: false 
-            // تم حذف حقل visual
         };
     });
 }
 function generateDuetBoard(wordsArray) {
-    const shuffledWords = [...wordsArray]; // استخدام المصفوفة الممررة
+    const shuffledWords = [...wordsArray];
     shuffleArray(shuffledWords);
     
     let cards = [];

@@ -755,23 +755,19 @@ onValue(resultRef, (snap) => {
     }, 1000);
 
     async function handleAutoTransition() {
-        // 1. تأكد أولاً أن اللاعب لا يزال في الغرفة ولم يضغط "مغادرة"
         const playersSnap = await get(playersRef);
         const currentPlayers = playersSnap.val() || {};
         
-        if (!currentPlayers[playerId]) return; // إذا كنت قد غادرت فعلياً، لا تفعل شيئاً
+        if (!currentPlayers[playerId]) return;
 
         const playerList = Object.values(currentPlayers).sort((a, b) => a.joinedAt - b.joinedAt);
         const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
 
-        // 2. كل لاعب يحدث فريقه لنفسه فقط (لا نحدث الكل دفعة واحدة)
         await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
             team: "spectators-list" 
         });
 
-        // 3. المشرف فقط يغير حالة الغرفة
         if (isAdmin) {
-            // تحديث حالة الغرفة ومسح الـ winner في تحديث واحد (Atomic Update)
             await update(roomRef, { 
                 status: "lobby",
                 "game/winner": null 
@@ -793,7 +789,6 @@ function applyGameStateToUI() {
     renderLog();
     updateUI();
 
-    // جلب إعدادات المؤقت من الغرفة
     get(ref(db, `rooms/${roomId}/settings/timer`)).then((snap) => {
         const seconds = snap.val();
         const timerDisplay = document.getElementById('lobbyDisplayTimer');
@@ -801,12 +796,10 @@ function applyGameStateToUI() {
         if (seconds && seconds > 0) {
             timerDuration = seconds;
             
-            // تحديد صاحب الدور الحالي في المود التعاوني
             const isCluePhase = (gameState.turn.phase === 'clue');
             const activeTeam = isCluePhase ? gameState.turn.side : (gameState.turn.side === 'red' ? 'blue' : 'red');
             const isMyTurn = (myTeam === activeTeam);
 
-            // إذا كان دوري ولم يبدأ المؤقت بعد، أقوم بتفعيله
             if (isMyTurn && !gameState.turn.ready) {
                 update(gameRef, { 
                     "turn/ready": true, 
@@ -814,7 +807,6 @@ function applyGameStateToUI() {
                 });
             }
 
-            // إذا كان المؤقت جاهزاً، ابدأ العد التنازلي
             if (gameState.turn.ready && gameState.turn.updatedAt) {
                 startGlobalTimer(gameState.turn.updatedAt);
             } else {
@@ -829,7 +821,6 @@ function applyGameStateToUI() {
 function renderGrid() {
     if (!gameState) return;
     const grid = document.getElementById('grid'); 
-    // للحصول على قائمة البطاقات المكشوفة سابقاً لتأثير الأنيميشن (اختياري)
     const existingRevealed = Array.from(document.querySelectorAll('.card-revealed')).map(el => el.id);
     
     grid.innerHTML = '';
@@ -839,24 +830,21 @@ function renderGrid() {
         const div = document.createElement('div');
         const cardId = `card-${i}`;
 
-        // --- منطق التعاوني: تحديد اللون بناءً على الفريق ---
         const myMapColor = (myTeam === 'red') ? card.sideA : card.sideB;
         
         const visualClass =
             myMapColor === "blue" ? "card-blue" :
             myMapColor === "red" ? "card-red" :
             myMapColor === "killer" ? "card-black" : "card-brown";
-        // ------------------------------------------------
 
         const isSelected = selectedCards.has(i);
-        const isPeeking = peekingCards.has(i); // ميزة التنافسي
+        const isPeeking = peekingCards.has(i);
 
         div.id = cardId;
         div.className = `card ${visualClass} ${card.revealed ? 'card-revealed' : ''} ${isSelected ? 'card-selected' : ''} ${isPeeking ? 'card-peeking' : ''}`;
         
         if (card.revealed && existingRevealed.includes(cardId)) div.classList.add('already-revealed');
 
-        // الهيكل مطابق للتنافسي (مع إضافة togglePeek للصورة)
         div.innerHTML = `
             <div class="confirm-btn" id="confirm-${i}" style="display: ${isSelected ? 'flex' : 'none'}" onclick="event.stopPropagation(); confirmSelection(${i});">
                 <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
@@ -873,7 +861,6 @@ function renderGrid() {
 
 window.togglePeek = function(i, event) {
     event.stopPropagation();
-    // يسمح برفع البطاقة فقط إذا كانت مكشوفة
     if (!gameState.board[i].revealed) return;
     
     if (peekingCards.has(i)) peekingCards.delete(i);
@@ -896,12 +883,10 @@ function updateUI() {
     const input = document.getElementById('clueInput');
     const select = document.getElementById('clueNum');
 
-    // 1. تنظيف الكلاسات القديمة
     redCard.classList.remove('active-red');
     blueCard.classList.remove('active-blue');
     if (controlArea.querySelector('.turn-info')) controlArea.querySelector('.turn-info').remove();
 
-    // 2. منطق من "النشط" في التعاوني
     const isCluePhase = (gameState.turn.phase === 'clue');
     const activeTeam = isCluePhase ? gameState.turn.side : (gameState.turn.side === 'red' ? 'blue' : 'red');
     if (isSpectator) {
@@ -912,7 +897,6 @@ function updateUI() {
         }
         return; 
     }
-    // تطبيق التوهج
     if (activeTeam === 'red') redCard.classList.add('active-red');
     else blueCard.classList.add('active-blue');
 
@@ -922,7 +906,6 @@ function updateUI() {
     const isRedGoal = (card.sideA === 'red' || card.sideB === 'red');
     const isBlueGoal = (card.sideA === 'blue' || card.sideB === 'blue');
     
-    // ملاحظة: البطاقة البنية (neutral) لن تدخل في هذا الشرط
     return isRedGoal || isBlueGoal;
 }).length;
 
@@ -930,17 +913,14 @@ const remainingToWin = 15 - revealedGoals;
 
 document.getElementById('blue-score').innerText = Math.max(0, remainingToWin);
 document.getElementById('red-score').innerText = Math.max(0, remainingToWin);
-    // 3. إدارة لوحة التحكم (Control Panel)
     const isMyTurn = (myTeam === activeTeam);
 
-    // إخفاء الكل مبدئياً
     clueUI.style.display = 'none';
     actionBtn.style.display = 'none';
     actionBtn.classList.remove('end-turn-btn', 'disabled-area');
     clueUI.classList.remove('disabled-area');
 
     if (isCluePhase) {
-        // --- مرحلة التلميح ---
         if (isMyTurn) {
             clueUI.style.display = 'flex';
             actionBtn.style.display = 'flex';
@@ -949,18 +929,17 @@ document.getElementById('red-score').innerText = Math.max(0, remainingToWin);
             btnIcon.className = 'arrow-icon';
             btnIcon.innerHTML = '';
         } else {
-            showTurnInfo(controlArea, { team: activeTeam, phase: 'spymaster' }); // نعرض أنه دور القائد
+            showTurnInfo(controlArea, { team: activeTeam, phase: 'spymaster' }); 
         }
     } else {
-        // --- مرحلة التخمين ---
         if (isMyTurn) {
-            clueUI.style.display = 'flex'; // نعرض التلميح السابق
-            clueUI.classList.add('disabled-area'); // لكن نجعله غير قابل للتعديل
-            input.value = gameState.clue.word; // نملأ البيانات
+            clueUI.style.display = 'flex'; 
+            clueUI.classList.add('disabled-area');
+            input.value = gameState.clue.word;
             select.value = gameState.clue.count;
             
             actionBtn.style.display = 'flex';
-            actionBtn.classList.add('end-turn-btn'); // زر إنهاء الدور
+            actionBtn.classList.add('end-turn-btn');
             btnIcon.className = '';
             btnIcon.innerHTML = '✕';
         } else {
@@ -1000,7 +979,7 @@ function renderLog() {
 }
 
 window.handleAction = function() {
-    if (!gameState || isSpectator) return; // حماية إضافية ضد الجمهور
+    if (!gameState || isSpectator) return;
     
     const isCluePhase = (gameState.turn.phase === 'clue');
     const isMyTurn = (myTeam === gameState.turn.side);
@@ -1010,7 +989,6 @@ window.handleAction = function() {
         sendClue();
     } else {
         if (myTeam === gameState.turn.side) return; 
-        // تنبيهات التأكيد
         if (guessesThisTurn === 0) {
             showCustomAlert("يجب أن تختار بطاقة واحدة على الأقل قبل إنهاء الدور!", true, endTurn);
         } else {
@@ -1031,7 +1009,6 @@ async function sendClue() {
         return;
     }
 
-    // منطق التنافسي: منع كتابة كلمة موجودة
     const onTableWords = Object.values(gameState.board)
         .filter(c => !c.revealed)
         .map(c => c.word.trim().toLowerCase());
@@ -1056,8 +1033,8 @@ async function sendClue() {
         turn: { 
             side: gameState.turn.side, 
             phase: "guess",
-            ready: false,      // تصفير الجاهزية لبداية مؤقت جديد
-            updatedAt: null    // تصفير الوقت
+            ready: false,
+            updatedAt: null
         } 
     });
 
@@ -1072,13 +1049,11 @@ async function sendClue() {
 }
 
 window.handleCardSelection = function(i) {
-    if (!gameState || isSpectator) return; // منع الجمهور
+    if (!gameState || isSpectator) return;
 
-    // الشرط: الطور تخمين + أنا لست صاحب الدور (أي أنا الشريك المخمن) + البطاقة غير مكشوفة
     const isMyTurnToGuess = (gameState.turn.phase === 'guess' && myTeam !== gameState.turn.side);
     if (!isMyTurnToGuess || gameState.board[i].revealed) return;
 
-    // منطق التنافسي: إضافة/حذف من التحديد (تعدد الاختيارات)
     if (selectedCards.has(i)) {
         selectedCards.delete(i);
     } else {
@@ -1098,10 +1073,8 @@ window.confirmSelection = async function(i) {
     const updates = {};
     updates[`board/${i}/revealed`] = true;
     
-    // --- الذكاء هنا: نختار الصورة لحظة الكشف ونخزنها في الداتابيز ---
     const chosenVisual = getVisualForColor(judgesColor);
     updates[`board/${i}/visual`] = chosenVisual;
-    // -------------------------------------------------------------
 
     let nextSide = gameState.turn.side;
     let nextPhase = 'guess';
@@ -1121,17 +1094,13 @@ window.confirmSelection = async function(i) {
     }
 
     const revealedGoalsCount = Object.values(gameState.board).filter(c => {
-        // يجب أن تكون البطاقة مكشوفة
         if (!c.revealed) return false;
         
-        // نحدد لونها الحقيقي بناءً على الخريطة (sideA أو sideB) 
-        // إذا كان أحد الجانبين ملون (أزرق أو أحمر) فهي هدف
         const isGoal = (c.sideA === 'blue' || c.sideA === 'red' || c.sideB === 'blue' || c.sideB === 'red');
         
         return isGoal;
     }).length;
 
-    // الآن نستخدم عدد الأهداف الفعلي للتحقق من الفوز
     if (revealedGoalsCount >= 15 && updates.winner !== "lose_killer") {
         updates.winner = "win_coop"; 
     }
@@ -1156,8 +1125,8 @@ async function endTurn() {
         turn: { 
             side: nextSide, 
             phase: "clue",
-            ready: false,      // تصفير الجاهزية
-            updatedAt: null    // تصفير الوقت
+            ready: false,
+            updatedAt: null
         }, 
         clue: { word: null, count: null } 
     });

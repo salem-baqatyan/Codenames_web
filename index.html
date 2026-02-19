@@ -143,13 +143,12 @@
     document.getElementById('joinIdInput').addEventListener('input', (e) => {
         let value = e.target.value.trim();
         
-        // التحقق إذا كان النص المدخل يحتوي على رابط
         if (value.includes('?r=')) {
             try {
                 const urlParams = new URLSearchParams(value.split('?')[1]);
                 const roomCode = urlParams.get('r');
                 if (roomCode) {
-                    e.target.value = roomCode; // استبدال الرابط بالرمز فوراً
+                    e.target.value = roomCode;
                 }
             } catch (err) {
                 console.error("خطأ في تحليل الرابط");
@@ -157,7 +156,6 @@
         }
     });
 
-// وظيفة للتحقق من وجود الغرفة وتغيير شكل الزر
     async function checkRoomExists(roomId) {
         const dbRef = ref(db);
         try {
@@ -173,26 +171,22 @@
         joinBtn.innerText = "انضمام";
     }
 
-    // مراقب الإدخال (تنظيف الرابط + التحقق من الغرفة)
     joinInput.addEventListener('input', async (e) => {
         let value = e.target.value.trim();
 
-        // 1. تنظيف الرابط إذا تم لصقه
         if (value.includes('?r=')) {
             const urlParams = new URLSearchParams(value.split('?')[1]);
             value = urlParams.get('r');
             e.target.value = value;
         }
 
-        // 2. التحقق من وجود الغرفة في قاعدة البيانات
-        if (value.length >= 4) { // ابدأ التحقق إذا كان الرمز 4 أحرف فأكثر
+        if (value.length >= 4) {
             checkRoomExists(value);
         } else {
             resetBtnStyle();
         }
     });
 
-    // وظيفة الانضمام الأصلية
     window.joinRoom = () => {
         let val = joinInput.value.trim();
         if (!val) return;
@@ -205,8 +199,8 @@
         location.href = `lobby.html?r=${newId}&type=${selectedType}`;
     };
 
-const roomsRef = ref(db, 'rooms');
-onValue(roomsRef, (snapshot) => {
+    const roomsRef = ref(db, 'rooms');
+    onValue(roomsRef, (snapshot) => {
         const rooms = snapshot.val();
         const tbody = document.getElementById('roomsListBody');
         tbody.innerHTML = '';
@@ -222,7 +216,6 @@ onValue(roomsRef, (snapshot) => {
             const playersCount = room.players ? Object.keys(room.players).length : 0;
             if (playersCount === 0) return;
 
-            // تحديد شكل المود
             const rawMode = room.settings?.mode || '—';
             const modeText = rawMode === 'Co_Op' ? 'تعاوني' : (rawMode === 'PvP' ? 'تنافسي' : rawMode);
 

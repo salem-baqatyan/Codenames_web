@@ -64,40 +64,39 @@
         .alert-btn:active { transform: scale(0.95); }
         .btn-ok { background: linear-gradient(135deg, #7ed321 0%, #417505 100%); color: white; border: 1px solid #b8e986; }
         .btn-cancel { background: #333; color: #bbb; border: 1px solid #444; }
-/* مؤقت دائري بسيط */
-.timer-container {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin: 10px auto;
-}
-.timer-svg {
-    transform: rotate(-90deg);
-    width: 60px;
-    height: 60px;
-}
-.timer-circle-bg {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.1);
-    stroke-width: 4;
-}
-.timer-circle-fg {
-    fill: none;
-    stroke: #3498db;
-    stroke-width: 4;
-    stroke-linecap: round;
-    stroke-dasharray: 176; /* المحيط تقريباً 2 * pi * r */
-    stroke-dashoffset: 0;
-    transition: stroke-dashoffset 1s linear;
-}
-#countdown-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: bold;
-    color: white;
-}
+        .timer-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            margin: 10px auto;
+        }
+        .timer-svg {
+            transform: rotate(-90deg);
+            width: 60px;
+            height: 60px;
+        }
+        .timer-circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 4;
+        }
+        .timer-circle-fg {
+            fill: none;
+            stroke: #3498db;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 176;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+        #countdown-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: white;
+        }
         /* --- Players List Modal & Mini Cards --- */
         #playersListModal {
             position: absolute; top: 60px; right: 15px; left: auto; width: 280px; height: auto;
@@ -368,7 +367,6 @@ const avatarImages = [
     "img/avatar/surprised_man.webp",
 ];
 
-// توليد مصفوفة الصور 1-9 تلقائياً لكل فئة لضمان التحميل المسبق الكامل
 const cardVisuals = {
     'blue': Array.from({length: 9}, (_, i) => `img/card/Blue${i + 1}.webp`),
     'red': Array.from({length: 9}, (_, i) => `img/card/Red${i + 1}.webp`),
@@ -387,14 +385,12 @@ function getVisualForType(type) {
     const pool = cardVisuals[type] || cardVisuals['neutral'];
     if (type === 'killer') return pool[0];
 
-    // جلب الصور التي ظهرت بالفعل على اللوحة
     const usedVisuals = Object.values(gameState.board)
         .filter(c => c.revealed && c.visual)
         .map(c => c.visual);
 
     const available = pool.filter(src => !usedVisuals.includes(src));
     
-    // إذا نفدت الصور الفريدة، نختار أي واحدة عشوائياً، وإلا نختار من المتاحة
     const finalPool = available.length > 0 ? available : pool;
     return finalPool[Math.floor(Math.random() * finalPool.length)];
 }
@@ -427,7 +423,6 @@ onValue(offsetRef, (snap) => {
 function startGameManager() {
     const loader = document.getElementById('loadingScreen');
     
-    // حماية: إذا استغرق التحميل أكثر من 6 ثوانٍ، ادخل للعبة فوراً
     const backupTimeout = setTimeout(() => {
         if (!isPageLoaded) finishLoading();
     }, 6000);
@@ -686,11 +681,9 @@ onValue(logRef, (snap) => {
         renderLog(); 
     }
 });
-// مراقب حالة الغرفة للانتقال التلقائي للردهة
 onValue(statusRef, (snap) => {
     const status = snap.val();
     if (status === "lobby" && isPageLoaded) {
-        // إذا تغيرت الحالة لردهة، ننتقل فوراً
         window.location.href = `lobby.html?r=${roomId}&p=${playerId}`;
     }
 });
@@ -699,7 +692,6 @@ onValue(resultRef, (snap) => {
     const winData = snap.val();
     if (!winData || !myTeam) return;
 
-    // استخراج الفائز والسبب (مع دعم النظام القديم إذا كان هناك فوز مخزن كنص)
     const winnerTeam = typeof winData === 'string' ? winData : winData.team;
     const reason = winData.reason || "score"; 
     
@@ -710,7 +702,6 @@ onValue(resultRef, (snap) => {
     let message = "";
     let alertClass = isIWinner ? "alert-win" : "alert-lose";
 
-    // منطق الرسائل الأربع الخاصة
     if (reason === "score") {
         if (isIWinner) {
             title = "🏆 انتصار مستحق! 🏆";
@@ -729,7 +720,6 @@ onValue(resultRef, (snap) => {
         }
     }
 
-    // بناء واجهة المودال
     modal.className = `custom-alert ${alertClass}`;
     modal.innerHTML = `
         <div class="alert-drag-handle"><div class="drag-indicator"></div></div>
@@ -748,7 +738,6 @@ onValue(resultRef, (snap) => {
     modal.style.display = 'block';
     setTimeout(() => { modal.classList.add('show-win'); makeDraggable(modal); }, 10);
 
-    // بقية كود التايمر والانتقال التلقائي كما هي دون تغيير...
     let timeLeft = 10;
     const timerBar = document.getElementById('timer-bar');
     const countdownText = document.getElementById('countdown-text');
@@ -767,23 +756,19 @@ onValue(resultRef, (snap) => {
     }, 1000);
 
     async function handleAutoTransition() {
-        // 1. تأكد أولاً أن اللاعب لا يزال في الغرفة ولم يضغط "مغادرة"
         const playersSnap = await get(playersRef);
         const currentPlayers = playersSnap.val() || {};
         
-        if (!currentPlayers[playerId]) return; // إذا كنت قد غادرت فعلياً، لا تفعل شيئاً
+        if (!currentPlayers[playerId]) return;
 
         const playerList = Object.values(currentPlayers).sort((a, b) => a.joinedAt - b.joinedAt);
         const isAdmin = (playerList.length > 0 && playerId === playerList[0].id);
 
-        // 2. كل لاعب يحدث فريقه لنفسه فقط (لا نحدث الكل دفعة واحدة)
         await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
             team: "spectators-list" 
         });
 
-        // 3. المشرف فقط يغير حالة الغرفة
         if (isAdmin) {
-            // تحديث حالة الغرفة ومسح الـ winner في تحديث واحد (Atomic Update)
             await update(roomRef, { 
                 status: "lobby",
                 "game/winner": null 
@@ -1017,24 +1002,19 @@ window.confirmSelection = async function(i) {
     updates.remaining = remaining;
 
     let nextTurn = null;
-    let winData = null; // سنخزن هنا الفائز والسبب
+    let winData = null; 
 
-    // تحديد حالة الفوز أو الخسارة
     if (card.type === "killer") {
-        // فوز بسبب المغتال (الخصم هو الفائز)
         winData = { team: enemy, reason: "assassin" };
     } else {
-        // التحقق من الفوز بالنقاط
         if (remaining.blue === 0) winData = { team: "blue", reason: "score" };
         else if (remaining.red === 0) winData = { team: "red", reason: "score" };
         
-        // إذا لم يوجد فوز، نتحقق من انتهاء الدور
         if (!winData && (card.type === enemy || card.type === "neutral")) {
             nextTurn = enemy;
         }
     }
 
-    // تسجيل اللوج
     await push(ref(db, `rooms/${roomId}/game/log`), { 
         type: "guess", team: myTeam, word: card.word, 
         cardColor: card.type, avatar: me.avatar, at: Date.now() 
@@ -1044,7 +1024,7 @@ window.confirmSelection = async function(i) {
     selectedCards.delete(i);
 
     if (winData) {
-        updates.winner = winData; // نرفع الكائن كاملاً {team, reason}
+        updates.winner = winData;
     } else if (nextTurn) {
         updates.turn = { team: nextTurn, phase: "spymaster", ready: false, updatedAt: null };
         updates.clue = { word: null, count: null };
